@@ -525,6 +525,9 @@ fn render_frame_quad(
 // ---------------------------------------------------------------------------
 
 fn run_emulator() {
+    let serial_console = wasi::cli::environment::get_environment()
+        .iter()
+        .any(|(name, value)| name == "FOLDIBOY_SERIAL_LOG" && value == "1");
     // --- GPU + surface init ---
     let gpu = webgpu::get_gpu();
     let adapter = gpu.request_adapter(None).unwrap();
@@ -903,12 +906,13 @@ fn run_emulator() {
                 EmulatorState::Running { cpu } => {
                     run_frame(cpu);
 
-                    // Print serial output (Blargg test ROMs)
-                    if !cpu.bus.serial_output.is_empty() {
+                    // Link-cable traffic is binary data, not normally console text.
+                    if serial_console && !cpu.bus.serial_output.is_empty() {
                         let msg: String =
-                            cpu.bus.serial_output.drain(..).map(|b| b as char).collect();
+                            cpu.bus.serial_output.iter().map(|&b| b as char).collect();
                         wasi_print(&msg);
                     }
+                    cpu.bus.serial_output.clear();
 
                     // Push audio samples to host
                     let samples = cpu.bus.apu.drain_samples();

@@ -1,0 +1,31 @@
+[package]
+name = "wasi-webgpu-wasmtime"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+wasmtime = "41.0"
+wasmtime-wasi = "41.0"
+wasmtime-wasi-io = "41.0"
+raw-window-handle = "0.6"
+wgpu-core = "27"
+wgpu-types = "27"
+wasi-graphics-context-wasmtime = { git = "https://github.com/wasi-gfx/wasi-gfx-runtime.git", rev = "067d92d0eabd264e15486b9cecbb9f7020257b7b" }
+callback-future = "0.1"
+futures = "0.3"
+
+[target.'cfg(any(target_os = "linux", target_os = "android"))'.dependencies.wgpu-core]
+version = "27"
+features = ["wgsl", "raw-window-handle", "vulkan", "noop"]
+
+[target.'cfg(target_os = "windows")'.dependencies.wgpu-core]
+version = "27"
+features = ["wgsl", "raw-window-handle", "dx12", "noop"]
+
+[target.'cfg(any(target_os = "macos", target_os = "ios"))'.dependencies.wgpu-core]
+version = "27"
+features = ["wgsl", "raw-window-handle", "metal", "noop"]
+
+[target.'cfg(all(not(target_os = "linux"), not(target_os = "android"), not(target_os = "windows"), not(target_os = "macos"), not(target_os = "ios")))'.dependencies.wgpu-core]
+version = "27"
+features = ["wgsl", "raw-window-handle", "gles", "noop"]

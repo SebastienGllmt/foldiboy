@@ -1,0 +1,16 @@
+[package]
+name = "wasi-surface-wasmtime"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+wasmtime = "41.0"
+wasmtime-wasi = "41.0"
+wasmtime-wasi-io = "41.0"
+raw-window-handle = "0.6"
+async-broadcast = "0.7"
+oneshot = "0.1"
+async-trait = "0.1"
+winit = { version = "0.30", features = ["android-native-activity"], optional = true }
+futures = "0.3"
+wasi-graphics-context-wasmtime = { git = "https://github.com/wasi-gfx/wasi-gfx-runtime.git", rev = "067d92d0eabd264e15486b9cecbb9f7020257b7b" }

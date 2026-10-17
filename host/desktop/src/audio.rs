@@ -39,14 +39,35 @@ impl AudioStream {
     fn new_with_device(sample_rate: u32, channels: u32) -> Self {
         let host = cpal::default_host();
 
-        let device = match host.default_output_device() {
-            Some(d) => d,
-            None => {
-                log::warn!("no audio output device found — audio disabled");
-                return Self::silent();
+        if let Some(device) = host.default_output_device() {
+            match Self::open_device(&device, sample_rate, channels) {
+                Ok(stream) => return stream,
+                Err(error) => {
+                    log::warn!("default audio output failed: {error}; trying a sound server")
+                }
             }
-        };
+        }
 
+        // ALSA's default can point at an absent hardware PCM even when the
+        // desktop sound server is available. Keep this fallback local to the app.
+        #[cfg(target_os = "linux")]
+        if let Ok(devices) = host.devices() {
+            for device in devices {
+                let name = device.name().unwrap_or_default();
+                if name != "pipewire" && name != "pulse" {
+                    continue;
+                }
+                match Self::open_device(&device, sample_rate, channels) {
+                    Ok(stream) => return stream,
+                    Err(error) => log::warn!("audio output {name} failed: {error}"),
+                }
+            }
+        }
+        log::warn!("no usable audio output — audio disabled");
+        Self::silent()
+    }
+
+    fn open_device(device: &cpal::Device, sample_rate: u32, channels: u32) -> Result<Self, String> {
         let config = cpal::StreamConfig {
             channels: channels as u16,
             sample_rate: cpal::SampleRate(sample_rate),
@@ -58,35 +79,30 @@ impl AudioStream {
         let rb = HeapRb::<i16>::new(capacity);
         let (producer, mut consumer) = rb.split();
 
-        let stream = match device.build_output_stream(
-            &config,
-            move |data: &mut [i16], _: &cpal::OutputCallbackInfo| {
-                let filled = consumer.pop_slice(data);
-                for sample in &mut data[filled..] {
-                    *sample = 0;
-                }
-            },
-            |err| log::error!("audio stream error: {err}"),
-            None,
-        ) {
-            Ok(s) => s,
-            Err(e) => {
-                log::warn!("failed to build audio stream: {e} — audio disabled");
-                return Self::silent();
-            }
-        };
-
-        if let Err(e) = stream.play() {
-            log::warn!("failed to start audio playback: {e} — audio disabled");
-            return Self::silent();
-        }
-
-        log::info!("audio: opened {}Hz {}ch output", sample_rate, channels);
-
-        AudioStream {
+        let stream = device
+            .build_output_stream(
+                &config,
+                move |data: &mut [i16], _: &cpal::OutputCallbackInfo| {
+                    let filled = consumer.pop_slice(data);
+                    for sample in &mut data[filled..] {
+                        *sample = 0;
+                    }
+                },
+                |err| log::error!("audio stream error: {err}"),
+                None,
+            )
+            .map_err(|error| error.to_string())?;
+        stream.play().map_err(|error| error.to_string())?;
+        log::info!(
+            "audio: opened {}Hz {}ch output on {}",
+            sample_rate,
+            channels,
+            device.name().unwrap_or_default()
+        );
+        Ok(AudioStream {
             producer,
             _stream: Some(stream),
-        }
+        })
     }
 
     fn silent() -> Self {
@@ -155,9 +171,22 @@ impl<T: AudioView> audio::HostAudioOutput for AudioImpl<T> {
 // Linker registration
 // ---------------------------------------------------------------------------
 
-pub fn add_to_linker<T: AudioView + 'static>(
-    linker: &mut Linker<T>,
-) -> wasmtime::Result<()> {
+pub fn add_to_linker<T: AudioView + 'static>(linker: &mut Linker<T>) -> wasmtime::Result<()> {
     audio::add_to_linker::<_, AudioHasData<T>>(linker, |x| AudioImpl(x))?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::AudioStream;
+
+    #[test]
+    #[ignore = "requires a desktop audio server or output device"]
+    fn opens_desktop_audio_output() {
+        let stream = AudioStream::new_with_device(48000, 2);
+        assert!(
+            stream._stream.is_some(),
+            "audio unexpectedly fell back to silence"
+        );
+    }
 }

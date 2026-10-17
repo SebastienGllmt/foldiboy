@@ -1,0 +1,12 @@
+[package]
+name = "wasi-graphics-context-wasmtime"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+wasmtime = "41.0"
+wasmtime-wasi = "41.0"
+wasmtime-wasi-io = "41.0"
+raw-window-handle = "0.6"
