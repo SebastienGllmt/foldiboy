@@ -146,8 +146,20 @@ impl Bus for GameBoyTestBus {
 
 pub const MAX_CYCLES: u64 = 100_000_000;
 
+/// Resolve suite paths independently of Cargo's test working directory.
+/// The override also supports workspaces whose repositories are symlinked.
+pub fn rom_path(relative: &str) -> std::path::PathBuf {
+    let root = std::env::var_os("FOLDIBOY_TEST_ROOT")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|| std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../.."));
+    root.join(relative)
+}
+
 pub fn make_cpu(rom_path: &str) -> Result<GbCpu<GameBoyTestBus>, String> {
-    let rom_data = std::fs::read(rom_path).map_err(|e| format!("Failed to load ROM: {e}"))?;
+    let path = self::rom_path(rom_path);
+    let rom_data = std::fs::read(&path).map_err(|e| {
+        format!("Failed to load ROM {}: {e}. Set FOLDIBOY_TEST_ROOT to the directory containing gb-test-roms and SameSuite", path.display())
+    })?;
     let mut bus = GameBoyTestBus::new();
     bus.load_rom(&rom_data);
     let mut cpu = GbCpu::new(bus);

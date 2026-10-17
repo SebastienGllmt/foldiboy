@@ -99,7 +99,8 @@ foldiboy/
 │   │   └── deps/
 │   │       └── nightstream-audio/
 │   │           └── audio.wit       nightstream:audio@0.0.1 (push-based audio)
-│   └── build.sh                wit-deps → cargo build → wasm-tools component new
+│   ├── interfaces/             Project-owned WIT packages (audio)
+│   └── build.sh                cargo build → wasm-tools component new
 ├── host/
 │   └── desktop/                wasmtime host application
 │       ├── src/
@@ -114,7 +115,6 @@ foldiboy/
 **Prerequisites:**
 - Rust nightly with `wasm32-wasip2` target
 - `wasm-tools` CLI
-- `wit-deps` CLI
 - `libasound2-dev` (Linux, for cpal audio)
 
 **Build & run:**
@@ -128,8 +128,24 @@ This builds the guest WASM component, then compiles and runs the host. The host 
 **Run tests:**
 
 ```bash
-cd lib && cargo test
+# From the repository's workspace symlink, with gb-test-roms and SameSuite alongside it:
+./scripts/setup-tests.sh  # build SameSuite ROMs and materialize WIT dependencies
+./scripts/test.sh
 ```
+
+The setup script uses RGBDS on PATH, or a pinned project-scoped Nix package.
+Cargo restores WIT dependencies through the `wit-deps` build dependency; no separate CLI installation is required.
+Set `FOLDIBOY_TEST_ROOT` to the directory containing `gb-test-roms` and `SameSuite` when using another layout or invoking the scripts through the canonical repository path.
+For direct Cargo invocations, use `cd lib && FOLDIBOY_TEST_ROOT=/path/to/test-suites cargo test --locked --workspace`.
+The current default suite has 346 passing tests and 6 ignored tests: five existing wave RAM tests and one optional game profiling test.
+Profiling requires `FOLDIBOY_PROFILE_ROM=/absolute/path/to/game.gb ./scripts/test.sh -p cpu --test opcode_profile -- --ignored`.
+The other downloaded suites are available for future integration; this command does not run Mooneye, acid2, Mealybug, MBC30, or RTC3 ROMs.
+
+**Game ROMs:**
+
+Place `.gb` or `.gbc` files in `roms/` and select one in the desktop ROM browser.
+ROMs must be files inside that directory; the WASI sandbox cannot follow symlinks outside it.
+Game sources, build tools, and generated ROMs are managed separately from this repository.
 
 **Controls:**
 
@@ -305,6 +321,7 @@ interface audio {
 
 **Frame timing**: the Game Boy produces samples at 4,194,304 / 87.38 ≈ 48,000.46 Hz. At 60 fps this is ~800.007 stereo frames per Game Boy frame vs. exactly 800 consumed. The excess is ~5 samples/frame. `write()` should silently drop overflow — the ring buffer absorbs the drift with imperceptible audio loss.
 
+The source interface is tracked in `lib/interfaces/nightstream-audio/audio.wit` and copied into `lib/wit/deps/` by the WIT dependency manager.
 See `host/desktop/src/audio.rs` for a reference implementation using cpal + ringbuf.
 
 ## Design Decisions (ZK Context)

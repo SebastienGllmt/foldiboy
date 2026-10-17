@@ -1,0 +1,18 @@
+package nightstream:audio@0.0.1;
+
+interface audio {
+    record audio-config {
+        sample-rate: u32,
+        channels: u32,
+    }
+
+    resource audio-output {
+        constructor(config: audio-config);
+        write: func(samples: list<s16>) -> u32;
+        available: func() -> u32;
+    }
+}
+
+world imports {
+    import audio;
+}

@@ -1,18 +1,18 @@
 [webgpu]
-url = "https://github.com/WebAssembly/wasi-gfx/archive/refs/heads/v0.0.1.tar.gz"
-prefix = "wasi-gfx-0.0.1/webgpu"
+url = "https://github.com/WebAssembly/wasi-webgpu/archive/d32397c9ba48c8c4a3be0ac019da272f892142d7.tar.gz"
+prefix = "wasi-webgpu-d32397c9ba48c8c4a3be0ac019da272f892142d7/webgpu"
 
 [surface]
-url = "https://github.com/WebAssembly/wasi-gfx/archive/refs/heads/v0.0.1.tar.gz"
-prefix = "wasi-gfx-0.0.1/surface"
+url = "https://github.com/WebAssembly/wasi-webgpu/archive/d32397c9ba48c8c4a3be0ac019da272f892142d7.tar.gz"
+prefix = "wasi-webgpu-d32397c9ba48c8c4a3be0ac019da272f892142d7/surface"
 
 [graphics-context]
-url = "https://github.com/WebAssembly/wasi-gfx/archive/refs/heads/v0.0.1.tar.gz"
-prefix = "wasi-gfx-0.0.1/graphics-context"
+url = "https://github.com/WebAssembly/wasi-webgpu/archive/d32397c9ba48c8c4a3be0ac019da272f892142d7.tar.gz"
+prefix = "wasi-webgpu-d32397c9ba48c8c4a3be0ac019da272f892142d7/graphics-context"
 
 [frame-buffer]
-url = "https://github.com/WebAssembly/wasi-gfx/archive/refs/heads/v0.0.1.tar.gz"
-prefix = "wasi-gfx-0.0.1/frame-buffer"
+url = "https://github.com/WebAssembly/wasi-webgpu/archive/d32397c9ba48c8c4a3be0ac019da272f892142d7.tar.gz"
+prefix = "wasi-webgpu-d32397c9ba48c8c4a3be0ac019da272f892142d7/frame-buffer"
 
 # TODO: update to WASI monorepo https://github.com/bytecodealliance/wit-deps/issues/341
 [cli]
@@ -21,3 +21,6 @@ prefix = "wasi-cli-0.2.0/wit"
 [io]
 url = "https://github.com/WebAssembly/wasi-io/archive/refs/tags/v0.2.0.tar.gz"
 prefix = "wasi-io-0.2.0/wit"
+
+[nightstream-audio]
+path = "../interfaces/nightstream-audio"

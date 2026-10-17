@@ -700,15 +700,11 @@ fn cb_opcode_name(op: u8) -> &'static str {
 }
 
 #[test]
-fn opcode_profile_pokemon_red() {
-    let rom_path = "../../../../foldiboy/roms/tetris.gb";
-    let rom_data = match std::fs::read(rom_path) {
-        Ok(d) => d,
-        Err(e) => {
-            println!("Skipping: could not load Pokemon Red ROM: {e}");
-            return;
-        }
-    };
+#[ignore = "requires a game ROM; set FOLDIBOY_PROFILE_ROM and run with --ignored"]
+fn opcode_profile() {
+    let rom_path = std::env::var_os("FOLDIBOY_PROFILE_ROM")
+        .expect("set FOLDIBOY_PROFILE_ROM to a game ROM path");
+    let rom_data = std::fs::read(&rom_path).expect("load profiling ROM");
 
     let mut bus = ProfilingBus::new(rom_data);
     // DMG post-boot I/O state
@@ -770,7 +766,8 @@ fn opcode_profile_pokemon_red() {
     }
 
     let frames = cpu.total_cycles as f64 / 17556.0; // ~17556 M-cycles per frame
-    println!("=== Pokemon Red Opcode Profile ===");
+    println!("=== Game Opcode Profile ===");
+    println!("ROM: {}", std::path::Path::new(&rom_path).display());
     println!("Total M-cycles:      {}", cpu.total_cycles);
     println!("Total instructions:  {}", total_instructions);
     println!("HALT cycles:         {}", halt_cycles);
