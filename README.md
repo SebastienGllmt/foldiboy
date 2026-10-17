@@ -128,14 +128,14 @@ This builds the guest WASM component, then compiles and runs the host. The host 
 **Run tests:**
 
 ```bash
-# From the repository's workspace symlink, with gb-test-roms and SameSuite alongside it:
+# From the repository's workspace symlink, with test suites in ../roms/tests/:
 ./scripts/setup-tests.sh  # build SameSuite ROMs and materialize WIT dependencies
 ./scripts/test.sh
 ```
 
 The setup script uses RGBDS on PATH, or a pinned project-scoped Nix package.
 Cargo restores WIT dependencies through the `wit-deps` build dependency; no separate CLI installation is required.
-Set `FOLDIBOY_TEST_ROOT` to the directory containing `gb-test-roms` and `SameSuite` when using another layout or invoking the scripts through the canonical repository path.
+Set `FOLDIBOY_TEST_ROOT` to the directory containing `gb-test-roms` and `SameSuite` (default: `../roms/tests/`) when using another layout or invoking the scripts through the canonical repository path.
 For direct Cargo invocations, use `cd lib && FOLDIBOY_TEST_ROOT=/path/to/test-suites cargo test --locked --workspace`.
 The current default suite has 346 passing tests and 6 ignored tests: five existing wave RAM tests and one optional game profiling test.
 Profiling requires `FOLDIBOY_PROFILE_ROM=/absolute/path/to/game.gb ./scripts/test.sh -p cpu --test opcode_profile -- --ignored`.

@@ -3,7 +3,7 @@ set -euo pipefail
 
 # Keep the logical path: the workspace may contain symlinks to canonical clones.
 project_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -L)
-export FOLDIBOY_TEST_ROOT="${FOLDIBOY_TEST_ROOT:-$(dirname -- "$project_dir")}"
+export FOLDIBOY_TEST_ROOT="${FOLDIBOY_TEST_ROOT:-$(dirname -- "$project_dir")/roms/tests}"
 
 for rom in \
     "gb-test-roms/cpu_instrs/individual/01-special.gb" \

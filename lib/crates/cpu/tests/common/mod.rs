@@ -151,7 +151,9 @@ pub const MAX_CYCLES: u64 = 100_000_000;
 pub fn rom_path(relative: &str) -> std::path::PathBuf {
     let root = std::env::var_os("FOLDIBOY_TEST_ROOT")
         .map(std::path::PathBuf::from)
-        .unwrap_or_else(|| std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../.."));
+        .unwrap_or_else(|| {
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../../roms/tests")
+        });
     root.join(relative)
 }
 

@@ -5,7 +5,7 @@ It includes unit tests and the Blargg/SameSuite ROM targets below; it does not r
 
 ## Setup and commands
 
-Clone [retrio/gb-test-roms](https://github.com/retrio/gb-test-roms) and [LIJI32/SameSuite](https://github.com/LIJI32/SameSuite) alongside the Foldiboy checkout, or set `FOLDIBOY_TEST_ROOT` to their parent directory.
+Clone [retrio/gb-test-roms](https://github.com/retrio/gb-test-roms) and [LIJI32/SameSuite](https://github.com/LIJI32/SameSuite) in the workspace’s `roms/tests/` directory, or set `FOLDIBOY_TEST_ROOT` to their parent directory.
 `gb-test-roms` contains compiled ROMs; SameSuite must be built with RGBDS.
 The helpers use the logical workspace path, including when its repositories are symlinks:
 
@@ -27,7 +27,7 @@ FOLDIBOY_TEST_ROOT=/path/to/test-suites cargo test --locked --workspace --no-fai
 ```
 
 Missing suite ROMs are failures with their attempted paths in the diagnostic.
-Without the environment override, the CPU harness looks for suite checkouts alongside a normal, non-symlinked Foldiboy checkout.
+Without the environment override, the CPU harness looks in `../roms/tests/` relative to a normal, non-symlinked Foldiboy checkout.
 
 ## Default coverage
 

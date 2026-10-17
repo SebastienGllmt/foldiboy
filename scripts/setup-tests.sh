@@ -2,7 +2,7 @@
 set -euo pipefail
 
 project_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -L)
-test_root="${FOLDIBOY_TEST_ROOT:-$(dirname -- "$project_dir")}"
+test_root="${FOLDIBOY_TEST_ROOT:-$(dirname -- "$project_dir")/roms/tests}"
 
 for suite in gb-test-roms SameSuite; do
     if [[ ! -e "$test_root/$suite/.git" ]]; then
