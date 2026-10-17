@@ -35,8 +35,10 @@ impl HostState {
     ) -> Self {
         let mut wasi = WasiCtxBuilder::new();
         wasi.inherit_stdio();
-        if std::env::var("FOLDIBOY_SERIAL_LOG").as_deref() == Ok("1") {
-            wasi.env("FOLDIBOY_SERIAL_LOG", "1");
+        for name in ["FOLDIBOY_SERIAL_LOG", "FOLDIBOY_INTEGER_SCALE"] {
+            if std::env::var(name).as_deref() == Ok("1") {
+                wasi.env(name, "1");
+            }
         }
         wasi.preopened_dir(
             "../../roms",

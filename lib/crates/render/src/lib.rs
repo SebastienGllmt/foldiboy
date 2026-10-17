@@ -91,7 +91,6 @@ const TRACE_TEX_H: u32 = 480;
 /// Logical canvas dimensions.
 const CANVAS_W: u32 = MEM_W + TRACE_W;     // 480
 const CANVAS_H: u32 = GB_H + MEM_H;        // 240
-const CANVAS_ASPECT: f32 = CANVAS_W as f32 / CANVAS_H as f32; // 2:1
 
 const SHADER_CODE: &str = r#"
 struct Uniforms {
@@ -155,24 +154,27 @@ struct QuadViewports {
     trace: Viewport,       // right: 160x240 logical (full height)
 }
 
-/// Compute four viewports that fit a 480x240 logical canvas into the window
-/// while preserving 2:1 aspect ratio.
-fn compute_viewports(win_w: u32, win_h: u32) -> QuadViewports {
+/// Fit the logical canvas inside the window, optionally using whole-pixel
+/// scaling. Windows smaller than the canvas still shrink without cropping.
+fn compute_viewports(win_w: u32, win_h: u32, integer_scale: bool) -> QuadViewports {
     let win_w = win_w.max(1) as f32;
     let win_h = win_h.max(1) as f32;
-    let win_aspect = win_w / win_h;
-
-    let (canvas_px_w, canvas_px_h) = if win_aspect >= CANVAS_ASPECT {
-        // Window wider than canvas: fit to height, pillarbox
-        (win_h * CANVAS_ASPECT, win_h)
+    let fit_scale = (win_w / CANVAS_W as f32).min(win_h / CANVAS_H as f32);
+    let snap_to_pixels = integer_scale && fit_scale >= 1.0;
+    let scale = if snap_to_pixels {
+        fit_scale.floor()
     } else {
-        // Window taller than canvas: fit to width, letterbox
-        (win_w, win_w / CANVAS_ASPECT)
+        fit_scale
     };
-
-    let scale = canvas_px_w / CANVAS_W as f32;
-    let offset_x = (win_w - canvas_px_w) / 2.0;
-    let offset_y = (win_h - canvas_px_h) / 2.0;
+    let canvas_px_w = CANVAS_W as f32 * scale;
+    let canvas_px_h = CANVAS_H as f32 * scale;
+    let mut offset_x = (win_w - canvas_px_w) / 2.0;
+    let mut offset_y = (win_h - canvas_px_h) / 2.0;
+    if snap_to_pixels {
+        // An odd-sized window can leave a spare pixel on the right or bottom.
+        offset_x = offset_x.floor();
+        offset_y = offset_y.floor();
+    }
 
     let top_panel_w = GB_W as f32 * scale;
     let top_panel_h = GB_H as f32 * scale;
@@ -525,7 +527,11 @@ fn render_frame_quad(
 // ---------------------------------------------------------------------------
 
 fn run_emulator() {
-    let serial_console = wasi::cli::environment::get_environment()
+    let environment = wasi::cli::environment::get_environment();
+    let integer_scale = environment
+        .iter()
+        .any(|(name, value)| name == "FOLDIBOY_INTEGER_SCALE" && value == "1");
+    let serial_console = environment
         .iter()
         .any(|(name, value)| name == "FOLDIBOY_SERIAL_LOG" && value == "1");
     // --- GPU + surface init ---
@@ -731,7 +737,7 @@ fn run_emulator() {
     wasi_println("foldiboy: initialized (press ESC to toggle focus)");
 
     // Viewport state
-    let mut viewports = compute_viewports(800, 600);
+    let mut viewports = compute_viewports(800, 600, integer_scale);
 
     // Double-click detection state
     let mut frame_count: u32 = 0;
@@ -764,7 +770,7 @@ fn run_emulator() {
         // Resize
         if events.contains(&1) {
             if let Some(e) = canvas.get_resize() {
-                viewports = compute_viewports(e.width, e.height);
+                viewports = compute_viewports(e.width, e.height, integer_scale);
             }
         }
 
@@ -1118,4 +1124,66 @@ fn wasi_println(msg: &str) {
 fn wasi_print(msg: &str) {
     let out = wasi::cli::stdout::get_stdout();
     out.blocking_write_and_flush(msg.as_bytes()).unwrap();
+}
+
+#[cfg(test)]
+mod viewport_tests {
+    use super::*;
+
+    #[test]
+    fn integer_scaling_fits_tall_wide_and_odd_windows() {
+        for (width, height) in [(2180, 1440), (1440, 2180), (1441, 721), (480, 240)] {
+            let v = compute_viewports(width, height, true);
+            let scale = v.game.width / GB_W as f32;
+            assert!(scale >= 1.0 && scale.fract() == 0.0);
+            assert!(v.trace.x + v.trace.width <= width as f32);
+            assert!(v.trace.y + v.trace.height <= height as f32);
+            assert!(
+                CANVAS_W as f32 * (scale + 1.0) > width as f32
+                    || CANVAS_H as f32 * (scale + 1.0) > height as f32
+            );
+            for viewport in [&v.game, &v.rom_browser, &v.ram_viewer, &v.trace] {
+                assert_eq!(viewport.x.fract(), 0.0);
+                assert_eq!(viewport.y.fract(), 0.0);
+            }
+        }
+    }
+
+    #[test]
+    fn small_windows_shrink_without_cropping() {
+        for (width, height) in [(320, 200), (100, 500), (800, 100), (0, 0)] {
+            let v = compute_viewports(width, height, true);
+            assert!(v.game.width > 0.0 && v.game.height > 0.0);
+            assert!(v.game.x >= 0.0 && v.game.y >= 0.0);
+            assert!(v.trace.x + v.trace.width <= width.max(1) as f32 + 0.001);
+            assert!(v.trace.y + v.trace.height <= height.max(1) as f32 + 0.001);
+        }
+    }
+
+    #[test]
+    fn pointer_mapping_accounts_for_integer_scale_letterboxing() {
+        let v = compute_viewports(1441, 721, true);
+        // Three-times scale leaves one spare pixel on the right and bottom.
+        assert!(hit_test_panel(0.0, 0.0, &v).is_some());
+        assert!(hit_test_panel(1440.0, 100.0, &v).is_none());
+        assert!(hit_test_panel(100.0, 720.0, &v).is_none());
+        let v = compute_viewports(2180, 1440, true);
+        assert!(hit_test_panel(0.0, 0.0, &v).is_none());
+        let (panel, x, y) = hit_test_panel(
+            (v.game.x + v.game.width / 2.0) as f64,
+            (v.game.y + v.game.height / 2.0) as f64,
+            &v,
+        )
+        .unwrap();
+        assert!(panel == PanelHit::GameScreen);
+        assert_eq!((x, y), (0.5, 0.5));
+    }
+
+    #[test]
+    fn default_scaling_fills_available_width() {
+        let v = compute_viewports(800, 600, false);
+        let canvas_width = v.trace.x + v.trace.width - v.game.x;
+        assert!((canvas_width - 800.0).abs() < 0.001);
+        assert!((v.game.width / GB_W as f32 - 5.0 / 3.0).abs() < 0.001);
+    }
 }

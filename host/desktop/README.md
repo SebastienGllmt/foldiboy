@@ -35,9 +35,20 @@ For Blargg ROMs or serial debugging, enable them explicitly:
 FOLDIBOY_SERIAL_LOG=1 ./build.sh
 ```
 
-Only this environment variable is forwarded into the Wasm guest.
+The host forwards only `FOLDIBOY_SERIAL_LOG=1` and `FOLDIBOY_INTEGER_SCALE=1` into the Wasm guest.
 Ordinary game traffic can contain repeated `0x55` bytes, which appeared as `U` with the previous unconditional serial logging.
 
 Window close now cancels the guest, releases audio/GPU resources while the event loop is alive, and joins the guest and frame threads before exiting normally.
 The acquisition retry loop observes shutdown, and a worker panic requests final UI exit after guest resources unwind.
 The regression suite covers surface recovery, cancellation during persistent timeout/loss, graphics-context error propagation, worker success/error/panic cleanup, and late events after receiver shutdown.
+
+For integer scaling inside a tiled window, launch with:
+
+```sh
+FOLDIBOY_INTEGER_SCALE=1 ./build.sh
+```
+
+The renderer centers the canvas at the largest whole-number scale that fits the window and leaves unused space black.
+Windows smaller than the logical 480×240 canvas shrink to fit without cropping.
+Pointer hit testing follows the same scaled layout.
+The default remains fractional scaling to fit the available space.

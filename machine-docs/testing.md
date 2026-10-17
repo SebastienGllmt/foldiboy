@@ -1,6 +1,6 @@
 # Testing
 
-The default suite passes 346 tests, with 6 ignored.
+The default suite passes 350 tests, with 6 ignored.
 It includes unit tests and the Blargg/SameSuite ROM targets below; it does not run every external test ROM repository.
 
 ## Setup and commands
@@ -42,8 +42,8 @@ Without the environment override, the CPU harness looks in `../roms/tests/` rela
 | Optional game profiler | 0 | 1 | Requires an explicit ROM path |
 | Memory unit tests | 3 | 0 | Bus trait and flat test memory |
 | PPU unit tests | 65 | 0 | Mode transitions, STAT IRQ, scanlines, OAM |
-| Render unit tests | 75 | 0 | Debug UI, text, ROM browser, memory and trace viewers |
-| Total | 346 | 6 | |
+| Render unit tests | 79 | 0 | Debug UI, text, ROM browser, memory and trace viewers, viewport scaling and hit testing |
+| Total | 350 | 6 | |
 
 The CPU ROM harness uses flat memory, a basic timer/VBlank model, and the APU.
 It does not exercise the production memory bus and PPU together.
