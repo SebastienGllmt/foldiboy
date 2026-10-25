@@ -1,0 +1,18 @@
+[package]
+name = "foldiboy-sm83"
+description = "SM83 instruction-set semantics authored in KRS"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99"
+publish = false
+
+[dependencies]
+k = { package = "krs", path = "/home/sebastiengllmt/git/workspaces/starstream-fv/inspirations/midnightntwrk/k-rust/krs/crates/krs" }
+
+[package.metadata.krs]
+k-namespace = "SM83"
+
+[package.metadata.krs.definitions.main]
+
+[workspace]
+resolver = "3"

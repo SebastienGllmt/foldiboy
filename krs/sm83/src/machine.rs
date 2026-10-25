@@ -1,0 +1,150 @@
+//! Architectural state, the bus, and the initial configuration.
+
+use k::Term;
+use k::builtin::{Bool, Int, KSequence, List, Map, map};
+
+use crate::alu::{CarrySet, ZeroSet};
+use crate::arith::Pair;
+use crate::decode::{Cond, Condition, Pair16, RegPair};
+use crate::micro::MicroOp;
+
+k::sorts! {
+    Reg8;
+    BusCycle;
+}
+
+/// The 8-bit registers addressed by instruction encodings.
+///
+/// `F` is not among them: no encoding names it as an 8-bit operand.
+#[k::constructors(sort = Reg8, result = k::KResult)]
+pub enum Register {
+    #[k::syntax("a")]
+    A,
+    #[k::syntax("b")]
+    B,
+    #[k::syntax("c")]
+    C,
+    #[k::syntax("d")]
+    D,
+    #[k::syntax("e")]
+    E,
+    #[k::syntax("h")]
+    H,
+    #[k::syntax("l")]
+    L,
+}
+
+/// One machine cycle as seen on the bus.
+///
+/// A write records the byte it replaces, so a memory argument can check
+/// each write against the latest earlier access to its address.
+#[k::constructors(sort = BusCycle, result = k::KResult)]
+pub enum Cycle {
+    #[k::syntax("read({addr}, {value})")]
+    Read { addr: Int, value: Int },
+    #[k::syntax("write({addr}, {old}, {new})")]
+    Write { addr: Int, old: Int, new: Int },
+    #[k::syntax("internal")]
+    Internal,
+}
+
+#[k::configuration]
+pub struct Machine {
+    #[k::cell]
+    pub k: KSequence,
+    /// The 8-bit register file.
+    #[k::cell]
+    pub regs: Map<Reg8, Int>,
+    /// The flag register: Z, N, H, C in bits 7 to 4; bits 3 to 0 are zero.
+    #[k::cell]
+    pub f: Int,
+    #[k::cell]
+    pub pc: Int,
+    #[k::cell]
+    pub sp: Int,
+    #[k::cell]
+    pub ime: Bool,
+    /// Set by `EI`: `IME` becomes set after the following instruction.
+    #[k::cell(name = "eiPending")]
+    pub ei_pending: Bool,
+    /// `HALT` mode: each boundary spends one cycle until an interrupt is requested.
+    #[k::cell]
+    pub halted: Bool,
+    /// Set by the `HALT` bug: the next opcode fetch does not advance `PC`.
+    #[k::cell(name = "haltBug")]
+    pub halt_bug: Bool,
+    /// Internal temporary registers; `W` is the high byte of `WZ`.
+    #[k::cell]
+    pub w: Int,
+    #[k::cell]
+    pub z: Int,
+    /// The address space, as a flat map from address to byte.
+    #[k::cell]
+    pub memory: Map<Int, Int>,
+    /// Bus activity since the start, one entry per machine cycle.
+    #[k::cell]
+    pub bus: List<BusCycle>,
+}
+
+/// The initial state; `ENTRY` is `#fetch` to run one instruction, or
+/// `#run(n)` to run `n` boundary steps.
+impl Machine {
+    #[k::init]
+    pub fn init(
+        #[k::config_var(name = "ENTRY")] entry: MicroOp,
+        #[k::config_var(name = "REGS")] regs: Map<Reg8, Int>,
+        #[k::config_var(name = "F")] f: Int,
+        #[k::config_var(name = "PC")] pc: Int,
+        #[k::config_var(name = "SP")] sp: Int,
+        #[k::config_var(name = "IME")] ime: Bool,
+        #[k::config_var(name = "MEMORY")] memory: Map<Int, Int>,
+    ) -> Self {
+        Self {
+            k: k::k![entry],
+            regs,
+            f,
+            pc,
+            sp,
+            ime,
+            ei_pending: false,
+            halted: false,
+            halt_bug: false,
+            w: 0,
+            z: 0,
+            memory,
+            bus: k::builtin::list::empty(),
+        }
+    }
+}
+
+/// The value of the register pair `HL`.
+#[k::function(total, internal)]
+pub fn Hl(registers: Term<Map>) -> Term<Int> {
+    Pair(map::get(registers, Register::H), map::get(registers, Register::L))
+}
+
+/// The value of a register pair.
+#[k::function(total, internal)]
+pub fn PairValue(pair: Term<RegPair>, registers: Term<Map>, flags: Term<Int>, sp: Term<Int>) -> Term<Int>;
+
+k::equations! {
+    for PairValue;
+    pair_value_registers: (Pair16::Registers(high, low), registers, _, _) => {
+        Pair(map::get(registers, high), map::get(registers, low))
+    };
+    pair_value_af:        (Pair16::Af, registers, flags, _)               => Pair(map::get(registers, Register::A), flags);
+    pair_value_sp:        (Pair16::StackPointer, _, _, sp)                => sp;
+}
+
+/// Whether a branch condition holds for a flag byte.
+#[k::function(total, internal)]
+pub fn Holds(cond: Term<Cond>, flags: Term<Int>) -> Term<Bool>;
+
+k::equations! {
+    for Holds;
+    holds_always:    (Condition::Always, _)       => true;
+    holds_not_zero:  (Condition::NotZero, flags)  => !ZeroSet(flags);
+    holds_zero:      (Condition::Zero, flags)     => ZeroSet(flags);
+    holds_not_carry: (Condition::NotCarry, flags) => !CarrySet(flags);
+    holds_carry:     (Condition::Carry, flags)    => CarrySet(flags);
+}

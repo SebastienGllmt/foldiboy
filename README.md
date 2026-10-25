@@ -107,6 +107,8 @@ foldiboy/
 │       │   ├── main.rs             wasmtime setup, wasi-gfx, event loop
 │       │   └── audio.rs           cpal + ringbuf audio backend
 │       └── build.sh            Builds guest, then cargo run --release
+├── krs/
+│   └── sm83/                   SM83 instruction-set semantics in KRS (K in Rust); see its README
 └── README.md
 ```
 
