@@ -5,7 +5,7 @@
 //! `WriteByte`, `Idle`) takes one machine cycle and appends one entry to
 //! the bus log; every other micro-operation takes no time.
 
-use k::builtin::{Int, list, map};
+use k::builtin::{Int, map};
 
 use crate::alu::{AluOp, UnaryOp};
 use crate::decode::{Address, AddrMode, Cond, Condition, Operand, Operand8, Pair16, RegPair};
@@ -105,7 +105,7 @@ k::rules! {
     } => {
         k: [Decode(opcode), ..],
         pc: Word(pc + 1),
-        bus: list::concat(log, list::item(Cycle::Read { addr: pc, value: opcode })),
+        bus: [..log, Cycle::Read { addr: pc, value: opcode }],
     };
 
     /// After the `HALT` bug, the fetch leaves `PC` on the opcode it read.
@@ -119,7 +119,7 @@ k::rules! {
     } => {
         k: [Decode(opcode), ..],
         halt_bug: false,
-        bus: list::concat(log, list::item(Cycle::Read { addr: pc, value: opcode })),
+        bus: [..log, Cycle::Read { addr: pc, value: opcode }],
     };
 
     fetch_cb: {
@@ -130,7 +130,7 @@ k::rules! {
     } => {
         k: [DecodeCb(opcode), ..],
         pc: Word(pc + 1),
-        bus: list::concat(log, list::item(Cycle::Read { addr: pc, value: opcode })),
+        bus: [..log, Cycle::Read { addr: pc, value: opcode }],
     };
 
     load_z_register: {
@@ -313,7 +313,7 @@ k::rules! {
     } => {
         k: [..],
         z: value,
-        bus: list::concat(log, list::item(Cycle::Read { addr, value })),
+        bus: [..log, Cycle::Read { addr, value }],
     };
 
     read_w: {
@@ -324,7 +324,7 @@ k::rules! {
     } => {
         k: [..],
         w: value,
-        bus: list::concat(log, list::item(Cycle::Read { addr, value })),
+        bus: [..log, Cycle::Read { addr, value }],
     };
 
     #[k::requires(map::in_keys(addr, memory))]
@@ -335,10 +335,7 @@ k::rules! {
     } => {
         k: [..],
         memory: map::update(memory, addr, value),
-        bus: list::concat(
-            log,
-            list::item(Cycle::Write { addr, old: map::get(memory, addr), new: value }),
-        ),
+        bus: [..log, Cycle::Write { addr, old: map::get(memory, addr), new: value }],
     };
 
     idle: {
@@ -346,7 +343,7 @@ k::rules! {
         bus: log,
     } => {
         k: [..],
-        bus: list::concat(log, list::item(Cycle::Internal)),
+        bus: [..log, Cycle::Internal],
     };
 
     alu_a: {

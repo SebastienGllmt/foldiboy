@@ -15,4 +15,4 @@ export LIBRARY_PATH="$Z3_LIB${LIBRARY_PATH:+:$LIBRARY_PATH}"
 CARGO_TARGET_DIR="$PWD/target" "$KRS_BIN" check --manifest-path Cargo.toml --package foldiboy-sm83 --definition main
 CARGO_TARGET_DIR="$PWD/target" "$KRS_BIN" emit-k --manifest-path Cargo.toml --package foldiboy-sm83 --definition main --output results/emitted >/dev/null
 (cd vectors && cargo build --release --offline --quiet)
-vectors/target/release/sm83-vectors --definition-ir results/emitted/definition-ir.json --corpus "$CORPUS" --report results/vectors.json "$@" 2>/dev/null
+vectors/target/release/sm83-vectors --definition-ir results/emitted/definition-ir.json --corpus "$CORPUS" --report results/vectors.json "$@"

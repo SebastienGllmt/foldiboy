@@ -7,7 +7,7 @@
 //! lowest such bit is the one served.
 
 use k::Term;
-use k::builtin::{Bool, Int, Map, list, map};
+use k::builtin::{Bool, Int, Map, map};
 
 use crate::Machine;
 use crate::arith::{High, Low, Word};
@@ -53,13 +53,13 @@ pub fn Requested(ie: Term<Int>, flags: Term<Int>) -> Term<Int> {
 
 /// Whether `memory` holds an enabled and requested interrupt.
 #[k::function(total, internal)]
-pub fn InterruptRequested(memory: Term<Map>) -> Term<Bool> {
+pub fn InterruptRequested(memory: Term<Map<Int, Int>>) -> Term<Bool> {
     Requested(map::get(memory, IE), map::get(memory, IF)) != 0
 }
 
 /// Whether the boundary dispatches an interrupt.
 #[k::function(total, internal)]
-pub fn Dispatches(ime: Term<Bool>, memory: Term<Map>) -> Term<Bool> {
+pub fn Dispatches(ime: Term<Bool>, memory: Term<Map<Int, Int>>) -> Term<Bool> {
     ime && InterruptRequested(memory)
 }
 
@@ -192,7 +192,7 @@ k::rules! {
         bus: log,
     } => {
         k: [..],
-        bus: list::concat(log, list::item(Cycle::Read { addr: pc, value: opcode })),
+        bus: [..log, Cycle::Read { addr: pc, value: opcode }],
     };
 
     /// `IE` is sampled after the high-byte push, so a push of the high byte

@@ -119,13 +119,13 @@ impl Machine {
 
 /// The value of the register pair `HL`.
 #[k::function(total, internal)]
-pub fn Hl(registers: Term<Map>) -> Term<Int> {
+pub fn Hl(registers: Term<Map<Reg8, Int>>) -> Term<Int> {
     Pair(map::get(registers, Register::H), map::get(registers, Register::L))
 }
 
 /// The value of a register pair.
 #[k::function(total, internal)]
-pub fn PairValue(pair: Term<RegPair>, registers: Term<Map>, flags: Term<Int>, sp: Term<Int>) -> Term<Int>;
+pub fn PairValue(pair: Term<RegPair>, registers: Term<Map<Reg8, Int>>, flags: Term<Int>, sp: Term<Int>) -> Term<Int>;
 
 k::equations! {
     for PairValue;
