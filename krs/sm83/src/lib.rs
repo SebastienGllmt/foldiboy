@@ -6,8 +6,7 @@
 //! appends one entry to the bus log; a value read in one cycle and used in
 //! a later one passes through the CPU's internal `W` and `Z` registers.
 
-pub mod alu;
-pub mod arith;
+pub use sm83_core::{alu, arith};
 pub mod decode;
 pub mod execute;
 pub mod interrupt;

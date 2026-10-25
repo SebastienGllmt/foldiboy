@@ -49,6 +49,8 @@ The rules follow the DMG behaviour that the mooneye and SameSuite hardware tests
 
 ## Source layout
 
+Arithmetic and ALU definitions live in `../sm83-core` and are re-exported by this crate.
+
 | File | Content |
 | --- | --- |
 | `machine.rs` | configuration, initializer, registers, bus cycles, register-pair and condition reads |
@@ -56,8 +58,8 @@ The rules follow the DMG behaviour that the mooneye and SameSuite hardware tests
 | `execute.rs` | each instruction as its micro-operation sequence |
 | `micro.rs` | micro-operations and their transitions |
 | `interrupt.rs` | the boundary step: `EI` delay, `HALT` mode, interrupt dispatch |
-| `alu.rs` | result and flag functions of the arithmetic and logic operations |
-| `arith.rs` | fixed-width integer helpers |
+| `../sm83-core/src/alu.rs` | result and flag functions of the arithmetic and logic operations |
+| `../sm83-core/src/arith.rs` | fixed-width integer helpers |
 
 ## Conventions
 
@@ -87,6 +89,7 @@ The rules follow the DMG behaviour that the mooneye and SameSuite hardware tests
 The crate depends on KRS by path (`Cargo.toml` and `vectors/Cargo.toml`), at a local k-rust checkout that is not yet published.
 The last validated revision is `793cc0a3a`; path dependencies follow the checkout's current revision.
 `KRS_ROOT` and `Z3_LIB` override the scripts' defaults.
+The scripts compose the root definition with `--dependency foldiboy-sm83-core:core`; direct KRS commands require the same selection.
 The scripts find the test suites as `scripts/test.sh` does, under `FOLDIBOY_TEST_ROOT` (by default `roms/tests` beside the repository, reached through its logical path): `sm83/v1` (SingleStepTests) and `mooneye-test-suite`.
 Build output goes to `target/` and `results/`, which are not tracked.
 
