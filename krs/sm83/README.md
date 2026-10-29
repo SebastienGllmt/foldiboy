@@ -73,6 +73,9 @@ Arithmetic and ALU definitions live in `../sm83-core` and are re-exported by thi
   Opcodes, addresses and masks are written in hex, and the interrupt registers are the constants `IE` and `IF`.
 - Collection cells and helper parameters declare element sorts: `Map<Reg8, Int>` for registers, `Map<Int, Int>` for memory, and `List<BusCycle>` for the bus log.
   KRS checks the element sorts through reads, writes and helper calls; these types do not impose byte or address bounds.
+  Read entries with `registers[Register::A]` or `memory[addr]`, and check membership with `memory.contains_key(addr)`.
+  Write entries with `k::map![high -> hi, low -> lo, ..registers]`; entries apply in order over the original map, so the later entry wins if keys alias.
+  These forms denote builtin map operations; reads of absent keys remain undefined.
 - Bus cycles append with builtin list notation (`[..log, Cycle::Read { addr, value }]`).
   The initializer keeps `list::empty()` because KRS does not yet accept `[]` there.
 - Binder sorts in rules are inferred from the cells and constructor fields they match, so rules declare none.

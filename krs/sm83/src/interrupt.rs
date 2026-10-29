@@ -7,7 +7,7 @@
 //! lowest such bit is the one served.
 
 use k::Term;
-use k::builtin::{Bool, Int, Map, map};
+use k::builtin::{Bool, Int, Map};
 
 use crate::Machine;
 use crate::arith::{High, Low, Word};
@@ -54,7 +54,7 @@ pub fn Requested(ie: Term<Int>, flags: Term<Int>) -> Term<Int> {
 /// Whether `memory` holds an enabled and requested interrupt.
 #[k::function(total, internal)]
 pub fn InterruptRequested(memory: Term<Map<Int, Int>>) -> Term<Bool> {
-    Requested(map::get(memory, IE), map::get(memory, IF)) != 0
+    Requested(memory[IE], memory[IF]) != 0
 }
 
 /// Whether the boundary dispatches an interrupt.
@@ -180,7 +180,7 @@ k::rules! {
             Micro::Idle,
             Micro::WriteByte { addr: Word(sp - 1), value: High(pc) },
             Step::PushLow { addr: Word(sp - 2), value: Low(pc) },
-            ..
+            ..,
         ],
         sp: Word(sp - 2),
     };
@@ -214,12 +214,8 @@ k::rules! {
         memory,
     } => {
         k: [..],
-        pc: InterruptVector(Requested(ie, map::get(memory, IF))),
+        pc: InterruptVector(Requested(ie, memory[IF])),
         ime: false,
-        memory: map::update(
-            memory,
-            IF,
-            map::get(memory, IF) - LowestRequest(Requested(ie, map::get(memory, IF))),
-        ),
+        memory: k::map![IF -> memory[IF] - LowestRequest(Requested(ie, memory[IF])), ..memory],
     };
 }

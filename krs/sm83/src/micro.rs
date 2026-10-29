@@ -5,10 +5,10 @@
 //! `WriteByte`, `Idle`) takes one machine cycle and appends one entry to
 //! the bus log; every other micro-operation takes no time.
 
-use k::builtin::{Int, map};
+use k::builtin::Int;
 
 use crate::alu::{AluOp, UnaryOp};
-use crate::decode::{Address, AddrMode, Cond, Condition, Operand, Operand8, Pair16, RegPair};
+use crate::decode::{AddrMode, Address, Cond, Condition, Operand, Operand8, Pair16, RegPair};
 use crate::machine::{Cycle, Register};
 use crate::{
     AluFlags, AluResult, BitFlags, Decode, DecodeCb, High, Hl, Holds, Low, Machine, Pair, Signed,
@@ -171,7 +171,7 @@ k::rules! {
         z: value,
     } => {
         k: [..],
-        regs: map::update(registers, r, value),
+        regs: k::map![r -> value, ..registers],
     };
 
     store_z_hl_indirect: {
@@ -195,11 +195,7 @@ k::rules! {
         regs: registers,
     } => {
         k: [..],
-        regs: map::update(
-            map::update(registers, high, High(value)),
-            low,
-            Low(value),
-        ),
+        regs: k::map![high -> High(value), low -> Low(value), ..registers],
     };
 
     /// The low four bits of `F` are always zero.
@@ -209,7 +205,7 @@ k::rules! {
         f: _,
     } => {
         k: [..],
-        regs: map::update(registers, Register::A, High(value)),
+        regs: k::map![Register::A -> High(value), ..registers],
         f: Low(value) & 0xF0,
     };
 
@@ -228,8 +224,8 @@ k::rules! {
         z: _,
     } => {
         k: [..],
-        w: map::get(registers, high),
-        z: map::get(registers, low),
+        w: registers[high],
+        z: registers[low],
     };
 
     resolve_via_hl_step: {
@@ -243,11 +239,11 @@ k::rules! {
                 pair: Pair16::Registers { high: Register::H, low: Register::L },
                 value: Word(Hl(registers) + delta),
             },
-            ..
+            ..,
         ],
         regs: registers,
-        w: map::get(registers, Register::H),
-        z: map::get(registers, Register::L),
+        w: registers[Register::H],
+        z: registers[Register::L],
     };
 
     resolve_high_immediate: {
@@ -301,7 +297,7 @@ k::rules! {
         k: [
             Micro::WriteByte { addr: Pair(w, z), value: Low(sp) },
             Micro::WriteByte { addr: Word(Pair(w, z) + 1), value: High(sp) },
-            ..
+            ..,
         ],
     };
 
@@ -327,15 +323,15 @@ k::rules! {
         bus: [..log, Cycle::Read { addr, value }],
     };
 
-    #[k::requires(map::in_keys(addr, memory))]
+    #[k::requires(memory.contains_key(addr))]
     write_byte: {
         k: [Micro::WriteByte { addr, value }, ..],
         memory,
         bus: log,
     } => {
         k: [..],
-        memory: map::update(memory, addr, value),
-        bus: [..log, Cycle::Write { addr, old: map::get(memory, addr), new: value }],
+        memory: k::map![addr -> value, ..memory],
+        bus: [..log, Cycle::Write { addr, old: memory[addr], new: value }],
     };
 
     idle: {
@@ -353,12 +349,11 @@ k::rules! {
         f: flags,
     } => {
         k: [..],
-        regs: map::update(
-            registers,
-            Register::A,
-            AluResult(op, map::get(registers, Register::A), value, flags),
-        ),
-        f: AluFlags(op, map::get(registers, Register::A), value, flags),
+        regs: k::map![
+            Register::A -> AluResult(op, registers[Register::A], value, flags),
+            ..registers,
+        ],
+        f: AluFlags(op, registers[Register::A], value, flags),
     };
 
     update_z: {
@@ -443,7 +438,7 @@ k::rules! {
             Micro::Idle,
             Micro::WriteByte { addr: Word(sp - 1), value: High(pc) },
             Micro::WriteByte { addr: Word(sp - 2), value: Low(pc) },
-            ..
+            ..,
         ],
         pc: Pair(high, low),
         sp: Word(sp - 2),
@@ -468,7 +463,7 @@ k::rules! {
             Micro::ReadZ { addr: sp },
             Micro::ReadW { addr: Word(sp + 1) },
             Micro::JumpIf { cond: Condition::Always },
-            ..
+            ..,
         ],
         sp: Word(sp + 2),
     };
