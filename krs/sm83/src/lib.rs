@@ -7,6 +7,7 @@
 //! a later one passes through the CPU's internal `W` and `Z` registers.
 
 pub use sm83_core::{alu, arith};
+pub mod claims;
 pub mod decode;
 pub mod execute;
 pub mod interrupt;

@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
+# Upstream mooneye acceptance suite adapter only.
+# Keep project-authored tests and proof workflows separate; see README.md.
 # Builds the mooneye acceptance ROMs that need only the CPU, RAM, IE and IF,
-# and runs each on the definition. Run `run-vectors.sh` first: it emits the
+# and runs each on the definition. Run `run-singlestep-tests.sh` first: it emits the
 # definition IR and builds the harness this script uses.
 # Arguments are extra ROM names (relative to the suite's acceptance/ directory).
 set -euo pipefail

@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Upstream SingleStepTests SM83 suite adapter only.
+# Keep project-authored tests and proof workflows separate; see README.md.
 # Checks the definition, emits its IR, and runs it against the SingleStepTests corpus.
 # Arguments are passed to the harness, e.g. `--files 00,40 --limit 100`.
 set -euo pipefail

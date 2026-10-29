@@ -58,6 +58,7 @@ Arithmetic and ALU definitions live in `../sm83-core` and are re-exported by thi
 | `execute.rs` | each instruction as its micro-operation sequence |
 | `micro.rs` | micro-operations and their transitions |
 | `interrupt.rs` | the boundary step: `EI` delay, `HALT` mode, interrupt dispatch |
+| `claims.rs`, `claims/` | native proof contracts, composed spec modules, and [coverage/source inventory](src/claims/README.md) |
 | `../sm83-core/src/alu.rs` | result and flag functions of the arithmetic and logic operations |
 | `../sm83-core/src/arith.rs` | fixed-width integer helpers |
 
@@ -89,22 +90,81 @@ Arithmetic and ALU definitions live in `../sm83-core` and are re-exported by thi
 
 ## Building
 
-The crate depends on KRS by path (`Cargo.toml` and `vectors/Cargo.toml`), at a local k-rust checkout that is not yet published.
-The last validated revision is `793cc0a3a`; path dependencies follow the checkout's current revision.
 `KRS_ROOT` and `Z3_LIB` override the scripts' defaults.
 The scripts compose the root definition with `--dependency foldiboy-sm83-core:core`; direct KRS commands require the same selection.
 The scripts find the test suites as `scripts/test.sh` does, under `FOLDIBOY_TEST_ROOT` (by default `roms/tests` beside the repository, reached through its logical path): `sm83/v1` (SingleStepTests) and `mooneye-test-suite`.
 Build output goes to `target/` and `results/`, which are not tracked.
 
-## Verification
+## Tools and workflow
 
-`run-vectors.sh` checks the definition, emits its IR, builds the harness in `vectors/`, and runs every vector of the [SingleStepTests sm83](https://github.com/SingleStepTests/sm83) corpus.
+The same KRS semantics feed concrete execution and symbolic proofs.
+Claims specify properties to check; they do not define additional CPU behavior.
+
+| Tool or input | Purpose in this project |
+| --- | --- |
+| KRS configuration, functions and `k::rules!` | Define the machine state and SM83 transitions. |
+| `krs check` | Check that the composed definition is well formed before executing or proving it. This does not establish SM83 correctness. |
+| `krs emit-k` | Generate K and definition IR from the semantics. The test harnesses consume the IR through `krs-exec`. |
+| `run-singlestep-tests.sh` | Run the upstream SingleStepTests SM83 corpus against the semantics. |
+| `run-mooneye-tests.sh` | Run upstream mooneye acceptance ROMs against the semantics. |
+| `k::claims!` in [src/claims.rs](src/claims.rs) and [src/claims/](src/claims/README.md) | Specify CPU behavior as symbolic execution contracts over the KRS machine, so the native prover can check the instruction rules against them. |
+| `krs prove` | Attempt to establish those claims using k-rust’s native reachability prover through `krs-exec`, with Z3 for symbolic conditions. A failed or stuck proof requires investigation; it does not by itself identify a CPU bug. |
+
+Use the upstream suites for compatibility evidence on concrete executions.
+Use claims to state the CPU contracts that must hold across symbolic inputs, such as an instruction's result, preserved flags and bus effects.
+Claims give the native prover an initial state, precondition and postcondition; it derives the intervening execution from the existing instruction rules.
+We use this interface to automate proofs about those rules without writing their transition reasoning by hand in Lean.
+Lean remains available for proofs that need explicit mathematical arguments, such as refinement between different machine models; claims are not a prerequisite for every Lean proof.
+The `all_paths` claim uses weak partial correctness: every finite maximal execution from its permitted initial states must pass through the postcondition; termination is not established by this modality alone.
+A proof applies only to the modeled behavior and the claim's preconditions; it does not validate the model against hardware.
+
+### Commands
+
+Run from `krs/sm83/`, with `KRS_BIN` pointing to the KRS CLI and its required shared libraries available.
+All commands composing the CPU definition need `--dependency foldiboy-sm83-core:core`.
+
+Check the definition:
+
+```bash
+"$KRS_BIN" check --package foldiboy-sm83 --definition main \
+  --dependency foldiboy-sm83-core:core
+```
+
+Run the native contract suite (sources, justifications and coverage are in the [claim inventory](src/claims/README.md)):
+
+```bash
+"$KRS_BIN" prove --package foldiboy-sm83 --definition main \
+  --dependency foldiboy-sm83-core:core \
+  --spec-module SM83-CONTRACTS-SPEC --depth 32
+```
+
+Success requires every selected claim to report `proven` and exit status 0.
+The six bit-index contracts use exhaustive native cases over the three-bit opcode field.
+The [claim inventory](src/claims/README.md#proof-evidence) records the reviewed proof evidence and the three long-running contracts still under investigation.
+Proof output is printed to the terminal; any saved diagnostic runs belong in ignored `results/`.
+
+Run the concrete test suites:
+
+```bash
+./run-singlestep-tests.sh
+./run-mooneye-tests.sh
+```
+
+## Upstream conformance suites
+
+`run-singlestep-tests.sh` and `run-mooneye-tests.sh` are adapters for the named upstream suites only.
+Their scope is building and loading those suites, executing them, and reporting their prescribed checks.
+Do not add project-authored test cases, proof workflows or general test infrastructure to these runners or their harnesses in `vectors/`.
+Changes should be limited to maintaining the suite integration as the build system, execution API or upstream suite changes.
+Keep project-authored verification separate, such as the symbolic contracts in `src/claims.rs`.
+
+`run-singlestep-tests.sh` checks the definition, emits its IR, builds the harness in `vectors/`, and runs every vector of the [SingleStepTests sm83](https://github.com/SingleStepTests/sm83) corpus.
 The harnesses configure the definition with `krs-exec` values and read results by cell and constructor names (`Register::A`, `Cycle::Read`), never by emitted K symbols.
 For each vector the harness compares the registers, flags, `PC`, `SP`, `IME`, the listed memory bytes, and the bus log.
 An internal cycle is compared by kind only, because the corpus records the address and data lines left on the bus, which this model does not track.
 The corpus is generated by an emulator; it is conformance evidence, not hardware or proof evidence.
 
-`run-roms.sh` builds the mooneye acceptance ROMs that need only the CPU, RAM, `IE` and `IF` (with `wla-dx` from an ephemeral `nix-shell`) and runs each with `vectors/src/bin/sm83-rom.rs`.
+`run-mooneye-tests.sh` builds the mooneye acceptance ROMs that need only the CPU, RAM, `IE` and `IF` (with `wla-dx` from an ephemeral `nix-shell`) and runs each with `vectors/src/bin/sm83-rom.rs`.
 The ROM fills `$0000-$7FFF` of a flat 64 KiB memory, the CPU starts in the post-boot state, and `LY` reads `$FF` so the mooneye harness skips its display code.
 The tests' authors verified their expected results on hardware (the `Verified results` header of each mooneye source), so they are hardware evidence.
 

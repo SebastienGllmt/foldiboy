@@ -1,0 +1,182 @@
+# Native SM83 contracts
+
+These Rust files are proof inputs, written in `k::claims!` over the existing machine.
+`krs prove` supplies execution, simplification and SMT reasoning; the contracts add no execution rules, trusted axioms, custom runner or Lean code.
+The native spec module `SM83-CONTRACTS-SPEC` imports the individual modules and selects the whole suite.
+
+## Sources and justification
+
+The expected results are specified independently of the implementation's `AluResult`, `AluFlags`, `UnaryResult`, `UnaryFlags`, `AddHlFlags`, `Holds`, operand tables and arithmetic helpers.
+Using builtin integer arithmetic, bitwise operations, map updates and conditional terms is intentional.
+Repeated decision tables and long formulas use `Expected*` functions beside the claims: decoder field tables in `decode.rs`, DAA corrections in `instructions.rs`, and interrupt priority in `boundaries.rs`.
+These functions must remain independent of the implementation helpers; sharing an implementation table with an expected result would hide errors in that table.
+The decoder tables use root `match` bodies and interrupt priority uses root `if` bodies, which KRS turns into defining equations.
+The DAA formulas use short scalar conditional expressions inside named helpers.
+KRS currently rejects function declarations inside spec modules, so the expectation helpers are declared outside those modules and emitted into `definition.k`; they add no machine transitions and are called only by the contracts.
+The DAA helpers retain scalar `kequal::ite` bodies because the reviewed prover left their equivalent branching-body versions unresolved on symbolic register inputs.
+The decoder tables retain the previous expressions' fallback values, while the claims restrict their indices to the corresponding opcode fields.
+
+| Reference | Role |
+| --- | --- |
+| [RGBDS gbz80(7)](https://github.com/gbdev/rgbds/blob/dfe76a12c167aa0bc03a4cc9c30d534cbc45e2f1/man/gbz80.7) | Instruction meaning, flags, lengths, conditions and cycle counts. The instruction heading corresponding to a contract's mnemonic supplies its ordinary behavior specification. |
+| [Pan Docs CPU Instruction Set](https://github.com/gbdev/pandocs/blob/abeda621759a8e2b322b368eacf4d31ec48eb4df/src/CPU_Instruction_Set.md) | Encoding families, register/condition field order, immediate width and little-endian representation. |
+| [gbops DMG opcode data](https://github.com/izik1/gbops/blob/90b9bf296aed373335a0abbef0a0794a919b9f2c/dmgops.json) | Cross-check for opcode bytes and ordered fetch/read/write/internal cycles. It is reference data, not hardware measurements. |
+| [Pan Docs Interrupts](https://github.com/gbdev/pandocs/blob/abeda621759a8e2b322b368eacf4d31ec48eb4df/src/Interrupts.md) and [HALT](https://github.com/gbdev/pandocs/blob/abeda621759a8e2b322b368eacf4d31ec48eb4df/src/halt.md) | Delayed EI, DI, interrupt priority/acknowledgement, HALT entry/wakeup and the HALT bug. |
+| [mooneye `interrupts/ie_push.s`](https://github.com/Gekkio/mooneye-test-suite/blob/31510e12eea6286d36eea060a6adde755e1067aa/acceptance/interrupts/ie_push.s) | Hardware-verified upper-push cancellation and lower-push sampling cases, rounds 1 and 3. |
+| [SameSuite `ei_delay_halt.asm`](https://github.com/LIJI32/SameSuite/blob/f15645fb049a47ea235f6d2c9a033e72d8087901/interrupt/ei_delay_halt.asm) | EI/HALT with prebuffered VBlank and STAT requests; the timer-arrival portion is outside this model. |
+
+The five-cycle dispatch bus order follows the existing model's SameBoy-based interpretation; Pan Docs establishes the total cycle count but does not alone establish that precise bus log.
+The log's `old` value on a write is Foldiboy bookkeeping: it must equal the replaced memory byte, not an additional hardware read cycle.
+An external specification justifies a contract; proving the contract checks the implementation against that statement, not the authority or completeness of the specification itself.
+
+## Numeric notation
+
+Numbers are written according to their role, rather than giving every repeated value a new name.
+
+| Role | Convention | Examples |
+| --- | --- | --- |
+| Memory-mapped register identity | Existing architectural constants | `IE` (`0xFFFF`), `IF` (`0xFF0F`) |
+| Opcode or byte value | Two-digit hex | `0xFB` (EI), `0x76` (HALT), `0x06` (LD B,d8) |
+| Flag weight or byte mask | Hex | Z/N/H/C use `0x80`/`0x40`/`0x20`/`0x10`; a byte mask is `0xFF` |
+| Interrupt bit set | Binary, grouped into nibbles | `0b0001_1111` for the five interrupt bits; `0b0000_0100` for timer |
+| Fixed address or interrupt vector | Four-digit hex | `0x0100`, `0x0200`, `0x0040`, `0x0058` |
+| Arithmetic radix or modulus | Hex power of two | `0x10` for nibbles, `0x100` for bytes, `0x1000` for the bit-11 carry boundary, `0x1_0000` for words |
+| BCD digit boundary and corrections | Hex | `0x99`, `0x06`, `0x60` |
+| Counts, bit indices and small offsets | Decimal | `pc + 2`, `bit` alternatives `0` through `7`, `delta == -1` |
+
+The same numeric value can have different roles: the byte radix is `0x100`, while a fixture address is `0x0100`.
+The contracts reuse only the existing IE/IF address constants, not implementation result/flag helpers or decoder tables.
+
+Some arithmetic offsets are representations of wrapping operations.
+Adding `0xFFFF` or `0xFFFE` before reducing modulo `0x1_0000` expresses a word decrement by one or two.
+Adding `0x200` before a byte subtraction's `% 0x100` keeps the intermediate nonnegative under the stated byte bounds.
+Those expressions retain their existing arithmetic shape in this notation cleanup.
+
+Constants and symbolic inputs serve different purposes.
+The IE-push fixtures deliberately use `PC = 0x0200, SP = 0x0000` and `PC = 0x0235, SP = 0x0001`: the pushed address bytes and their timing determine the interrupt behavior.
+Their source comments explain those choices.
+The EI/NOP/DI sequence fixtures' `0x0100` starting address could instead become a symbolic input during a coverage extension; doing so broadens the claim and is separate from changing notation.
+The notation cleanup was checked against the reviewed revision: `krs check` passes, and emitted `definition.k` and `spec.k` are byte-identical to the pre-cleanup versions.
+
+## Inventory
+
+Each row identifies a family of native claims; individual names and preconditions are in the linked source.
+All claimed bus logs append to an arbitrary existing log.
+Unmodified cells are framed, including unrelated registers and memory.
+Temporary `w`/`z` cells are exposed where execution changes them, so they are not accidentally asserted unchanged.
+
+| Source / names | Property and reason for inclusion |
+| --- | --- |
+| [../claims.rs](../claims.rs), `add_hl_de` | Full 16-bit ADD HL,DE arithmetic and flags; retains the original dogfooding regression. |
+| [decode.rs](decode.rs), `contract_decode_*` | Independent opcode-layout check, using native finite alternatives over all 256 base and 256 CB byte values. Covers every encoding, not instruction execution. Twelve base-byte alternatives check the model's unsupported-opcode policy, including STOP, rather than claiming hardware support. |
+| [instructions.rs](instructions.rs), `contract_nop` | NOP preserves the entire state after fetch. |
+| `contract_ld8_*`, `contract_ld16_*`, `contract_ld_sp_hl` | Register, immediate and [HL] data paths; little-endian assembly, PC advancement, writes and flags preservation. These establish transport independently of arithmetic. |
+| `contract_alu_*` | ADD/ADC/SUB/SBC/AND/XOR/OR/CP over register, immediate and [HL] operands; result, every flag, preservation and read timing. Register sources include A, covering accumulator aliasing. |
+| `contract_unary_*` | INC/DEC; CB rotates/shifts/SWAP; accumulator rotates, DAA, CPL, SCF and CCF. Distinguishes accumulator rotations' forced Z=0 from CB rotations' result-dependent Z. Covers register and [HL] destinations where encodable. |
+| `contract_bit_*` | BIT/RES/SET over all bit positions 0..7, register and [HL] paths; preserved flags and read/modify/write order. |
+| `contract_inc16_*`, `contract_dec16_*` | Wrapping register-pair/SP arithmetic, unchanged flags and internal cycle. |
+| `contract_add_hl_*` | All register-pair and SP sources, including source=HL aliasing; 16-bit wrap, Z preservation, N clearing and carries from bits 11 and 15. |
+| `contract_jump_hl`, `contract_di`, `contract_ei` | Direct register jump and immediate/delayed interrupt-control effects. |
+| [memory.rs](memory.rs), `contract_load_a_*`, `contract_store_a_*` | BC/DE, HL+/HL-, high-C, high-immediate and absolute addressing; address formation, pointer updates, data transport and ordered bus effects. |
+| `contract_store_sp` | LD [d16],SP reads the address first and writes low then high, including address wrap. |
+| `contract_push_*`, `contract_pop_*` | Stack byte order, SP wrap, preservation and POP AF's low-nibble mask. |
+| `contract_sp_offset_*` | ADD SP,e8 and LD HL,SP+e8: signed result, unsigned low-byte carry flags and distinct internal-cycle counts. |
+| [control.rs](control.rs), `contract_jumprelative_*`, `contract_jump_*`, `contract_call_*` | Taken/untaken outcomes for NZ/Z/NC/C and unconditional taken forms; consumed operands, signed offsets, PC wrap, stack writes and cycle differences. |
+| `contract_return*`, `contract_restart` | RET/conditional RET/RETI and all eight RST vectors; return-address order, SP changes, conditional idle cycle and immediate RETI enable. |
+| [fetch.rs](fetch.rs), `contract_fetch_*` | Fetch-to-finish composition for NOP, all seven LD r8,d8 encodings, all four LD r16,d16 encodings, and CB RLC A. These test opcode/operand reads and execution together; they are not end-to-end coverage of every opcode. |
+| `contract_halt_bug_*` | The next fetch consumes the bug flag without incrementing PC; LD B,d8 rereads its opcode as the operand. |
+| `contract_boundary_ld_hl_immediate` | One complete arbitration-to-finish instruction, with ordinary running state and no requested interrupt. |
+| [boundaries.rs](boundaries.rs), `contract_halt_*` | HALT entry, idle, wake without dispatch and bug activation; prebuffered VBlank/STAT return-PC behavior. |
+| `contract_boundary_*` | Arbitration selects dispatch using old IME, or fetch while applying delayed EI. These targets deliberately stop at the selected action. |
+| `contract_dispatch_running`, `contract_dispatch_wake` | Full five-cycle dispatch, priority, IF acknowledgement, stack writes and IME clearing; ordinary cases exclude stack writes to IE/IF. |
+| `contract_dispatch_ie_*` | Separate hardware-derived cases for stack aliasing IE; cancellation and late writes must not be hidden by ordinary-case exclusions. |
+| `contract_ei_then_*` | EI/NOP, EI/DI and prebuffered EI/HALT sequences; one-step enable delay, DI cancellation and HALT return PC. |
+
+The instruction schemas sometimes admit more typed register combinations than the ISA encodes; their actual encodings are a subset, checked separately by the decoder contracts.
+Finite condition alternatives are explicit native KRS cases; every alternative must prove before the family is proven.
+The six `contract_bit_*` claims match `bit @ (0 | 1 | 2 | 3 | 4 | 5 | 6 | 7)`.
+These alternatives exhaust the existing `0 <= bit && bit < 8` premise and correspond to the three-bit opcode field.
+Their original byte/flag premises, arithmetic postconditions, arbitrary register targets, memory and frames are retained.
+
+## Scope and exclusions
+
+- Decoded contracts start after opcode fetch and interrupt arbitration; their cycle logs contain only the remaining cycles.
+- Fetch contracts start at `Micro::Fetch`; only the explicitly named `Step::Run`/`Step::Boundary` contracts include arbitration.
+- Operand/register bounds and valid incoming flag bits are explicit where used. A written memory byte must already exist and be an integer byte because the bus log records its old value.
+- Memory is the current flat map. No cartridge, I/O read masks, timer, DMA, PPU, joypad, STOP execution or peripheral-driven interrupt arrival is established here.
+- The ordinary dispatch contracts exclude writes to IE/IF. IE alias cases are separately specified; writes onto IF and arbitrary asynchronous changes need further contracts and source qualification.
+- Full decoder coverage plus decoded family contracts does not yet constitute a proof that every fetched instruction composes correctly. The fetch contracts above are the present composition coverage.
+- `all_paths` is weak partial correctness. A proven result alone is not a termination theorem; inspect vacuity, trusted assumptions and claim applications separately.
+
+## Running
+
+From `krs/sm83/`, using the CLI build and library environment described in the parent README:
+
+```bash
+"$KRS_BIN" prove --package foldiboy-sm83 --definition main \
+  --dependency foldiboy-sm83-core:core \
+  --spec-module SM83-CONTRACTS-SPEC --depth 32
+```
+
+For the six bit-index contracts:
+
+```bash
+"$KRS_BIN" prove --package foldiboy-sm83 --definition main \
+  --dependency foldiboy-sm83-core:core \
+  --spec-module SM83-INSTRUCTIONS-SPEC --depth 32 \
+  --claim contract-bit-resetbit-register --claim contract-bit-resetbit-indirect \
+  --claim contract-bit-setbit-register --claim contract-bit-setbit-indirect \
+  --claim contract-bit-testbit-register --claim contract-bit-testbit-indirect
+```
+
+For only the finite decoder contracts, use `--spec-module SM83-DECODE-SPEC --depth 0`.
+For an individual obligation, select its module and add `--claim contract-ld8-register` (for example).
+Depth-zero decoder proofs check normalization against the expected decoded term, before any instruction transition.
+
+To retain machine-readable diagnostics locally, append `--output json > results/claims.json` after creating `results/`.
+That directory is ignored; saved output is not a build input or a substitute for rerunning the command.
+On Linux with a user systemd manager, prefix a command with `systemd-run --user --scope -p MemoryMax=4G -p MemorySwapMax=0 env CARGO_BUILD_JOBS=1` to cap its memory, including collector builds and child processes.
+An external resource limit produces no proof or refutation; retain it as an unqualified run.
+
+## Proof evidence
+
+The reviewed k-rust local-contract implementation is `492ac739a`; Foldiboy validation uses the containing merge `e50f28748`.
+The upstream replay of all 181 original claims proved 172, left six unguided bit-index claims unresolved, and reached a 90-second external wall limit on three larger claims.
+Our review independently reran eight unchanged instruction/sequence contracts and the original map reproducer successfully, including its certified negative control.
+
+The six bit-index contracts now use exhaustive native input alternatives.
+On 2026-10-28, `krs check` passed and all six adopted contracts proved: eight productive branches each, 48 total, with no reported vacuity, trusted reachability claims or claim applications.
+The proof command completed in about 27 seconds after collection was built.
+Validation used byte-identical Rust sources in an isolated copy, with only the two KRS facade dependency paths redirected to the reviewed checkout, while upstream frontend work continued separately.
+The build and validation each used a 4 GiB cgroup cap, one Cargo job and zero swap; the validation group, including collection, peaked at approximately 2.4 GiB.
+Together these runs provide proof evidence for 178 of 181 authored contracts.
+The following table combines the upstream replay with that targeted validation; it is not a new full-suite replay.
+
+On 2026-10-30, the `Expected*` helper refactor passed `krs check` and replayed all 46 decoder claims plus the DAA instruction claim at k-rust `d95e77fc9`.
+Four temporary native equivalence claims also proved that the extracted DAA byte/flags and interrupt vector/mask expressions equal their previous inline forms under the existing byte and flag bounds.
+The refactor preserves every claim subject and precondition and every existing definition sentence; it adds expectation functions and their defining equations.
+This targeted validation does not reclassify the three open contracts or constitute a new full-suite replay.
+
+| Module | Authored claims | Recorded proofs | Awaiting proof |
+| --- | ---: | ---: | ---: |
+| Original ADD HL,DE regression | 1 | 1 | 0 |
+| Decoder | 46 | 46 | 0 |
+| Decoded instructions | 76 | 76 | 0 |
+| Addressing / stack / SP offsets | 17 | 17 | 0 |
+| Control flow | 11 | 10 | 1 |
+| Fetch composition | 16 | 16 | 0 |
+| Boundaries / interrupts / HALT | 14 | 12 | 2 |
+
+These counts concern grouped properties, not numbers of supported or correct opcodes.
+The decoder's 46 authored claims account for 512 proven byte alternatives; the six bit-index claims account for 48 branches.
+No successful claim in our targeted review reports vacuity, trusted reachability claims or claim applications.
+
+Three contracts remain unqualified:
+
+- `contract-call-taken`
+- `contract-dispatch-running`
+- `contract-dispatch-wake`
+
+Each independently reached the same 90-second external wall limit without a native verdict in our review.
+These are ordinary local execution contracts; a timeout does not identify whether the blocker is missing reasoning, repeated preparation or solver cost.
+They remain under investigation in k-rust.
