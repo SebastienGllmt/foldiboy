@@ -66,6 +66,8 @@ Arithmetic and ALU definitions live in `../sm83-core` and are re-exported by thi
 
 - An opcode decodes into a typed `Instruction` through a table of bit templates (`k::bits!("00 yyy 100")` in `k::equations!`), whose fields index operand tables (`R8`, `Rp`, `Rp2`, `Cc`, `AluTable`, `Rot`, ...).
   An opcode no template matches decodes to `Instruction::Unimplemented`, which no rule executes.
+  Decoder contracts use `k::bits!(opcode, "01 ___ ___")` conditions for regular families and retain explicit cases for singleton encodings and the irregular unsupported-opcode set.
+  The named `HALT_OPCODE` exception excludes HALT from the register-load family; expected operand tables remain independent of the implementation tables.
   The index tables are `total` with `underspecified = ".."`: an index outside its field's range has no named value, which `krs check` would otherwise report.
 - Functions are `#[k::function(total, internal)]` fns: a body is the one equation, or an `if` chain whose branches are its equations (`Signed`, `DaaHigh`, `InterruptVector`); a `;` declares a function that a table defines.
   None is program syntax, so none needs a `syntax` template.
@@ -109,6 +111,11 @@ Claims specify properties to check; they do not define additional CPU behavior.
 | `run-mooneye-tests.sh` | Run upstream mooneye acceptance ROMs against the semantics. |
 | `k::claims!` in [src/claims.rs](src/claims.rs) and [src/claims/](src/claims/README.md) | Specify CPU behavior as symbolic execution contracts over the KRS machine, so the native prover can check the instruction rules against them. |
 | `krs prove` | Attempt to establish those claims using k-rust’s native reachability prover through `krs-exec`, with Z3 for symbolic conditions. A failed or stuck proof requires investigation; it does not by itself identify a CPU bug. |
+| `krust kcompile` | Compile emitted K semantics and a selected spec module to the KORE and runtime metadata consumed by k2lean. |
+| `k2lean gen`, `k2lean claims` | Generate a Lean semantics library, its equation obligations, and proofs of the selected KRS contracts. `gen --spec` includes expectation helpers used only by claims. |
+| `lake build` and generated axiom guards | Check generated Lean proofs and reject added axioms or `sorry`. Open statements are not proofs. |
+
+The Lean decoder workflow and its proof scope are documented in the [claim inventory](src/claims/README.md#lean-decoder-check).
 
 Use the upstream suites for compatibility evidence on concrete executions.
 Use claims to state the CPU contracts that must hold across symbolic inputs, such as an instruction's result, preserved flags and bus effects.

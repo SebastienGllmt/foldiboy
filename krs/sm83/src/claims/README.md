@@ -68,7 +68,7 @@ Temporary `w`/`z` cells are exposed where execution changes them, so they are no
 | Source / names | Property and reason for inclusion |
 | --- | --- |
 | [../claims.rs](../claims.rs), `add_hl_de` | Full 16-bit ADD HL,DE arithmetic and flags; retains the original dogfooding regression. |
-| [decode.rs](decode.rs), `contract_decode_*` | Independent opcode-layout check, using native finite alternatives over all 256 base and 256 CB byte values. Covers every encoding, not instruction execution. Twelve base-byte alternatives check the model's unsupported-opcode policy, including STOP, rather than claiming hardware support. |
+| [decode.rs](decode.rs), `contract_decode_*` | Independent opcode-layout check, using symbolic bit-pattern conditions for 23 regular families and explicit cases for singleton and unsupported encodings over all 256 base and 256 CB byte values. Covers every encoding, not instruction execution. Twelve base-byte alternatives check the model's unsupported-opcode policy, including STOP, rather than claiming hardware support. |
 | [instructions.rs](instructions.rs), `contract_nop` | NOP preserves the entire state after fetch. |
 | `contract_ld8_*`, `contract_ld16_*`, `contract_ld_sp_hl` | Register, immediate and [HL] data paths; little-endian assembly, PC advancement, writes and flags preservation. These establish transport independently of arithmetic. |
 | `contract_alu_*` | ADD/ADC/SUB/SBC/AND/XOR/OR/CP over register, immediate and [HL] operands; result, every flag, preservation and read timing. Register sources include A, covering accumulator aliasing. |
@@ -94,9 +94,15 @@ Temporary `w`/`z` cells are exposed where execution changes them, so they are no
 
 The instruction schemas sometimes admit more typed register combinations than the ISA encodes; their actual encodings are a subset, checked separately by the decoder contracts.
 Finite condition alternatives are explicit native KRS cases; every alternative must prove before the family is proven.
+RST retains its eight explicit opcode alternatives: its symbolic arithmetic target remains beyond the current generated Lean closer, while the explicit form proves.
 The six `contract_bit_*` claims match `bit @ (0 | 1 | 2 | 3 | 4 | 5 | 6 | 7)`.
 These alternatives exhaust the existing `0 <= bit && bit < 8` premise and correspond to the three-bit opcode field.
 Their original byte/flag premises, arithmetic postconditions, arbitrary register targets, memory and frames are retained.
+
+The decoder cleanup task list and acceptance criteria are recorded in [sm83-decoder-cleanup.toml](../../../../machine-docs/sm83-decoder-cleanup.toml).
+Its byte-domain audit compares every migrated family with its previous explicit list over all 256 bytes.
+Expected field indices explicitly include their width, such as `(opcode / 0x10) % 4`, even where the family bounds already imply that width.
+The audit also checks that these indices equal the previous quotient at every permitted byte; all other postcondition structure and the CPU semantics are unchanged.
 
 ## Scope and exclusions
 
@@ -129,7 +135,7 @@ For the six bit-index contracts:
   --claim contract-bit-testbit-register --claim contract-bit-testbit-indirect
 ```
 
-For only the finite decoder contracts, use `--spec-module SM83-DECODE-SPEC --depth 0`.
+For only the decoder contracts, use `--spec-module SM83-DECODE-SPEC --depth 0`.
 For an individual obligation, select its module and add `--claim contract-ld8-register` (for example).
 Depth-zero decoder proofs check normalization against the expected decoded term, before any instruction transition.
 
@@ -137,6 +143,44 @@ To retain machine-readable diagnostics locally, append `--output json > results/
 That directory is ignored; saved output is not a build input or a substitute for rerunning the command.
 On Linux with a user systemd manager, prefix a command with `systemd-run --user --scope -p MemoryMax=4G -p MemorySwapMax=0 env CARGO_BUILD_JOBS=1` to cap its memory, including collector builds and child processes.
 An external resource limit produces no proof or refutation; retain it as an unqualified run.
+
+## Lean decoder check
+
+KRS claims remain the authored proof inputs.
+`krust kcompile` supplies KORE and runtime metadata; `k2lean gen` translates the semantics and states its equation obligations; `k2lean claims` translates the selected contracts and attempts their proofs.
+`lake build` checks those proofs and their generated axiom guards.
+The completed decoder run must have no open equation obligations or open claims.
+This workflow validates decoder contracts, not execution of every instruction or the entire 181-contract suite.
+
+Run from `krs/sm83/` with matching `KRS_BIN`, `KRUST_BIN`, `K2LEAN_BIN` and `K2LEAN_PRELUDE` (the absolute path of the k2lean Lake package directory).
+The Lean toolchain is selected by the generated projects.
+Build large projects sequentially and use the memory cap described above.
+
+```bash
+"$KRS_BIN" emit-k --package foldiboy-sm83 --definition main \
+  --dependency foldiboy-sm83-core:core --output results/emitted
+"$KRUST_BIN" kcompile results/emitted/definition.k \
+  --main-module SM83 --syntax-module SM83-SYNTAX \
+  --output-directory results/lean/semantics
+"$KRUST_BIN" kcompile results/emitted/spec.k \
+  --main-module SM83-DECODE-SPEC --definition-module SM83 --for-proving \
+  --output-directory results/lean/spec
+"$K2LEAN_BIN" gen --kore results/lean/semantics/definition.kore \
+  --runtime results/lean/semantics/runtime.json \
+  --spec results/lean/spec/definition.kore \
+  --out results/lean/library --name Sm83 --prelude "$K2LEAN_PRELUDE"
+"$K2LEAN_BIN" claims --kore results/lean/semantics/definition.kore \
+  --spec results/lean/spec/definition.kore \
+  --out results/lean/claims --name Sm83Claims \
+  --semantics Sm83 --semantics-path ../library \
+  --kclaims-path "$K2LEAN_PRELUDE"
+(cd results/lean/library && lake build Sm83 Sm83Test.Axioms)
+(cd results/lean/claims && lake build Sm83Claims Sm83ClaimsTest)
+```
+
+`gen --spec` is required because the expectation functions are part of the contracts but unused by machine transitions.
+The axiom guards permit only the standard Lean axioms and reject `sorry` or additional proof axioms.
+A compact source condition may be proved by finite table-index cases internally; this does not change its quantified input domain.
 
 ## Proof evidence
 
@@ -157,6 +201,34 @@ Four temporary native equivalence claims also proved that the extracted DAA byte
 The refactor preserves every claim subject and precondition and every existing definition sentence; it adds expectation functions and their defining equations.
 This targeted validation does not reclassify the three open contracts or constitute a new full-suite replay.
 
+The decoder cleanup was validated at k-rust `fe97012a4` on 2026-10-30.
+It audits 24 regular families and converts 23; RST keeps its eight explicit cases because its compact arithmetic target does not close with the current generated Lean tactic.
+The 23 migrated domains cover exactly the same 471 bytes as their previous lists; the complete base and CB pages still cover 512 bytes exactly once.
+Eleven families now spell their field width explicitly with `% 4` or `% 8`; every helper argument is equal to the previous argument at every permitted byte, and all other postcondition structure is unchanged.
+The emitted CPU `definition.k` is byte-identical.
+The final `krs check` passes, and all 46 decoder claims prove at depth zero (64 leaves, formerly 512).
+The common generated Lean library proves all 336 equation obligations with zero open statements; the final decoder module proves all 64 generated claims and passes its axiom guard.
+Every decoder proof closes at the initial configuration without rule steps or claim applications.
+This covers decoding only; the three older unresolved native contracts retain their previous status.
+
+The cost comparison checks each audited family in both forms against the same library and tool revision.
+Dependency builds and KORE compilation are outside the measured proof checks.
+Each before/after pair uses the same protocol: a direct Lean module check, or a Lake proof build with dependencies already prepared; axiom guards are checked separately.
+For the 23 converted families, one bounded run on the shared host measured:
+
+| Metric | Explicit cases | Compact families |
+| --- | ---: | ---: |
+| Native isolated checks, total wall time | 5.65 s | 16.16 s |
+| Lean checks, total wall time | 224.5 s | 140.2 s |
+| Lean checks, total CPU time | 514.0 s | 123.8 s |
+| Compiled claim modules, total size | 394.2 MB | 48.5 MB |
+| Largest Lean scope memory peak | 2.53 GiB | 0.59 GiB |
+
+Native symbolic reasoning is slower than evaluating concrete table entries; the measured increase is about 10.5 seconds across these isolated checks.
+The cleanup accepts that cost in exchange for simpler source, much smaller Lean modules and lower total Lean proof cost, with unchanged CPU semantics.
+These are single-run measurements, not stable performance guarantees; timings include process/import overhead and shared-host scheduling.
+Raw comparisons and logs belong in ignored `results/decoder-cleanup-2026-10-30/`; the checked-in task record contains the acceptance summary rather than generated proofs or a custom runner.
+
 | Module | Authored claims | Recorded proofs | Awaiting proof |
 | --- | ---: | ---: | ---: |
 | Original ADD HL,DE regression | 1 | 1 | 0 |
@@ -168,7 +240,8 @@ This targeted validation does not reclassify the three open contracts or constit
 | Boundaries / interrupts / HALT | 14 | 12 | 2 |
 
 These counts concern grouped properties, not numbers of supported or correct opcodes.
-The decoder's 46 authored claims account for 512 proven byte alternatives; the six bit-index claims account for 48 branches.
+The decoder's 46 authored claims cover 512 opcode bytes; regular families need not enumerate each byte as a proof branch.
+The six bit-index execution claims retain their 48 explicit branches.
 No successful claim in our targeted review reports vacuity, trusted reachability claims or claim applications.
 
 Three contracts remain unqualified:

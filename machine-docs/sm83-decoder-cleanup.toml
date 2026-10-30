@@ -1,0 +1,91 @@
+title = "SM83 decoder contract readability cleanup"
+status = "complete"
+baseline_commit = "28649e3a7efcdefa782163a92b0ce9c5b8283074"
+validation_revision = "fe97012a46d46c1ef2bc0dc7811232affb0437e7"
+objective = "Replace regular opcode-family lists with readable conditions while preserving byte coverage, independent expectations, native and Lean provability, and practical proof cost."
+
+[scope]
+file = "krs/sm83/src/claims/decode.rs"
+long_lists = ["ld_r8_r8", "alu_r8", "cb_rotations", "cb_bit", "cb_reset", "cb_set"]
+other_candidates = ["ld_r16_immediate", "store_a_indirect", "load_a_indirect", "inc16", "dec16", "addhl", "inc_r8", "dec_r8", "ld_r8_immediate", "accumulator", "jr_conditional", "returnif", "jump", "call", "pop", "push", "alu_immediate", "rst"]
+claim_prefix = "contract_decode_"
+preserve = ["CPU implementation and Expected* functions", "All logical claim postconditions (explicit field-width normalization must preserve each selected byte's index values)", "All 512 base/CB byte cases", "The irregular 12-byte unsupported policy set", "The 21 singleton opcode contracts", "The six bit-index execution enumerations"]
+non_goals = ["New CPU behavior", "Execution across symbolic opcode families", "Resolving the three older long-running native contracts", "A constant for every opcode", "Custom proof runners or handwritten Lean proofs in Foldiboy"]
+
+[[task]]
+id = "rewrite"
+status = "complete"
+work = "Audit all 24 regular lists and use bit-pattern conditions where clearer; name the HALT exception. Retain a list if the alternative cannot meet validation and cost requirements."
+
+[[task]]
+id = "byte_domains"
+status = "complete"
+work = "Compare each candidate against the baseline over all 256 bytes; confirm whole base/CB coverage, unchanged postconditions and unchanged semantics."
+
+[[task]]
+id = "native"
+status = "complete"
+work = "Run krs check and all 46 decoder claims at depth zero; retain productive verdicts and reject weakened or vacuous proofs."
+
+[[task]]
+id = "lean"
+status = "complete"
+work = "Generate the common library with the proof-only helper specs, prove all generated equation obligations and all changed claims through k2lean, and pass the generated axiom guards without open obligations or added axioms."
+
+[[task]]
+id = "cost"
+status = "complete"
+work = "Compare explicit and compact forms per family on the same tool revision and common library, separating dependency builds from proof checks. Record wall/CPU time, bounded-scope peak memory and compiled claim-module size; investigate material regressions before accepting a change. Each before/after pair must use the same measurement protocol; prepared-dependency Lake proof builds avoid compiling the same proof again for its axiom guard."
+
+[[task]]
+id = "finish"
+status = "complete"
+work = "Update conventions, commands and proof evidence; remove the resolved handoff prompt; record outcomes and commit the completed cleanup."
+
+[validation_policy]
+heavy_work = "Sequential heavy jobs, 4 GiB cgroup cap, swap disabled, one Cargo build job, external wall limits; identical Lean invocation settings within every before/after pair."
+artifacts = "Ignored krs/sm83/results/; generated files and temporary experiment orchestration are not repository infrastructure."
+lean_grouping = "Use generated single-family spec selections for the before/after comparison so a 512-case monolithic Lean module cannot exhaust the memory cap. Preserve the source claim and module semantics in each selection."
+evidence = "A successful generation or a timing record is not a proof. Require successful native verdicts and Lean kernel/axiom-guard checks; record resource limits as no verdict."
+
+[results]
+audited_families = 24
+converted_families = 23
+converted_bytes = 471
+retained_regular_family = "rst"
+retained_reason = "The compact RST condition proves natively, but the current generated Lean closer leaves its symbolic arithmetic target open; its eight explicit cases prove."
+index_normalization_families = 11
+index_normalization = "Explicit quotient/remainder field widths; exhaustive equality with old helper arguments over every selected byte. No other postcondition structure changed."
+cpu_definition_identical = true
+native_check = "883 descriptors, 11 semantic modules"
+native_decoder_claims = 46
+native_decoder_leaves_before = 512
+native_decoder_leaves_after = 64
+native_decoder_depth = 0
+lean_equation_theorems = 336
+lean_equation_open = 0
+lean_decoder_claims = 64
+lean_decoder_open = 0
+axiom_guards = "All library, single-family and combined decoder guards pass; only standard Lean axioms."
+retained_cases = "RST's 8 alternatives, 21 singleton claims, 12 unsupported-policy bytes and all six bit-index execution enumerations."
+artifacts = "krs/sm83/results/decoder-cleanup-2026-10-30 (ignored): exact domain and field audits, successful native and Lean runs, costs, and separately archived unsuccessful compact attempts."
+resolved_prompt_removed = "machine-docs/prompts/k2lean-sm83-decoder-proofs.md"
+
+[cost]
+comparison = "Sum of independent, matched-protocol family checks for the 23 conversions, with common dependencies prepared. One bounded run on a loaded shared host; not a repeated benchmark."
+native_wall_seconds_before = 5.65
+native_wall_seconds_after = 16.16
+lean_wall_seconds_before = 224.5
+lean_wall_seconds_after = 140.2
+lean_cpu_seconds_before = 514.0
+lean_cpu_seconds_after = 123.8
+claim_module_bytes_before = 394151672
+claim_module_bytes_after = 48534720
+max_lean_scope_bytes_before = 2713358336
+max_lean_scope_bytes_after = 637538304
+acceptance = "Accept the roughly 10.5-second native increase across the isolated checks for the source simplification, 8.1x smaller compiled Lean modules and lower overall Lean proof cost. CPU semantics are unchanged. RST remains explicit to preserve Lean provability."
+
+[remaining_limits]
+cleanup = "No remaining work for this cleanup."
+upstream = "The observed compact RST arithmetic-target closure and general instruction execution across symbolic opcode families remain separate capabilities; neither is required by the accepted source."
+other_native_contracts = "call-taken, dispatch-running and dispatch-wake retain their previously recorded unresolved status; this task does not reclassify them."
