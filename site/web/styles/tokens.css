@@ -30,26 +30,36 @@
   --led-on: #ff3b2e;
   --led-off: #6e3b38;
   --focus: #2b54b8;
+  --hinge-lo: #66625a; /* the hinge barrel: dark edges, light ridge */
+  --hinge-mid: #b0aa9d;
+  --hinge-hi: #e2ded5;
+  --desk: #26252b; /* what the opened device lies on, around the halves */
+  --desk-hi: #3a3940;
+  --cart: #4a4950; /* the cartridge shell, ridged */
+  --cart-ridge: #55545b;
+  --cart-label-1: #1b1f4a; /* the cartridge label: night sky… */
+  --cart-label-2: #4a2f7a;
+  --cart-stream: #8fd3e8; /* …and the stream across it */
+  --cart-print: #f1ecff;
 
-  /* ---- screen: the pocket grey LCD every view draws on ---- */
-  --lcd: #d6d5cb; /* screen background */
-  --win: #e8e7df; /* window and dialogue fill */
-  --ink: #1f201c; /* text, window frames, title bars */
-  --ink-2: #4b4c45; /* secondary text, axis labels */
-  --ink-3: #9e9d92; /* hatching, disabled, faint marks */
-  --rule: #b7b6ab; /* dotted table rules, grid lines */
-  --link: #1f4fb0;
-  --sel: #1f201c; /* selected row fill */
-  --sel-ink: #e8e7df; /* text on a selected row */
-  --sel-mark: #c98c00; /* the cursor edge on a selected row */
-  --lcd-dots: rgba(0, 0, 0, 0.05); /* the pixel-grid overlay */
+  /* ---- screen: the green colour LCD every view draws on (both screens) ---- */
+  --lcd: #e4ecc6; /* screen background */
+  --win: #f4f7e6; /* window and dialogue fill */
+  --ink: #1c2812; /* text, window frames, title bars */
+  --ink-2: #485a34; /* secondary text, axis labels */
+  --ink-3: #9aab7c; /* hatching, disabled, faint marks */
+  --rule: #b9c79a; /* dotted table rules, grid lines */
+  --link: #2c3c9a;
+  --sel: #2e5a1c; /* the cursor's fill (selected row, current page): a dark LCD green, distinct from the ink title bars */
+  --sel-ink: #f4f7e6; /* text on the cursor's fill (7.4:1) */
+  --lcd-dots: rgba(28, 40, 18, 0.05); /* the pixel-grid overlay */
 
   /* ---- tones: the five status tones of vocabulary.toml; each pairs with a sprite shape (ui/sprites.ts) ---- */
   --tone-good: #23803a;
   --tone-warning: #c98c00;
   --tone-serious: #c9582a;
   --tone-critical: #c42b35;
-  --tone-neutral: #64655e;
+  --tone-neutral: #6c7764;
   --on-tone: #ffffff; /* glyphs and text drawn on a tone fill */
 
   /* ---- series: categorical colours for charts and other non-status categories; always paired with a marker shape ---- */
@@ -80,6 +90,10 @@
   --frame: 2px; /* every line on the screen: window frames, rules, bars */
   --radius-screen: 3px 3px 48px 3px; /* the screen's rounded lower-right corner */
   --radius-bezel: 10px 10px 54px 10px;
-  --rail: 76px; /* width of the control rail */
+  --radius-half: 22px; /* the outer corners of each half of the device */
+  --ctl-min: 232px; /* the control half's width in the book fold: from this in narrow windows… */
+  --ctl-max: 340px; /* …to this in wide ones (21vw in between) */
+  --hinge: 26px; /* the hinge's thickness */
+  --margin-desk: 28px; /* desk showing around the device (more on top, for the cartridge) */
   --cell: 24px; /* one slot in a grid such as the opcode matrix */
 }

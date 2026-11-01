@@ -1,13 +1,15 @@
-// Slot matrix: one or more 16 × 16 grids of slots (for example opcode pages), a legend, and a readout of the slot under the cursor.
-// The D-pad moves the cursor (shell.ts calls moveCursor); the cursor runs from one grid into the next at the right edge.
+// Slot matrix: one or more 16 × 16 grids of slots (for example opcode pages) and a legend. The slot under the cursor is read
+// out on the info screen (ui/info.ts). The D-pad moves the cursor (shell.ts calls moveCursor); the cursor runs from one grid
+// into the next at the right edge.
 // See DESIGN.md, "Matrix".
 
 import { h, type Child } from "./dom";
+import { infoTitle, showInfo } from "./info";
 import { status } from "./status";
 import type { Tone } from "./sprites";
 
 export interface Slot {
-  /** Short code shown on the axis-aligned readout title, e.g. "10" or "CB 7F". */
+  /** Short code shown in the info screen title, e.g. "10" or "CB 7F". */
   key: string;
   /** Accessible name: what the slot is and its status. */
   label: string;
@@ -16,7 +18,7 @@ export interface Slot {
   glyph?: string;
   /** A structural slot that is not a member of the universe (a prefix, a reserved slot): drawn as an outlined box. */
   marked?: boolean;
-  /** What the readout shows for this slot. */
+  /** What the info screen shows for this slot, under its key and status. */
   detail: Child;
 }
 
@@ -63,11 +65,11 @@ export function miniGrid(grid: Grid, caption: string): HTMLElement {
 }
 
 // The live matrix on the screen, if any; shell.ts moves its cursor.
-let active: { grids: Grid[]; root: HTMLElement; readout: HTMLElement; cursor: [number, number] } | undefined;
+let active: { grids: Grid[]; root: HTMLElement; cursor: [number, number] } | undefined;
 
 function select(gi: number, code: number, scroll = true) {
   if (!active) return;
-  const { grids, root, readout } = active;
+  const { grids, root } = active;
   const grid = grids[gi]!;
   const slot = grid.slots[code]!;
   root.querySelectorAll(".slot.cur").forEach((x) => x.classList.remove("cur"));
@@ -75,7 +77,7 @@ function select(gi: number, code: number, scroll = true) {
   el?.classList.add("cur");
   if (scroll) el?.scrollIntoView({ block: "nearest" });
   active.cursor = [gi, code];
-  readout.replaceChildren(h("div", { class: "win-title" }, h("span", {}, "SLOT ", slot.key), h("span", { class: "aside" }, status(slot.tone, ""))), h("div", { class: "win-body" }, slot.detail));
+  showInfo([infoTitle("SLOT ", slot.key, status(slot.tone, "")), h("div", {}, slot.detail)]);
 }
 
 /** Moves the cursor of the matrix on screen. Returns false when there is no matrix, so the shell can do its default. */
@@ -92,9 +94,8 @@ export function moveCursor(dx: number, dy: number): boolean {
   return true;
 }
 
-/** The interactive matrix: legend, grids side by side, readout. `start` is the slot the cursor starts on. */
+/** The interactive matrix: legend, then grids side by side. `start` is the slot the cursor starts on; it is read out at once. */
 export function slotMatrix(grids: Grid[], legend: LegendItem[], start: [number, number] = [0, 0]): HTMLElement {
-  const readout = h("section", { class: "win readout", "aria-live": "polite" });
   const root = h(
     "div",
     { class: "matrix-block" },
@@ -123,9 +124,8 @@ export function slotMatrix(grids: Grid[], legend: LegendItem[], start: [number, 
         ),
       ),
     ),
-    readout,
   );
-  active = { grids, root, readout, cursor: start };
+  active = { grids, root, cursor: start };
   queueMicrotask(() => select(start[0], start[1], false));
   return root;
 }

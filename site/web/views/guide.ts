@@ -18,12 +18,12 @@ const swatch = (token: string, note = "") => h("div", { class: "swatch" }, h("i"
 
 function tokens() {
   return [
-    win("Tokens: screen", [usage("styles/tokens.css", "views use these through components; a raw colour outside tokens.css is a bug."), h("div", { class: "swatches" }, ["--lcd", "--win", "--ink", "--ink-2", "--ink-3", "--rule", "--link", "--sel", "--sel-mark"].map((t) => swatch(t)))]),
+    win("Tokens: screen", [usage("styles/tokens.css", "views use these through components; a raw colour outside tokens.css is a bug."), h("div", { class: "swatches" }, ["--lcd", "--win", "--ink", "--ink-2", "--ink-3", "--rule", "--link", "--sel", "--sel-ink"].map((t) => swatch(t)))]),
     cols(
       win("Tokens: tones", [usage("--tone-*", "one per vocabulary tone; only ever drawn with that tone's sprite."), h("div", { class: "swatches" }, TONES.map((t) => swatch(`--tone-${t}`)))]),
       win("Tokens: series", [usage("--series-1..4", "categories that are not statuses (chart series); always paired with a marker shape."), h("div", { class: "swatches" }, [1, 2, 3, 4].map((i) => swatch(`--series-${i}`)))]),
     ),
-    win("Tokens: case", [usage("--case-*, --bezel*, --button-*", "the shell only. Never on the screen."), h("div", { class: "swatches" }, ["--case", "--case-print", "--bezel", "--stripe-1", "--stripe-2", "--button-ab", "--button-pad", "--led-on"].map((t) => swatch(t)))]),
+    win("Tokens: case", [usage("--case-*, --bezel*, --button-*, --hinge-*, --desk*, --cart*", "the shell only. Never on the screen."), h("div", { class: "swatches" }, ["--case", "--case-print", "--bezel", "--stripe-1", "--stripe-2", "--button-ab", "--button-pad", "--led-on", "--hinge-mid", "--desk", "--cart-label-1", "--cart-stream"].map((t) => swatch(t)))]),
     win("Type", [
       usage("--text-*", "one face on the screen, four sizes. DotGothic16 is drawn on a 16px grid, so 16 and 32 are the crisp sizes."),
       h("div", { class: "type-ramp" },
@@ -81,7 +81,7 @@ function components(m: Model) {
       chips([statusOf(m.vocabulary.capability_status, "built"), statusOf(m.vocabulary.capability_status, "missing"), statusOf(m.vocabulary.ticket_status, "in-progress"), tag("baseline"), tag("quiet tag", true)]),
     ]),
     win("Table", [
-      usage("table(columns, rows)", "rows are selectable: ↑↓ move the cursor, A opens the row's href. Give rows an id so #/route/<id> can select them. num: right-aligned numbers; nowrap: ids."),
+      usage("table(columns, rows)", "rows are selectable: ↑↓ move the cursor, the info screen reads out the whole row, A opens the row's href. Give rows an id: it is the readout's title, and #/route/<id> selects the row. num: right-aligned numbers; nowrap: ids. On a main screen under 640px only the first two columns show, so put the id and the status first."),
       table(
         [{ label: "Status", nowrap: true }, { label: "Item", nowrap: true }, { label: "Description" }, { label: "Count", num: true }],
         [
@@ -106,7 +106,7 @@ function components(m: Model) {
       ], { flag: SAMPLE }),
     ),
     win("Slot matrix", [
-      usage("slotMatrix(grids, legend, start)", "a universe of 16 × 16 slots: legend, grids, readout of the slot under the cursor. The D-pad moves the cursor across grids. critical slots carry ✕; marked slots are structural (a prefix)."),
+      usage("slotMatrix(grids, legend, start)", "a universe of 16 × 16 slots: legend, then grids. The slot under the cursor is read out on the info screen (its detail, under its key and status). The D-pad moves the cursor across grids. critical slots carry ✕; marked slots are structural (a prefix)."),
       slotMatrix(grids, [{ tone: "good", label: "pass", n: 250 }, { tone: "critical", glyph: "✕", label: "fail", n: 2 }, { tone: "neutral", label: "no vectors", n: 9 }, { tone: "neutral", marked: true, glyph: "CB", label: "prefix", n: 1 }], [0, 0x10]),
       usage("miniGrid(grid, caption), slotLegend(items, stacked)", "a small read-only map for overviews."),
       cols(miniGrid(grids[0]!, "Grid A"), slotLegend([{ tone: "good", label: "pass", n: 250, meaning: "every vector passes" }, { tone: "critical", glyph: "✕", label: "fail", n: 2, meaning: "a vector fails" }], true)),

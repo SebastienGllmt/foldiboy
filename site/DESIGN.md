@@ -7,9 +7,11 @@ It is deliberately not linked from the site: it is a tool for whoever changes th
 
 ## The idea
 
-The browser window is a handheld game console of the late 1980s, reduced to its essentials.
-The case shrinks to a narrow rail on the left that carries every hardware part; the rest of the window is the screen, and the pages are what the screen shows.
-The screen is a pocket grey LCD drawn in full colour, with in-game windows, a pixel font and pixel sprites.
+The browser window is a foldable handheld game console in the spirit of the late 1980s, opened flat on a desk (hence FOLDIBOY).
+The left half carries the hardware and a small second screen; a hinge joins it to the right half, which is the main screen.
+The main screen shows the page; the second screen shows the menu and an info panel that reads out whatever the cursor is on.
+Both screens are a green colour LCD, with in-game windows, a pixel font and pixel sprites.
+The desk shows around the device, and a Nightstream cartridge (named for the proof system) sits in the top of the control half.
 
 The design is inspired by that era of hardware but is not branded.
 No console maker's names, logos, wordmarks, seals or artwork appear anywhere; the product name is FOLDIBOY.
@@ -24,19 +26,20 @@ Three qualities decide every choice, in this order:
 
 | Path | Owns | Changed when |
 | --- | --- | --- |
-| `web/index.html` | The shell markup: rail, bezel, `#screen` | Almost never; see "The shell" |
+| `web/index.html` | The shell markup: control half (second screen, controls), hinge, main screen `#screen` | Almost never; see "The shell" |
 | `web/styles/tokens.css` | Every colour, size, space and font | A new token is needed |
-| `web/styles/shell.css` | Rail, hardware parts, bezel, screen glass, menu bar | The shell changes |
+| `web/styles/shell.css` | The two folds, the halves, hinge, hardware parts, bezels, title bar, menu, info panel | The shell changes |
 | `web/styles/components.css` | Every block that can appear on the screen | A component is added or changed |
 | `web/ui/dom.ts` | `h()`, `s()`, `join()`, `countBy()` | Rarely |
 | `web/ui/sprites.ts` | 9×9 pixel bitmaps: tones, shapes, marks | A tone, shape or mark is added |
 | `web/ui/status.ts` | Status → tone → sprite + label | A status source is added |
 | `web/ui/components.ts` | Builders for pages, windows, tables, fields, numbers, prose | A component is added or changed |
-| `web/ui/matrix.ts` | The slot matrix (grids, legend, readout, cursor) | Grids change |
+| `web/ui/matrix.ts` | The slot matrix (grids, legend, cursor; the readout goes to the info screen) | Grids change |
+| `web/ui/info.ts` | The info screen: page description, row readout, `showInfo()` for builders | The readout changes |
 | `web/ui/charts.ts` | The chart kinds | A chart kind is added |
-| `web/shell.ts` | Buttons, keys, row cursor, LIVE light | The control contract changes |
-| `web/app.ts` | Fetching the model, routing, rendering into `#screen` | Routing changes |
-| `web/views/routes.ts` | The route table: menu, D-pad order, router | A page is added |
+| `web/shell.ts` | Buttons, keys, row cursor, the deck's page list, LIVE light | The control contract changes |
+| `web/app.ts` | Fetching the model, routing, rendering the page, title bar, menu, deck line and page description | Routing changes |
+| `web/views/routes.ts` | The route table: menu, D-pad order, router, each page's `about` sentence | A page is added |
 | `web/views/*.ts` | One module per page, composed from `ui/` builders | Content changes |
 | `web/views/guide.ts` | The living catalogue at `#/guide` | Any token, sprite or component changes |
 | `web/fonts/` | DotGothic16 (OFL) and its licence | A font is replaced |
@@ -52,7 +55,7 @@ These hold everywhere; a change that breaks one is wrong even if it looks fine.
 3. **Status is never colour alone.** Every status is a tone sprite (each tone has its own silhouette) plus a text label, through `status()` or `statusOf()`.
 4. **Tones mean status.** The five `--tone-*` colours are only used for statuses. Categories that are not statuses (chart series) use `--series-*` and a marker shape.
 5. **Everything sits in a window.** Content blocks are `win()`; messages about the data are `dialogue()`. Nothing floats loose on the screen except the page title.
-6. **The shell is fixed.** Pages render inside `#screen` only. The rail, bezel and menu bar are not page real estate.
+6. **The shell is fixed.** Pages render inside `#screen` only. The control half, hinge, bezels, title bar, menu and info screen are not page real estate; builders reach the info screen only through `ui/info.ts`.
 7. **Real or flagged.** Every number is computed from the tracking model. Anything invented (samples, mock series) is in a window flagged `SAMPLE DATA` or `MOCK DATA`, and never ships on a page that is not the guide unless Sebastien asks for it.
 8. **Missing is visible.** Missing fields render as "not specified" (`fields()` does it), empty lists as an `empty()` sentence, unknown statuses as neutral. Never hide a gap.
 9. **No new fonts, no branding.** One screen face (DotGothic16), the system face for case print and prose, the system monospace for code.
@@ -60,16 +63,30 @@ These hold everywhere; a change that breaks one is wrong even if it looks fine.
 
 ## The shell
 
-The rail, top to bottom: LIVE light, the FOLDIBOY wordmark printed up the rail, a spacer, D-pad, A/B, SELECT/START, speaker holes.
-The bezel has a striped caption strip on top and the rounded lower-right corner that the case has; inside it, the screen glass with a faint pixel-grid overlay.
-Below 700px wide the rail becomes a strip along the bottom, like the lower half of the device.
+The device is a foldable opened flat, and it opens one of two ways depending on the window's width (the breakpoint, 720px, is in `shell.css` and `shell.ts`):
 
-The menu bar is the first line of the screen and belongs to the shell: it lists the menu routes with counts, a one-line key hint and the load time.
+- **Book fold** (720px wide and up): control half | hinge | main screen.
+  The control half is `clamp(--ctl-min, 21vw, --ctl-max)` wide (232 to 340px); it is a size container, and its D-pad, A/B and wordmark scale with it (`cqw`), so the fold stays visible at every desktop size.
+  Top to bottom: wordmark and LIVE light, the second screen (menu, then info), D-pad and A/B, SELECT/START and speaker, the key hints.
+  In a window shorter than 560px (a phone held sideways) the half drops the wordmark, SELECT/START and key hints and keeps the screen and the D-pad and A/B.
+- **Flip fold** (narrower, phones): main screen on top, the hinge across, and the control half as a short deck below: D-pad | second screen | A/B, then LIVE light, wordmark, SELECT/START.
+  The second screen's top line is the deck line, ◀ page ▶; the page name (or START) swaps the info for the page list.
 
-The LIVE light reports the server connection: on while the event stream is connected, a brief flash when a tracking file changes and the screen re-renders, dark when disconnected.
+Both folds use the same markup; `shell.css` rearranges it (grid areas and `display: contents`), so no view or script depends on which fold is showing, except the two buttons whose meaning changes (see "Controls").
 
-Do not add parts to the rail or text to the bezel caption.
-If a new global affordance is needed (a search, a filter), it goes in the menu bar's end slot or on a page, never on the case.
+The parts:
+
+- **Desk margin**: `--margin-desk` of desk around the device (more on top, for the cartridge), so the device reads as an object in the window rather than its border. Short windows and the flip fold keep only a thin margin.
+- **Cartridge**: a fixed "Nightstream" cartridge pushed into the top edge of the control half (book fold only). It names the proof system the site tracks; it never changes with the page, which the title bar and the menu already name.
+- **Hinge**: a barrel with two knuckles of case plastic, vertical in the book fold and horizontal in the flip fold. It is what makes the device a foldable; never remove it.
+- **Bezels**: each screen sits in a bezel with a striped caption strip and a rounded lower-right corner, and a faint pixel-grid overlay on the glass.
+- **Title bar**: the first line of the main screen, sticky. The router moves the page's title row (`page()`'s header) into it and adds the load time.
+- **Menu**: the menu routes with counts, on the second screen. The current page has the blinking ▶ cursor.
+- **Info screen**: under the menu. It reads out what the cursor is on: the page's `about` sentence and a key hint when nothing is selected, the whole selected table row (every column, including those a narrow main screen hides), or the slot under the matrix cursor. See `ui/info.ts`.
+- **LIVE light**: on while the server's event stream is connected, a brief flash when a tracking file changes and the screen re-renders, dark when disconnected.
+
+Do not add parts to the case, change the cartridge label, or add text to the bezel captions.
+If a new global affordance is needed (a search, a filter), it goes on the second screen or on a page, never on the case; talk to Sebastien first.
 
 ## Tokens
 
@@ -77,15 +94,17 @@ All in `web/styles/tokens.css`, in groups:
 
 | Group | Tokens | Use |
 | --- | --- | --- |
-| Case | `--case*`, `--bezel*`, `--stripe-*`, `--button-*`, `--led-*` | The shell only |
+| Case | `--case*`, `--bezel*`, `--stripe-*`, `--button-*`, `--led-*`, `--hinge-*`, `--desk*`, `--cart*` | The shell only |
 | Screen | `--lcd`, `--win`, `--ink`, `--ink-2`, `--ink-3`, `--rule`, `--link`, `--sel*` | Everything drawn on the screen |
 | Tones | `--tone-good`, `--tone-warning`, `--tone-serious`, `--tone-critical`, `--tone-neutral`, `--on-tone` | Statuses only |
 | Series | `--series-1` … `--series-4` | Chart series and other non-status categories |
 | Type | `--font-screen`, `--font-case`, `--font-code`, `--text-title` 32, `--text-heading` 20, `--text-body` 16, `--text-small` 14 | |
 | Space | `--s1` 4 … `--s6` 32 | Gaps and padding |
-| Shape | `--frame` 2px, `--radius-screen`, `--radius-bezel`, `--rail`, `--cell` | |
+| Shape | `--frame` 2px, `--radius-screen`, `--radius-bezel`, `--radius-half`, `--ctl-min`, `--ctl-max`, `--hinge`, `--margin-desk`, `--cell` | |
 
-The screen palette is the single "pocket grey" palette; there is no dark mode and no palette switch.
+The screen palette is the single green "colour LCD" palette, shared by both screens; there is no dark mode and no palette switch.
+It was chosen over grey-on-grey for text contrast. The cursor's fill (`--sel`, the selected row and the current page in the menu) is a dark LCD green with light text (`--sel-ink`, 7.4:1), distinct from the near-black title bars; a hovered row only tints unselected rows.
+Anything in a cell that brings its own fill (`code`, quiet tags) must follow the row onto `--sel`, and sprites in a selected row sit on a small `--sel-ink` tile so every tone and shape keeps its own colours on the green.
 Add a token only when a value is needed in two places or carries a meaning; give it a name that says what it is for, not what it looks like.
 
 ## Type
@@ -128,7 +147,7 @@ Each builder is in `web/ui/`; each has a section in `#/guide`.
 | `status(tone, label)`, `statusOf(terms, id)` | Any status | Plain labels |
 | `tag(text, quiet?)` | A label without a status: a maturity, "baseline" | Statuses |
 | `chips(items)`, `statusCounts(…)` | Several statuses or counts by status on one line | |
-| `table(columns, rows)` | Lists of records; rows are selectable and can link with `href` | Two-column label/value data |
+| `table(columns, rows)` | Lists of records; rows are selectable, read out on the info screen, and can link with `href`. Give rows an `id` (the readout's title) and put the id and status in the first two columns (all a narrow screen shows) | Two-column label/value data |
 | `fields(pairs)` | Label / value pairs of one record | Lists of records |
 | `list(items, ordered?)` | Short lists inside a field or cell | |
 | `counters(items)` | Headline numbers on an overview, each linking to its page; one block per page | Anything else |
@@ -150,6 +169,10 @@ Use `cols()` for two or three windows that belong together and are each readable
 Long tables are always full width.
 A `dialogue()` about the data (such as "not adopted yet") comes right under the title.
 
+The main screen is a size container named `screen`, and components adapt to its width, not the window's (`components.css`, "narrow main screen").
+Under 640px, tables keep only their first two columns, `cols()` stack, counters go two across and page padding tightens; under 470px and 400px the matrix cells shrink so a 16 × 16 grid fits a phone.
+Design a page so it still reads at 640px with only the first two columns of each table; the info screen supplies the rest of a row.
+
 Detail pages: `#/<route>/<id>` renders the route's `detail` view if it has one, with a crumb back to the list.
 Routes without a detail view treat the id as a row to select on the list page (`#/tickets/T-SITE` selects and scrolls to that ticket), so every record has a linkable address.
 
@@ -160,18 +183,18 @@ The shell maps buttons and keys; views only mark what can be selected (table row
 | Button | Key | Does |
 | --- | --- | --- |
 | D-pad ← → | ← → | Previous / next page in menu order; on a slot matrix, moves the slot cursor |
-| D-pad ↑ ↓ | ↑ ↓ | Previous / next selectable row; on a slot matrix, moves the slot cursor; with no rows, scrolls |
-| A | X | Opens the selected row's `href` |
-| B | Z | Back |
-| START | Enter | Overview |
+| D-pad ↑ ↓ | ↑ ↓ | Previous / next selectable row, read out on the info screen; on a slot matrix, moves the slot cursor; with no rows, scrolls; with the deck's page list open, moves through it |
+| A | X | Opens the selected row's `href`; in the page list, goes to the page |
+| B | Z | Back. Flip fold: first closes the page list, then clears the selected row, then goes back |
+| START | Enter | Overview. Flip fold: opens or closes the page list |
 | SELECT | Shift, pressed and released alone | Scrolls to the next window on the page |
 
 Mouse and normal keyboard use keep working: links are links, a click selects a row, Enter on a focused link follows it.
-A new interaction pattern (for example a second kind of cursor) goes in `shell.ts`, uses the existing buttons, and is added to this table, to the key hint in `app.ts` and to the button tooltips in `index.html`.
+A new interaction pattern (for example a second kind of cursor) goes in `shell.ts`, uses the existing buttons, and is added to this table, to the key hints and button tooltips in `index.html` and to the comment at the top of `shell.ts`.
 
 ## Matrix
 
-`slotMatrix(grids, legend, start)` draws grids of 16 × 16 slots side by side, a legend above, and a readout window below that shows the slot under the cursor.
+`slotMatrix(grids, legend, start)` draws grids of 16 × 16 slots side by side with a legend above; the slot under the cursor is read out on the info screen (its key and status in the title, then the slot's `detail`).
 A slot has a tone (fill colour), an optional glyph (critical slots carry ✕ so they read without colour; neutral slots are hatched), and `marked` for structural slots such as the CB prefix, drawn as an outlined box.
 The cursor starts on `start` (the opcode page starts on the first failing slot), follows hover and focus, and runs from one grid into the next at the right edge.
 Only one interactive matrix should be on a page.
@@ -188,7 +211,7 @@ A new kind of chart is a new builder in `ui/charts.ts` plus a guide section, nev
 When the tracking data grows, decide in this order:
 
 1. **Can existing builders show it?** A new record type is usually a `table` on a list page and `fields` on a detail page. A new status list is a vocabulary list drawn with `statusOf`.
-2. **Is it a new page?** Write `views/<name>.ts` returning one `page()`, and add one entry to `ROUTES` in `views/routes.ts` (label, `menu`, `count`, `list`, optional `detail`). The menu, D-pad cycle and router follow.
+2. **Is it a new page?** Write `views/<name>.ts` returning one `page()`, and add one entry to `ROUTES` in `views/routes.ts` (label, `menu`, `count`, `about`, `list`, optional `detail` and `detailAbout`). The menu, deck line, D-pad cycle, router and info screen follow.
 3. **Is it a new kind of block?** Add a builder to `ui/components.ts` (or a new `ui/` module for something large), its CSS block to `components.css` using tokens, a guide section, and a row in the Components table above. Make it generic over its data; keep tracking-model knowledge in `views/`.
 4. **Is it a new status?** Give it a tone in `vocabulary.toml` if it is vocabulary; otherwise add one mapping in `ui/status.ts`.
 5. **Is it a new loop shape?** Add its bitmap to `SHAPE` in `ui/sprites.ts`; until then it shows the neutral ring.
@@ -200,11 +223,11 @@ Copy: plain sentences; say what a number counts ("498/512 pass"), not what it im
 
 1. `bun run typecheck`.
 2. `bun run dev` and open the routes you touched, plus `#/guide`.
-3. Look at 1440×900, 1024×768 and a narrow window (640 wide): nothing clipped, no text overlapping, tables scroll inside their window rather than the screen.
-4. Use the controls on the pages you touched: ↑ ↓ through rows, X on a row with a link, Z back, ← → between pages, Shift to jump windows.
+3. Look at 1440×900, 960×1080 (half a screen), 760×900, 1280×520 (short), and a phone (390×844, the flip fold): nothing clipped, no text overlapping, the hinge visible, tables scroll inside their window rather than the screen.
+4. Use the controls on the pages you touched: ↑ ↓ through rows (the info screen reads each out), X on a row with a link, Z back, ← → between pages, Shift to jump windows; on a phone, Enter for the page list.
 5. Every status you added shows a sprite and a label.
 
 ## History
 
 The design was chosen over eight rounds of proposals with Sebastien; the proposals, his verdicts and the static mocks are in `draft-personal/autoresearch/design-handoff.md` and `draft-personal/autoresearch/design/`.
-The chosen direction is round 7's "left rail" layout built on round 6's trimmed handheld.
+The first site used round 7's "left rail" layout; round 9 replaced it with round 5's fold-out (the foldable with a second screen), on the same components, with the book/flip folds, the green colour LCD, a desk margin and a fixed Nightstream cartridge.

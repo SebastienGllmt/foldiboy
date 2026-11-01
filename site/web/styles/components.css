@@ -52,7 +52,10 @@
 .table tr[data-sel]:not(.cur):hover td { background: color-mix(in srgb, var(--sel) 8%, transparent); }
 .table tr.cur td { background: var(--sel); color: var(--sel-ink); }
 #screen .table tr.cur td a, .table tr.cur td .muted { color: var(--sel-ink); }
-.table tr.cur td:first-child { box-shadow: inset 6px 0 0 var(--sel-mark); }
+/* anything in a cell that brings its own fill must follow the row onto the cursor's fill */
+#screen .table tr.cur td code { background: color-mix(in srgb, var(--sel-ink) 16%, transparent); color: var(--sel-ink); }
+/* sprites sit on a small light tile, so every tone and shape keeps its own colours on the green fill */
+.table tr.cur .spr { color: var(--ink); background: var(--sel-ink); box-shadow: 0 0 0 2px var(--sel-ink); border-radius: 1px; }
 .table tr.cur .tag.quiet { color: var(--sel-ink); border-color: var(--ink-3); }
 
 /* ---------- fields: label / value pairs ---------- */
@@ -87,7 +90,7 @@ a.counter:hover .l { text-decoration: underline; }
 .fill-neutral { --fill: var(--tone-neutral); background: repeating-linear-gradient(135deg, var(--tone-neutral) 0 2px, transparent 2px 4px); }
 .split-bar .fill-neutral { background: repeating-linear-gradient(135deg, var(--ink-3) 0 2px, transparent 2px 4px); }
 
-/* ---------- matrix: a 16 × 16 grid of slots with a cursor and a readout ---------- */
+/* ---------- matrix: a 16 × 16 grid of slots with a cursor; the slot under it is read out on the info screen ---------- */
 .matrix-block { display: grid; gap: var(--s3); }
 .matrices { display: flex; flex-wrap: wrap; gap: 30px; align-items: flex-start; }
 .matrix { display: grid; grid-template-columns: 28px repeat(16, var(--cell)); grid-auto-rows: var(--cell); gap: 2px; font-size: var(--text-small); line-height: var(--cell); }
@@ -109,7 +112,31 @@ a.counter:hover .l { text-decoration: underline; }
 .legend .slot { cursor: default; }
 .legend.stacked { display: grid; }
 .legend.stacked .item { display: grid; grid-template-columns: var(--cell) 1fr auto; gap: 10px; }
-.readout .fields { grid-template-columns: max-content 1fr; }
+
+/* ---------- narrow main screen ----------
+   Components adapt to the width of #screen (a size container named "screen"), not the window: the main screen is narrow
+   in a tiled window, a sideways phone and a phone, each with a different window size. */
+@container screen (max-width: 640px) {
+  /* tables keep their first two columns (the id and the status); the info screen reads out the whole selected row */
+  .table th:nth-child(n + 3), .table td:nth-child(n + 3) { display: none; }
+  .page { padding: var(--s3) 12px 40px; gap: var(--s4); }
+  .cols { grid-template-columns: minmax(0, 1fr); }
+  .counters { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s2) var(--s3); }
+  .dialogue { overflow-wrap: anywhere; padding-right: 28px; }
+  .prose table { display: block; overflow-x: auto; }
+}
+@container screen (max-width: 470px) {
+  .win-body { padding: 8px 8px 10px; }
+  .table td, .table th { padding: 5px 4px; }
+  .table .nowrap { white-space: normal; overflow-wrap: anywhere; }
+  .matrix { --cell: 17px; grid-template-columns: 22px repeat(16, var(--cell)); gap: 1px; font-size: 11px; }
+  .slot { font-size: 10px; }
+}
+@container screen (max-width: 400px) {
+  .page { padding: 10px 6px 40px; }
+  .matrix { --cell: 15px; grid-template-columns: 18px repeat(16, var(--cell)); font-size: 10px; }
+  .slot { font-size: 9px; }
+}
 
 /* ---------- charts: crisp SVG on the screen ---------- */
 svg.chart { width: 100%; height: auto; display: block; font-family: var(--font-screen); shape-rendering: crispEdges; }
