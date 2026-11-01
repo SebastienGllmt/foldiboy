@@ -1,0 +1,99 @@
+/* The shell: the browser window drawn as the handheld.
+   The case shrinks to a rail on the left that carries every hardware part; the rest of the window is the screen.
+   Views never style anything in this file; they render inside #screen only. See DESIGN.md, "The shell". */
+
+html, body { height: 100%; margin: 0; }
+/* The shell is pinned to the viewport itself rather than relying on html/body heights, so it always fills the window. */
+body {
+  position: fixed;
+  inset: 0;
+  box-sizing: border-box;
+  display: grid;
+  /* Both tracks explicit: the single row is 1fr of the viewport, so rail and screen always reach the bottom
+     (an implicit auto row only stretches when nothing overrides align-content). */
+  grid-template-columns: var(--rail) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  align-content: stretch;
+  padding: 10px 10px 10px 0;
+  overflow: hidden;
+  font-family: var(--font-screen);
+  background:
+    radial-gradient(70% 60% at 0% 0%, rgba(255, 255, 255, 0.28), transparent 60%),
+    linear-gradient(180deg, var(--case), var(--case-lo));
+}
+
+/* ---------- the rail: LIVE light, wordmark, D-pad, A/B, SELECT/START, speaker ---------- */
+.rail { display: flex; flex-direction: column; align-items: center; gap: 26px; padding: 8px 0 12px; min-height: 0; }
+.rail .spacer { flex: 1; min-height: 0; }
+.led { display: grid; justify-items: center; gap: 5px; font: italic 700 8px/1 var(--font-case); letter-spacing: 0.14em; color: var(--case-print); }
+.led i { width: 9px; height: 9px; border-radius: 50%; background: var(--led-off); box-shadow: inset 0 -2px 2px rgba(0, 0, 0, 0.3); }
+.led[data-state="live"] i { background: var(--led-on); box-shadow: 0 0 8px var(--led-on), inset 0 -2px 2px rgba(0, 0, 0, 0.3); }
+.led[data-state="flash"] i { background: #fff3c4; box-shadow: 0 0 12px #ffd25e; }
+.wordmark { writing-mode: vertical-rl; transform: rotate(180deg); display: flex; align-items: center; gap: 10px; color: var(--case-print); white-space: nowrap; }
+.wordmark b { font: italic 800 22px/1 var(--font-case); letter-spacing: 0.03em; }
+.wordmark span { font: italic 700 9px/1 var(--font-case); letter-spacing: 0.26em; text-transform: uppercase; }
+.dpad { position: relative; width: 57px; height: 57px; flex: none; }
+.dpad::before { content: ""; position: absolute; inset: -9px; border-radius: 50%; background: radial-gradient(circle, rgba(0, 0, 0, 0.1) 60%, transparent 62%); }
+.dpad button, .dpad .mid { position: absolute; width: 19px; height: 19px; background: var(--button-pad); border: 0; padding: 0; cursor: pointer; box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08); }
+.dpad .up { left: 19px; top: 0; border-radius: 3px 3px 0 0; }
+.dpad .down { left: 19px; top: 38px; border-radius: 0 0 3px 3px; }
+.dpad .left { left: 0; top: 19px; border-radius: 3px 0 0 3px; }
+.dpad .right { left: 38px; top: 19px; border-radius: 0 3px 3px 0; }
+.dpad .mid { left: 19px; top: 19px; cursor: default; }
+/* only the outer bottom edges of the cross are shaded; inner edges get none, so the arms and centre read as one piece */
+.dpad .up, .dpad .mid { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08); }
+.ab { position: relative; width: 66px; height: 70px; flex: none; }
+.ab::before { content: ""; position: absolute; left: 4px; top: 12px; width: 58px; height: 34px; border-radius: 20px; background: rgba(0, 0, 0, 0.08); transform: rotate(-35deg); }
+.ab .btn { position: absolute; display: grid; justify-items: center; gap: 3px; }
+.ab .btn.b { left: 2px; top: 24px; }
+.ab .btn.a { right: 2px; top: 0; }
+.ab button { width: 28px; height: 28px; border-radius: 50%; border: 0; cursor: pointer; background: radial-gradient(circle at 35% 30%, var(--button-ab-hi), var(--button-ab) 55%, var(--button-ab-lo)); box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.3), 0 2px 0 rgba(0, 0, 0, 0.2); }
+.ab label, .pills label { font: italic 800 9px/1 var(--font-case); color: var(--case-print); letter-spacing: 0.1em; }
+.pills { display: grid; gap: 20px; justify-items: center; flex: none; }
+.pills .p { display: grid; justify-items: center; gap: 5px; transform: rotate(-24deg); }
+.pills button { width: 34px; height: 10px; border-radius: 5px; border: 0; cursor: pointer; background: var(--button-pill); box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.3), 0 0 0 3px rgba(0, 0, 0, 0.07); }
+.pills label { font-size: 7px; letter-spacing: 0.14em; }
+.speaker { display: grid; grid-template-columns: repeat(3, 6px); gap: 6px; transform: rotate(-24deg); flex: none; }
+.speaker i { width: 6px; height: 6px; border-radius: 50%; background: rgba(0, 0, 0, 0.35); box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.5), 1px 1px 0 var(--case-hi); }
+.rail button:active, .rail button.pressed { transform: translateY(1px); box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.35); filter: brightness(0.88); }
+/* The D-pad is one physical piece: a pressed arm darkens in place instead of moving, so no gap opens between arm and centre. */
+.dpad button:active, .dpad button.pressed { transform: none; filter: none; background: color-mix(in srgb, var(--button-pad) 75%, black); box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.5); }
+.rail button:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+/* ---------- bezel and screen ---------- */
+.bezel { display: grid; grid-template-rows: 26px minmax(0, 1fr); padding: 0 6px 6px; min-height: 0; border-radius: var(--radius-bezel); background: linear-gradient(180deg, var(--bezel-hi), var(--bezel)); box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.12), inset 0 -2px 0 rgba(0, 0, 0, 0.25); }
+.bezel-caption { display: flex; align-items: center; gap: 12px; padding: 0 12px; font: italic 700 9px/1 var(--font-case); letter-spacing: 0.16em; color: var(--bezel-print); white-space: nowrap; overflow: hidden; text-transform: uppercase; }
+.bezel-caption .stripes { flex: 1; height: 6px; min-width: 20px; background: linear-gradient(var(--stripe-1), var(--stripe-1)) top / 100% 2px no-repeat, linear-gradient(var(--stripe-2), var(--stripe-2)) bottom / 100% 2px no-repeat; }
+.bezel-caption .stripes.short { flex: 0 0 48px; }
+.screen-glass { position: relative; min-height: 0; border-radius: var(--radius-screen); background: var(--lcd); box-shadow: inset 0 3px 10px rgba(0, 0, 0, 0.45); overflow: hidden; }
+.screen-glass::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(0deg, var(--lcd-dots) 0 1px, transparent 1px 3px), repeating-linear-gradient(90deg, var(--lcd-dots) 0 1px, transparent 1px 3px); }
+#screen { position: absolute; inset: 0; overflow: auto; color: var(--ink); font: var(--text-body) / var(--line) var(--font-screen); scrollbar-width: thin; scrollbar-color: var(--ink-2) var(--lcd); }
+#screen:focus { outline: none; }
+
+/* ---------- the menu bar: first line of the screen, owned by the shell ---------- */
+.menu { position: sticky; top: 0; z-index: 3; display: flex; flex-wrap: wrap; align-items: center; gap: var(--s1) 6px; padding: 10px 18px 8px; background: var(--lcd); border-bottom: var(--frame) solid var(--ink); }
+#screen .menu a { display: inline-flex; color: var(--ink); text-decoration: none; padding: 0 8px 0 4px; }
+#screen .menu a::before { content: "\25B6"; visibility: hidden; width: 1em; font-size: 12px; line-height: 24px; }
+#screen .menu a[aria-current="page"] { background: var(--ink); color: var(--lcd); }
+#screen .menu a[aria-current="page"]::before { visibility: visible; animation: blink 1s steps(1) infinite; }
+#screen .menu a:hover:not([aria-current]) { background: var(--rule); }
+.menu .count { margin-left: 6px; color: var(--ink-2); }
+.menu a[aria-current="page"] .count { color: var(--lcd); }
+.menu .keys { color: var(--ink-2); font-size: var(--text-small); margin-left: var(--s2); }
+.menu .end { margin-left: auto; display: flex; gap: var(--s4); align-items: center; color: var(--ink-2); white-space: nowrap; }
+#screen .menu .end a { font-size: var(--text-small); padding: 0 4px; color: var(--ink-2); }
+#screen .menu .end a::before { display: none; }
+
+@keyframes blink { 50% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; scroll-behavior: auto !important; } }
+
+/* narrow windows: the rail becomes a strip along the bottom, like the device's lower half */
+@media (max-width: 700px) {
+  body { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) 84px; padding: 8px 8px 0; }
+  .bezel { grid-row: 1; }
+  .rail { grid-row: 2; flex-direction: row; justify-content: space-between; padding: 0 12px; gap: 14px; }
+  .wordmark { writing-mode: horizontal-tb; transform: none; }
+  .rail .spacer, .speaker { display: none; }
+  .pills { grid-auto-flow: column; }
+  .menu .keys { display: none; }
+}

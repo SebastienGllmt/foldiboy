@@ -1,0 +1,144 @@
+/* Screen components: everything a view can draw inside #screen.
+   Each block here has exactly one builder in ui/components.ts (or ui/matrix.ts, ui/charts.ts); views call builders, never write these
+   class names by hand. The catalogue, with live examples, is the #/guide route. See DESIGN.md, "Components". */
+
+#screen a { color: var(--link); text-underline-offset: 3px; }
+#screen code { font: var(--text-small) var(--font-code); background: var(--win); padding: 0 4px; }
+.muted { color: var(--ink-2); }
+.small { font-size: var(--text-small); line-height: 1.35; }
+.id { white-space: nowrap; }
+.nowrap { white-space: nowrap; }
+.empty { color: var(--ink-2); margin: 0; }
+
+/* ---------- page: title row, then a vertical stack of blocks ---------- */
+.page { display: grid; gap: var(--s5); padding: var(--s4) 22px 40px; align-content: start; }
+.page-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s1) var(--s3); }
+.page-title h1 { font: var(--text-title) / 1.1 var(--font-screen); margin: 0; }
+.page-title .sub { color: var(--ink-2); }
+.page-title .crumb { flex-basis: 100%; font-size: var(--text-small); color: var(--ink-2); }
+.cols { display: grid; gap: var(--s5); grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); align-items: start; }
+
+/* ---------- window: the framed box every block of content sits in ---------- */
+.win { background: var(--win); border: var(--frame) solid var(--ink); box-shadow: 0 0 0 2px var(--win), 0 0 0 4px var(--ink); margin: 4px; min-width: 0; }
+.win-title { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s3); align-items: baseline; background: var(--ink); color: var(--lcd); padding: 1px 10px; text-transform: uppercase; }
+.win-title .aside { margin-left: auto; text-transform: none; color: var(--ink-3); }
+.win-title .aside.flag { color: var(--tone-warning); text-transform: uppercase; }
+.win-body { padding: 10px 14px 12px; display: grid; gap: var(--s3); min-width: 0; }
+.win-body > * { margin: 0; }
+.win h2 { font: var(--text-heading) / 1.3 var(--font-screen); margin: var(--s2) 0 0; }
+
+/* ---------- dialogue: a message to the reader, with the blinking ▼ ---------- */
+.dialogue { position: relative; display: flex; gap: var(--s3); align-items: flex-start; padding: 12px 40px 12px 16px; }
+.dialogue::after { content: "\25BC"; position: absolute; right: 14px; bottom: 6px; font-size: 13px; animation: blink 1s steps(1) infinite; }
+.dialogue .spr { margin-top: 3px; }
+
+/* ---------- status: a sprite and a label, never colour alone ---------- */
+.spr { display: inline-block; vertical-align: -2px; flex: none; shape-rendering: crispEdges; }
+.status { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.status + .status { margin-left: var(--s3); }
+.chips { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s4); }
+.chips .status + .status { margin-left: 0; }
+.tag { display: inline-block; border: var(--frame) solid currentColor; padding: 0 6px; line-height: 20px; white-space: nowrap; margin: 0 var(--s1) 2px 0; }
+.tag.quiet { border-color: var(--rule); color: var(--ink-2); }
+
+/* ---------- table ---------- */
+.table-wrap { overflow-x: auto; }
+.table { border-collapse: collapse; width: 100%; }
+.table th { text-align: left; font-weight: 400; color: var(--ink-2); border-bottom: var(--frame) solid var(--ink); padding: 4px 8px; vertical-align: bottom; }
+.table td { padding: 6px 8px; border-bottom: var(--frame) dotted var(--rule); vertical-align: top; }
+.table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.table td .small { display: block; }
+.table tr[data-sel] { cursor: pointer; scroll-margin: 60px 0 20px; }
+.table tr[data-sel]:hover td { background: color-mix(in srgb, var(--sel) 8%, transparent); }
+.table tr.cur td { background: var(--sel); color: var(--sel-ink); }
+#screen .table tr.cur td a, .table tr.cur td .muted { color: var(--sel-ink); }
+.table tr.cur td:first-child { box-shadow: inset 6px 0 0 var(--sel-mark); }
+.table tr.cur .tag.quiet { color: var(--sel-ink); border-color: var(--ink-3); }
+
+/* ---------- fields: label / value pairs ---------- */
+.fields { display: grid; grid-template-columns: minmax(8em, max-content) 1fr; gap: var(--s1) var(--s4); margin: 0; }
+.fields dt { color: var(--ink-2); }
+.fields dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.fields ol, .fields ul, .list { margin: 0; padding-left: 1.2em; }
+
+/* ---------- counters: big numbers with a label and a detail line ---------- */
+.counters { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: var(--s2) var(--s5); }
+.counter { display: grid; grid-template-columns: auto 1fr; gap: 0 10px; align-items: center; }
+#screen a.counter { color: inherit; text-decoration: none; }
+.counter .n { font-size: var(--text-title); line-height: 1.1; grid-row: span 2; min-width: 2ch; text-align: right; }
+.counter .d { color: var(--ink-2); line-height: 1.25; font-size: var(--text-small); }
+a.counter:hover .l { text-decoration: underline; }
+
+/* ---------- gauge: one real fraction as a segmented bar ---------- */
+.gauge { display: grid; grid-template-columns: minmax(7.5em, max-content) 1fr auto; gap: 10px; align-items: center; }
+.bar { height: 14px; border: var(--frame) solid var(--ink); padding: 2px; background: var(--lcd); }
+.bar i { display: block; height: 100%; background: repeating-linear-gradient(90deg, var(--fill) 0 6px, transparent 6px 8px); }
+
+/* ---------- split: one total broken down by status ---------- */
+.split { display: grid; gap: var(--s1); }
+.split-bar { display: flex; height: 14px; gap: 2px; padding: 2px; border: var(--frame) solid var(--ink); background: var(--lcd); min-width: 160px; }
+.split-bar i { display: block; height: 100%; }
+
+/* tone fills shared by gauge, split and slot */
+.fill-good { --fill: var(--tone-good); background: var(--tone-good); }
+.fill-warning { --fill: var(--tone-warning); background: var(--tone-warning); }
+.fill-serious { --fill: var(--tone-serious); background: var(--tone-serious); }
+.fill-critical { --fill: var(--tone-critical); background: var(--tone-critical); }
+.fill-neutral { --fill: var(--tone-neutral); background: repeating-linear-gradient(135deg, var(--tone-neutral) 0 2px, transparent 2px 4px); }
+.split-bar .fill-neutral { background: repeating-linear-gradient(135deg, var(--ink-3) 0 2px, transparent 2px 4px); }
+
+/* ---------- matrix: a 16 × 16 grid of slots with a cursor and a readout ---------- */
+.matrix-block { display: grid; gap: var(--s3); }
+.matrices { display: flex; flex-wrap: wrap; gap: 30px; align-items: flex-start; }
+.matrix { display: grid; grid-template-columns: 28px repeat(16, var(--cell)); grid-auto-rows: var(--cell); gap: 2px; font-size: var(--text-small); line-height: var(--cell); }
+.matrix .axis { text-align: center; color: var(--ink-2); }
+.slot { position: relative; border: 0; padding: 0; margin: 0; width: var(--cell); height: var(--cell); cursor: pointer; font: 13px / var(--cell) var(--font-screen); color: var(--on-tone); text-align: center; }
+.slot.tone-good { background: var(--tone-good); }
+.slot.tone-warning { background: var(--tone-warning); }
+.slot.tone-serious { background: var(--tone-serious); }
+.slot.tone-critical { background: var(--tone-critical); }
+.slot.tone-neutral { background: repeating-linear-gradient(135deg, var(--win) 0 3px, var(--ink-3) 3px 5px); box-shadow: inset 0 0 0 1px var(--ink-3); color: var(--ink); }
+.slot.marked { background: var(--win); box-shadow: inset 0 0 0 2px var(--ink); color: var(--ink); font-size: 10px; }
+.slot.cur { z-index: 1; }
+.slot.cur::after { content: ""; position: absolute; inset: -4px; border: 3px solid var(--link); animation: blink 1s steps(1) infinite; }
+.slot:focus-visible { outline: 3px solid var(--focus); outline-offset: 1px; }
+.slot.mini { width: 9px; height: 9px; cursor: default; font-size: 0; }
+.matrix.mini { grid-template-columns: repeat(16, 9px); grid-auto-rows: 9px; gap: 1px; }
+.legend { display: flex; flex-wrap: wrap; gap: var(--s2) 26px; }
+.legend .item { display: inline-flex; align-items: center; gap: var(--s2); }
+.legend .slot { cursor: default; }
+.legend.stacked { display: grid; }
+.legend.stacked .item { display: grid; grid-template-columns: var(--cell) 1fr auto; gap: 10px; }
+.readout .fields { grid-template-columns: max-content 1fr; }
+
+/* ---------- charts: crisp SVG on the screen ---------- */
+svg.chart { width: 100%; height: auto; display: block; font-family: var(--font-screen); shape-rendering: crispEdges; }
+.chart .grid { stroke: var(--rule); stroke-width: 1; stroke-dasharray: 2 4; }
+.chart .axis { stroke: var(--ink); stroke-width: 2; }
+.chart text { fill: var(--ink-2); font-size: var(--text-small); }
+.chart .label { fill: var(--ink); font-size: var(--text-body); }
+.chart .area { opacity: 0.14; }
+
+/* ---------- prose: rendered Markdown such as the README ---------- */
+.prose { font-family: var(--font-case); font-size: 15px; line-height: 1.55; max-width: 90ch; }
+.prose h1, .prose h2, .prose h3 { font-family: var(--font-screen); font-weight: 400; line-height: 1.2; margin: 1.2em 0 0.4em; }
+.prose h1 { font-size: var(--text-heading); }
+.prose h2 { font-size: 18px; }
+.prose h3 { font-size: var(--text-body); }
+.prose > :first-child { margin-top: 0; }
+.prose table { border-collapse: collapse; margin: 0.6em 0; }
+.prose th, .prose td { border-bottom: 1px dotted var(--rule); padding: 3px 8px; text-align: left; vertical-align: top; }
+.prose th { border-bottom: var(--frame) solid var(--ink); font-weight: 600; }
+.prose pre { background: var(--lcd); padding: var(--s2) var(--s3); overflow-x: auto; }
+.prose pre code { background: none; padding: 0; }
+
+/* ---------- style guide only (#/guide) ---------- */
+.swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--s2) var(--s4); }
+.swatch { display: flex; align-items: center; gap: var(--s2); }
+.swatch i { width: 28px; height: 28px; flex: none; border: var(--frame) solid var(--ink); }
+.swatch .small { display: block; }
+.type-ramp { display: grid; gap: var(--s2); }
+.t-title { font-size: var(--text-title); line-height: 1.1; }
+.t-heading { font-size: var(--text-heading); }
+.t-body { font-size: var(--text-body); }
+.t-small { font-size: var(--text-small); }

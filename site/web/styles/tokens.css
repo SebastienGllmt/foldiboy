@@ -1,0 +1,85 @@
+/* Design tokens: the only place colours, type, spacing and radii are defined.
+   Every other stylesheet and every view uses these variables; a raw colour or size anywhere else is a bug.
+   See DESIGN.md, "Tokens", for what each group is for and how to add one. */
+
+@font-face {
+  font-family: "DotGothic16";
+  src: url("../fonts/DotGothic16-latin.woff2") format("woff2");
+  font-display: swap;
+}
+
+:root {
+  color-scheme: light;
+
+  /* ---- case: the handheld's plastic, printing and parts (shell only) ---- */
+  --case: #cfcabf;
+  --case-lo: #b9b3a6;
+  --case-hi: #e4e0d7;
+  --case-print: #2a2d6b; /* navy print on the case: wordmark, button labels */
+  --case-print-2: #6d6f80; /* small secondary print on the case */
+  --bezel: #5b5d6e;
+  --bezel-hi: #62647a;
+  --bezel-print: #d5d6e2;
+  --stripe-1: #8e2459;
+  --stripe-2: #2b2f73;
+  --button-ab: #a3245e;
+  --button-ab-lo: #74163f;
+  --button-ab-hi: #c43a78;
+  --button-pad: #393940;
+  --button-pill: #7a787f;
+  --led-on: #ff3b2e;
+  --led-off: #6e3b38;
+  --focus: #2b54b8;
+
+  /* ---- screen: the pocket grey LCD every view draws on ---- */
+  --lcd: #d6d5cb; /* screen background */
+  --win: #e8e7df; /* window and dialogue fill */
+  --ink: #1f201c; /* text, window frames, title bars */
+  --ink-2: #4b4c45; /* secondary text, axis labels */
+  --ink-3: #9e9d92; /* hatching, disabled, faint marks */
+  --rule: #b7b6ab; /* dotted table rules, grid lines */
+  --link: #1f4fb0;
+  --sel: #1f201c; /* selected row fill */
+  --sel-ink: #e8e7df; /* text on a selected row */
+  --sel-mark: #c98c00; /* the cursor edge on a selected row */
+  --lcd-dots: rgba(0, 0, 0, 0.05); /* the pixel-grid overlay */
+
+  /* ---- tones: the five status tones of vocabulary.toml; each pairs with a sprite shape (ui/sprites.ts) ---- */
+  --tone-good: #23803a;
+  --tone-warning: #c98c00;
+  --tone-serious: #c9582a;
+  --tone-critical: #c42b35;
+  --tone-neutral: #64655e;
+  --on-tone: #ffffff; /* glyphs and text drawn on a tone fill */
+
+  /* ---- series: categorical colours for charts and other non-status categories; always paired with a marker shape ---- */
+  --series-1: #b0306a;
+  --series-2: #2f54c8;
+  --series-3: #23803a;
+  --series-4: #b86d00;
+
+  /* ---- type: one screen face (DotGothic16 is drawn on a 16px grid), one case face, one code face ---- */
+  --font-screen: "DotGothic16", ui-monospace, monospace;
+  --font-case: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-code: ui-monospace, "SF Mono", Menlo, monospace;
+  --text-title: 32px; /* page title */
+  --text-heading: 20px; /* section heading inside a window */
+  --text-body: 16px; /* everything else on the screen */
+  --text-small: 14px; /* secondary lines, captions, axis labels */
+  --line: 1.5;
+
+  /* ---- space: a 4px step scale ---- */
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 24px;
+  --s6: 32px;
+
+  /* ---- shape ---- */
+  --frame: 2px; /* every line on the screen: window frames, rules, bars */
+  --radius-screen: 3px 3px 48px 3px; /* the screen's rounded lower-right corner */
+  --radius-bezel: 10px 10px 54px 10px;
+  --rail: 76px; /* width of the control rail */
+  --cell: 24px; /* one slot in a grid such as the opcode matrix */
+}

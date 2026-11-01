@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Foldiboy tracking</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="./styles/tokens.css" />
+    <link rel="stylesheet" href="./styles/shell.css" />
+    <link rel="stylesheet" href="./styles/components.css" />
+  </head>
+  <body>
+    <!-- The shell: the window is the handheld. Its parts are fixed; see DESIGN.md, "The shell". Views render into #screen only. -->
+    <div class="rail" role="group" aria-label="Handheld controls">
+      <div class="led" data-state="off"><i></i>LIVE</div>
+      <div class="wordmark"><b>FOLDIBOY</b><span>tracking</span></div>
+      <span class="spacer"></span>
+      <div class="dpad" role="group" aria-label="Direction pad">
+        <button class="up" type="button" data-key="up" title="Up: previous row (&#8593;)" aria-label="Up: previous row"></button>
+        <button class="left" type="button" data-key="left" title="Left: previous page (&#8592;)" aria-label="Left: previous page"></button>
+        <span class="mid" aria-hidden="true"></span>
+        <button class="right" type="button" data-key="right" title="Right: next page (&#8594;)" aria-label="Right: next page"></button>
+        <button class="down" type="button" data-key="down" title="Down: next row (&#8595;)" aria-label="Down: next row"></button>
+      </div>
+      <div class="ab" role="group" aria-label="Action buttons">
+        <div class="btn b"><button type="button" data-key="b" title="B: back (Z)" aria-label="B: back"></button><label>B</label></div>
+        <div class="btn a"><button type="button" data-key="a" title="A: open the selected row (X)" aria-label="A: open the selected row"></button><label>A</label></div>
+      </div>
+      <div class="pills">
+        <div class="p"><button type="button" data-key="select" title="Select: jump to the next window (Shift)" aria-label="Select: jump to the next window"></button><label>SELECT</label></div>
+        <div class="p"><button type="button" data-key="start" title="Start: overview (Enter)" aria-label="Start: overview"></button><label>START</label></div>
+      </div>
+      <div class="speaker" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    </div>
+    <div class="bezel">
+      <div class="bezel-caption"><span class="stripes"></span><span>SM83 dot matrix &middot; autoresearch tracking</span><span class="stripes short"></span></div>
+      <div class="screen-glass">
+        <main id="screen" tabindex="-1"></main>
+      </div>
+    </div>
+    <script type="module" src="./app.ts"></script>
+  </body>
+</html>

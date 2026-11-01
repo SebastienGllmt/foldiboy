@@ -1,0 +1,14 @@
+{
+  "name": "foldiboy-site",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --hot server.ts",
+    "check": "bun src/check.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5"
+  }
+}
