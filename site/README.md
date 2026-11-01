@@ -21,4 +21,4 @@ bun run typecheck
 | `web/` | Client: the handheld shell, the design system in `web/ui/` and `web/styles/`, one view per route in `web/views/` |
 | `DESIGN.md` | The design system: rules, tokens, components, controls, and how to extend it; read it before changing `web/` |
 
-The site is styled as a handheld console screen; `DESIGN.md` explains the system and `#/guide` shows every component.
+The site is styled as a handheld console screen; `DESIGN.md` explains the system, and `#/guide` (open it by URL; it is not linked from the site) shows every component.

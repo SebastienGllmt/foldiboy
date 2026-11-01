@@ -3,6 +3,7 @@
 Read this before changing anything under `web/`.
 It says what the site looks like, why, which code owns each part, and how to add things without breaking the whole.
 The `#/guide` route draws every token and component with the same code the pages use; keep it open while you work.
+It is deliberately not linked from the site: it is a tool for whoever changes the design, not part of reading the tracking data, so open it by URL (`http://127.0.0.1:4173/#/guide`).
 
 ## The idea
 
@@ -63,7 +64,7 @@ The rail, top to bottom: LIVE light, the FOLDIBOY wordmark printed up the rail, 
 The bezel has a striped caption strip on top and the rounded lower-right corner that the case has; inside it, the screen glass with a faint pixel-grid overlay.
 Below 700px wide the rail becomes a strip along the bottom, like the lower half of the device.
 
-The menu bar is the first line of the screen and belongs to the shell: it lists the menu routes with counts, a one-line key hint, the style guide link and the load time.
+The menu bar is the first line of the screen and belongs to the shell: it lists the menu routes with counts, a one-line key hint and the load time.
 
 The LIVE light reports the server connection: on while the event stream is connected, a brief flash when a tracking file changes and the screen re-renders, dark when disconnected.
 

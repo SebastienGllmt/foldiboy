@@ -23,7 +23,7 @@ function menu(current: string, m: Model) {
       return h("a", { href: `#/${r.id}`, "aria-current": r.id === current ? "page" : undefined }, r.label, n !== undefined ? h("span", { class: "count" }, String(n)) : null);
     }),
     h("span", { class: "keys", title: "Arrow keys page and select, X opens, Z goes back, Enter returns to the overview, Shift jumps to the next window" }, "←→ page · ↑↓ row · X open · Z back"),
-    h("span", { class: "end" }, h("a", { href: "#/guide", "aria-current": current === "guide" ? "page" : undefined }, "style guide"), h("span", { title: "When the tracking model was loaded" }, "loaded " + new Date(m.loadedAt).toLocaleTimeString("en", { hour: "2-digit", minute: "2-digit" }))),
+    h("span", { class: "end" }, h("span", { title: "When the tracking model was loaded" }, "loaded " + new Date(m.loadedAt).toLocaleTimeString("en", { hour: "2-digit", minute: "2-digit" }))),
   );
 }
 

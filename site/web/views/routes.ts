@@ -15,7 +15,7 @@ export interface Route {
   id: string;
   /** Menu label. */
   label: string;
-  /** In the menu and the D-pad cycle (true), or reachable only by link (false). */
+  /** In the menu and the D-pad cycle (true), or reachable only by URL or link (false), like the style guide at #/guide. */
   menu: boolean;
   /** A short count shown beside the menu label, or nothing. */
   count?: (m: Model) => string | number | undefined;
