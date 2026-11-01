@@ -10,7 +10,7 @@ It is deliberately not linked from the site: it is a tool for whoever changes th
 The browser window is a foldable handheld game console in the spirit of the late 1980s, opened flat on a desk (hence FOLDIBOY).
 The left half carries the hardware and a small second screen; a hinge joins it to the right half, which is the main screen.
 The main screen shows the page; the second screen shows the menu and an info panel that reads out whatever the cursor is on.
-Both screens are a green colour LCD, with in-game windows, a pixel font and pixel sprites.
+Both screens are an LCD in one of two schemes (paper by default, or the green colour LCD; SELECT switches), with in-game windows, a pixel font and pixel sprites.
 The desk shows around the device, and a Nightstream cartridge (named for the proof system) sits in the top of the control half.
 
 The design is inspired by that era of hardware but is not branded.
@@ -67,8 +67,8 @@ The device is a foldable opened flat, and it opens one of two ways depending on 
 
 - **Book fold** (720px wide and up): control half | hinge | main screen.
   The control half is `clamp(--ctl-min, 21vw, --ctl-max)` wide (232 to 340px); it is a size container, and its D-pad, A/B and wordmark scale with it (`cqw`), so the fold stays visible at every desktop size.
-  Top to bottom: wordmark and LIVE light, the second screen (menu, then info), D-pad and A/B, SELECT/START and speaker, the key hints.
-  In a window shorter than 560px (a phone held sideways) the half drops the wordmark, SELECT/START and key hints and keeps the screen and the D-pad and A/B.
+  Top to bottom: wordmark and LIVE light, the second screen (menu, then info), D-pad and A/B, SELECT/START and speaker.
+  In a window shorter than 560px (a phone held sideways) the half drops the wordmark and SELECT/START and keeps the screen and the D-pad and A/B.
 - **Flip fold** (narrower, phones): main screen on top, the hinge across, and the control half as a short deck below: D-pad | second screen | A/B, then LIVE light, wordmark, SELECT/START.
   The second screen's top line is the deck line, ◀ page ▶; the page name (or START) swaps the info for the page list.
 
@@ -102,9 +102,10 @@ All in `web/styles/tokens.css`, in groups:
 | Space | `--s1` 4 … `--s6` 32 | Gaps and padding |
 | Shape | `--frame` 2px, `--radius-screen`, `--radius-bezel`, `--radius-half`, `--ctl-min`, `--ctl-max`, `--hinge`, `--margin-desk`, `--cell` | |
 
-The screen palette is the single green "colour LCD" palette, shared by both screens; there is no dark mode and no palette switch.
-It was chosen over grey-on-grey for text contrast. The cursor's fill (`--sel`, the selected row and the current page in the menu) is a dark LCD green with light text (`--sel-ink`, 7.4:1), distinct from the near-black title bars; a hovered row only tints unselected rows.
-Anything in a cell that brings its own fill (`code`, quiet tags) must follow the row onto `--sel`, and sprites in a selected row sit on a small `--sel-ink` tile so every tone and shape keeps its own colours on the green.
+Both screens share one scheme, and there are two: **paper** (the default: `#f3efe4` screen, near-white windows, ink cursor) and **green** (the colour LCD: green screen, cursor in the dark shade of the classic four-shade green LCD). SELECT switches between them and the choice is kept in the browser's local storage.
+A scheme sets exactly the screen tokens (`--lcd` … `--lcd-dots`) and `--tone-neutral`; paper is `:root`, green is `:root[data-screen="green"]` in `tokens.css`. Anything drawn on a screen must read in both, so use tokens and check both schemes. There is no dark mode.
+Both were chosen over grey-on-grey for text contrast. The cursor's fill (`--sel`, the selected row and the current page in the menu) takes its colour from the scheme's own world, with light text (`--sel-ink`): the ink on paper, `#306230` (a shade the original green LCD could show) on green. Never a hue from outside the scheme, such as the link blue; a hovered row only tints unselected rows.
+Anything in a cell that brings its own fill (`code`, quiet tags) must follow the row onto `--sel`, and sprites in a selected row sit on a small `--sel-ink` tile so every tone and shape keeps its own colours on the cursor's fill.
 Add a token only when a value is needed in two places or carries a meaning; give it a name that says what it is for, not what it looks like.
 
 ## Type
@@ -187,10 +188,10 @@ The shell maps buttons and keys; views only mark what can be selected (table row
 | A | X | Opens the selected row's `href`; in the page list, goes to the page |
 | B | Z | Back. Flip fold: first closes the page list, then clears the selected row, then goes back |
 | START | Enter | Overview. Flip fold: opens or closes the page list |
-| SELECT | Shift, pressed and released alone | Scrolls to the next window on the page |
+| SELECT | Shift, pressed and released alone | Switches the screen scheme (paper / green), remembered in this browser |
 
 Mouse and normal keyboard use keep working: links are links, a click selects a row, Enter on a focused link follows it.
-A new interaction pattern (for example a second kind of cursor) goes in `shell.ts`, uses the existing buttons, and is added to this table, to the key hints and button tooltips in `index.html` and to the comment at the top of `shell.ts`.
+A new interaction pattern (for example a second kind of cursor) goes in `shell.ts`, uses the existing buttons, and is added to this table, to the button tooltips in `index.html` and to the comment at the top of `shell.ts`.
 
 ## Matrix
 
@@ -224,10 +225,10 @@ Copy: plain sentences; say what a number counts ("498/512 pass"), not what it im
 1. `bun run typecheck`.
 2. `bun run dev` and open the routes you touched, plus `#/guide`.
 3. Look at 1440×900, 960×1080 (half a screen), 760×900, 1280×520 (short), and a phone (390×844, the flip fold): nothing clipped, no text overlapping, the hinge visible, tables scroll inside their window rather than the screen.
-4. Use the controls on the pages you touched: ↑ ↓ through rows (the info screen reads each out), X on a row with a link, Z back, ← → between pages, Shift to jump windows; on a phone, Enter for the page list.
+4. Use the controls on the pages you touched: ↑ ↓ through rows (the info screen reads each out), X on a row with a link, Z back, ← → between pages, Shift to switch to the other screen scheme (check both); on a phone, Enter for the page list.
 5. Every status you added shows a sprite and a label.
 
 ## History
 
 The design was chosen over eight rounds of proposals with Sebastien; the proposals, his verdicts and the static mocks are in `draft-personal/autoresearch/design-handoff.md` and `draft-personal/autoresearch/design/`.
-The first site used round 7's "left rail" layout; round 9 replaced it with round 5's fold-out (the foldable with a second screen), on the same components, with the book/flip folds, the green colour LCD, a desk margin and a fixed Nightstream cartridge.
+The first site used round 7's "left rail" layout; round 9 replaced it with round 5's fold-out (the foldable with a second screen), on the same components, with the book/flip folds, the paper and green screen schemes, a desk margin and a fixed Nightstream cartridge.

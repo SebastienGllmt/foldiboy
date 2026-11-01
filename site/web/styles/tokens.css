@@ -42,24 +42,25 @@
   --cart-stream: #8fd3e8; /* …and the stream across it */
   --cart-print: #f1ecff;
 
-  /* ---- screen: the green colour LCD every view draws on (both screens) ---- */
-  --lcd: #e4ecc6; /* screen background */
-  --win: #f4f7e6; /* window and dialogue fill */
-  --ink: #1c2812; /* text, window frames, title bars */
-  --ink-2: #485a34; /* secondary text, axis labels */
-  --ink-3: #9aab7c; /* hatching, disabled, faint marks */
-  --rule: #b9c79a; /* dotted table rules, grid lines */
-  --link: #2c3c9a;
-  --sel: #2e5a1c; /* the cursor's fill (selected row, current page): a dark LCD green, distinct from the ink title bars */
-  --sel-ink: #f4f7e6; /* text on the cursor's fill (7.4:1) */
-  --lcd-dots: rgba(28, 40, 18, 0.05); /* the pixel-grid overlay */
+  /* ---- screen: the LCD every view draws on (both screens). Two schemes, switched with SELECT (shell.ts):
+     "paper" here by default, "green" below. A scheme sets exactly these tokens and --tone-neutral. ---- */
+  --lcd: #f3efe4; /* screen background */
+  --win: #fffdf7; /* window and dialogue fill */
+  --ink: #23201b; /* text, window frames, title bars */
+  --ink-2: #5d574c; /* secondary text, axis labels */
+  --ink-3: #b3ab9b; /* hatching, disabled, faint marks */
+  --rule: #d8d0bf; /* dotted table rules, grid lines */
+  --link: #2b4fb8;
+  --sel: #23201b; /* the cursor's fill (selected row, current page): the ink */
+  --sel-ink: #fffdf7; /* text on the cursor's fill */
+  --lcd-dots: rgba(0, 0, 0, 0.025); /* the pixel-grid overlay */
 
   /* ---- tones: the five status tones of vocabulary.toml; each pairs with a sprite shape (ui/sprites.ts) ---- */
   --tone-good: #23803a;
   --tone-warning: #c98c00;
   --tone-serious: #c9582a;
   --tone-critical: #c42b35;
-  --tone-neutral: #6c7764;
+  --tone-neutral: #6c675e;
   --on-tone: #ffffff; /* glyphs and text drawn on a tone fill */
 
   /* ---- series: categorical colours for charts and other non-status categories; always paired with a marker shape ---- */
@@ -96,4 +97,19 @@
   --hinge: 26px; /* the hinge's thickness */
   --margin-desk: 28px; /* desk showing around the device (more on top, for the cartridge) */
   --cell: 24px; /* one slot in a grid such as the opcode matrix */
+}
+
+/* The green colour LCD scheme (SELECT). */
+:root[data-screen="green"] {
+  --lcd: #e4ecc6;
+  --win: #f4f7e6;
+  --ink: #1c2812;
+  --ink-2: #485a34;
+  --ink-3: #9aab7c;
+  --rule: #b9c79a;
+  --link: #2c3c9a;
+  --sel: #306230; /* the dark shade of the classic four-shade green LCD (6.6:1 with --sel-ink) */
+  --sel-ink: #f4f7e6;
+  --lcd-dots: rgba(28, 40, 18, 0.05);
+  --tone-neutral: #6c7764;
 }

@@ -1,13 +1,13 @@
 // The shell's behaviour: the hardware buttons, their keys, the row cursor, the deck's page list and the LIVE light.
 // Views never handle keys or buttons; they mark selectable rows (table rows do this) and the shell does the rest.
-// Button contract (also printed on the control half and in the button tooltips):
+// Button contract (also in the button tooltips):
 //   D-pad ← →   previous / next page in the menu (on a slot matrix: move the slot cursor)
 //   D-pad ↑ ↓   previous / next selectable row, read out on the info screen (on a slot matrix: move the slot cursor;
 //               with no rows: scroll; with the deck's page list open: move through it)
 //   A  (X)      open the selected row's link (page list: go to the page)
 //   B  (Z)      back (flip fold: first closes the page list, then clears the selected row)
 //   START (Enter)   overview (flip fold: open or close the page list)
-//   SELECT (Shift)  jump to the next window on the page
+//   SELECT (Shift)  switch the screen colours (paper / green), remembered in this browser
 // See DESIGN.md, "Controls".
 
 import { rowReadout, showInfo } from "./ui/info";
@@ -74,13 +74,22 @@ function moveDeckList(delta: number) {
   links[next]?.scrollIntoView({ block: "nearest" });
 }
 
-function nextWindow() {
-  const s = screen();
-  const top = s.getBoundingClientRect().top + (s.querySelector<HTMLElement>(".titlebar")?.offsetHeight ?? 0) + 8;
-  const blocks = [...s.querySelectorAll<HTMLElement>(".page > .win, .page > .cols, .page > section")];
-  const next = blocks.find((b) => b.getBoundingClientRect().top > top + 4);
-  s.scrollTo({ top: next ? s.scrollTop + next.getBoundingClientRect().top - top : 0, behavior: "smooth" });
+// ---------- the screen scheme (SELECT): paper by default, or the green colour LCD; tokens.css defines both ----------
+const SCHEMES = ["paper", "green"] as const;
+const SCHEME_KEY = "foldiboy-screen";
+function setScheme(scheme: string) {
+  if (scheme === "paper") delete document.documentElement.dataset.screen;
+  else document.documentElement.dataset.screen = scheme;
+  try { localStorage.setItem(SCHEME_KEY, scheme); } catch {}
 }
+function nextScheme() {
+  const now = document.documentElement.dataset.screen ?? "paper";
+  setScheme(SCHEMES[(SCHEMES.indexOf(now as (typeof SCHEMES)[number]) + 1) % SCHEMES.length]!);
+}
+try {
+  const saved = localStorage.getItem(SCHEME_KEY);
+  if (saved && (SCHEMES as readonly string[]).includes(saved)) setScheme(saved);
+} catch {}
 
 export function press(key: Key, actions: ShellActions) {
   const button = document.querySelector(`.half.ctl [data-key="${key}"]`);
@@ -124,7 +133,7 @@ export function press(key: Key, actions: ShellActions) {
       else actions.start();
       return;
     case "select":
-      nextWindow();
+      nextScheme();
       return;
   }
 }

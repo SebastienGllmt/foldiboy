@@ -18,7 +18,7 @@ const swatch = (token: string, note = "") => h("div", { class: "swatch" }, h("i"
 
 function tokens() {
   return [
-    win("Tokens: screen", [usage("styles/tokens.css", "views use these through components; a raw colour outside tokens.css is a bug."), h("div", { class: "swatches" }, ["--lcd", "--win", "--ink", "--ink-2", "--ink-3", "--rule", "--link", "--sel", "--sel-ink"].map((t) => swatch(t)))]),
+    win("Tokens: screen", [usage("styles/tokens.css", "views use these through components; a raw colour outside tokens.css is a bug. Two schemes set them, paper (default) and green: press SELECT (Shift) to check a component in both."), h("div", { class: "swatches" }, ["--lcd", "--win", "--ink", "--ink-2", "--ink-3", "--rule", "--link", "--sel", "--sel-ink"].map((t) => swatch(t)))]),
     cols(
       win("Tokens: tones", [usage("--tone-*", "one per vocabulary tone; only ever drawn with that tone's sprite."), h("div", { class: "swatches" }, TONES.map((t) => swatch(`--tone-${t}`)))]),
       win("Tokens: series", [usage("--series-1..4", "categories that are not statuses (chart series); always paired with a marker shape."), h("div", { class: "swatches" }, [1, 2, 3, 4].map((i) => swatch(`--series-${i}`)))]),
