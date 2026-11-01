@@ -49,7 +49,7 @@
 .table .num { text-align: right; font-variant-numeric: tabular-nums; }
 .table td .small { display: block; }
 .table tr[data-sel] { cursor: pointer; scroll-margin: 60px 0 20px; }
-.table tr[data-sel]:hover td { background: color-mix(in srgb, var(--sel) 8%, transparent); }
+.table tr[data-sel]:not(.cur):hover td { background: color-mix(in srgb, var(--sel) 8%, transparent); }
 .table tr.cur td { background: var(--sel); color: var(--sel-ink); }
 #screen .table tr.cur td a, .table tr.cur td .muted { color: var(--sel-ink); }
 .table tr.cur td:first-child { box-shadow: inset 6px 0 0 var(--sel-mark); }
