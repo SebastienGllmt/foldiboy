@@ -57,18 +57,33 @@ async function refresh(keepScroll: boolean) {
 
 window.addEventListener("hashchange", () => render());
 
-// Tracking-file changes re-render in place; a reconnect means the server restarted with new site code, so reload the page.
+// Live updates. "model": a tracking file changed, re-render in place. "reload": client code changed, reload the page and come
+// back to the same scroll position. A reconnect means the server restarted, which may also mean new code, so reload too.
+const SCROLL_KEY = "foldiboy-reload-scroll";
+function reloadKeepingScroll() {
+  sessionStorage.setItem(SCROLL_KEY, JSON.stringify({ hash: location.hash, top: document.getElementById("screen")!.scrollTop }));
+  location.reload();
+}
+function restoreScroll() {
+  const saved = sessionStorage.getItem(SCROLL_KEY);
+  sessionStorage.removeItem(SCROLL_KEY);
+  if (!saved) return;
+  const { hash, top } = JSON.parse(saved) as { hash: string; top: number };
+  if (hash === location.hash) document.getElementById("screen")!.scrollTop = top;
+}
+
 const events = new EventSource("/api/events");
 let connected = false;
 events.addEventListener("open", () => {
-  if (connected) location.reload();
+  if (connected) reloadKeepingScroll();
   connected = true;
   led("live");
 });
 events.addEventListener("error", () => led("off"));
+events.addEventListener("reload", reloadKeepingScroll);
 events.addEventListener("model", () => {
   led("flash");
   void refresh(true);
 });
 led("off");
-void refresh(false);
+void refresh(false).then(restoreScroll);

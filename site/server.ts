@@ -1,15 +1,32 @@
-// Local tracking site: serves the web client and pushes a reload event when a tracking file changes.
+// Local tracking site: serves the web client and keeps open pages live.
+// Events on /api/events: "model" when a tracking file changes (the page re-renders in place),
+// "reload" when a client file under web/ changes (the page reloads, keeping its scroll position).
 
 import { watch, type FSWatcher } from "node:fs";
+import { resolve } from "node:path";
 import index from "./web/index.html";
 import { loadModel, trackingDir, type Model } from "./src/model";
 
+type Client = ReadableStreamDefaultController<Uint8Array>;
+
+// `bun --hot` re-evaluates this module on every server-side change. Connected pages and watchers live on globalThis so a
+// re-evaluation keeps the pages that are already open and replaces the watchers instead of adding more.
+const state = globalThis as {
+  clients?: Set<Client>;
+  trackingWatcher?: FSWatcher;
+  webWatcher?: FSWatcher;
+  reloadTimer?: Timer;
+  webTimer?: Timer;
+  evaluated?: boolean;
+};
+
 const dir = trackingDir();
+const webDir = resolve(import.meta.dir, "web");
 const encoder = new TextEncoder();
-const clients = new Set<ReadableStreamDefaultController<Uint8Array>>();
+const clients = (state.clients ??= new Set<Client>());
 let model: Model = await loadModel(dir);
 
-function broadcast(event: string) {
+function broadcast(event: "model" | "reload") {
   for (const client of clients) {
     try {
       client.enqueue(encoder.encode(`event: ${event}\ndata: ${model.loadedAt}\n\n`));
@@ -19,8 +36,6 @@ function broadcast(event: string) {
   }
 }
 
-// `bun --hot` re-evaluates this module; replace the previous watcher rather than adding another.
-const state = globalThis as { trackingWatcher?: FSWatcher; reloadTimer?: Timer };
 state.trackingWatcher?.close();
 state.trackingWatcher = watch(dir, { recursive: true }, () => {
   clearTimeout(state.reloadTimer);
@@ -29,6 +44,17 @@ state.trackingWatcher = watch(dir, { recursive: true }, () => {
     broadcast("model");
   }, 100);
 });
+
+state.webWatcher?.close();
+state.webWatcher = watch(webDir, { recursive: true }, () => {
+  clearTimeout(state.webTimer);
+  // Give Bun's development bundler a moment to pick up the change before pages ask for the new bundle.
+  state.webTimer = setTimeout(() => broadcast("reload"), 150);
+});
+
+// A re-evaluation means server code changed: open pages reload to pick up anything it serves differently.
+if (state.evaluated) setTimeout(() => broadcast("reload"), 150);
+state.evaluated = true;
 
 const server = Bun.serve({
   hostname: "127.0.0.1",

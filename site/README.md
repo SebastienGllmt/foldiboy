@@ -5,7 +5,7 @@ It reads the tracking directory and never writes to it.
 
 ```bash
 bun install
-bun run dev      # http://127.0.0.1:4173, reloads when a tracking file or site source changes
+bun run dev      # http://127.0.0.1:4173; open pages re-render when a tracking file changes and reload when web/ changes
 bun run check    # prints problems; exits 1 on any error
 bun run typecheck
 ```
@@ -15,7 +15,7 @@ bun run typecheck
 
 | File | Content |
 | --- | --- |
-| `server.ts` | Bun server: the client with HMR, `/api/model`, and `/api/events`, which announces each reload of the tracking files |
+| `server.ts` | Bun server: the client, `/api/model`, and `/api/events`, which tells open pages when tracking files change (re-render) or client files change (reload) |
 | `src/model.ts` | Loads the tracking files, checks fields and references, derives reverse links |
 | `src/check.ts` | Command-line problem report |
 | `web/` | Client: the handheld shell, the design system in `web/ui/` and `web/styles/`, one view per route in `web/views/` |
