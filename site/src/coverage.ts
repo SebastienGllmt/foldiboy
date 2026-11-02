@@ -108,7 +108,9 @@ async function universes(problems: Problem[]): Promise<Universe[]> {
       provenance: mooneye.provenance,
       columns: [{ id: "key", title: "Test" }],
       rows: mooneye.rows.map((r) => ({ key: r.test })),
-      derived: [],
+      derived: mooneye.reported
+        ? [{ id: "reference", title: "Reference result", derived: true, cells: Object.fromEntries(mooneye.rows.map((r) => [r.test, { value: r.verdict ?? "not-run", note: r.reason, authored: false }])) }]
+        : [],
     });
   }
 
@@ -128,7 +130,7 @@ async function universes(problems: Problem[]): Promise<Universe[]> {
   const claims = await sources.loadClaims(problems);
   if (claims) {
     const cells: Record<string, Cell> = {};
-    for (const c of claims.rows) cells[c.claim] = { value: c.verdict === "proven" ? "proven" : c.verdict === "failed" ? "failed" : "indeterminate", authored: false };
+    for (const c of claims.rows) cells[c.claim] = { value: ["proven", "failed", "budget-exceeded"].includes(c.verdict) ? c.verdict : "indeterminate", authored: false };
     out.push({
       id: "claims",
       title: "Native claims",

@@ -8,11 +8,13 @@
 //! A mooneye test signals its result in `B C D E H L` before it loops on
 //! itself: `3 5 8 13 21 34` is a pass, all `$42` a failure.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use std::sync::Mutex;
 use std::{env, fs, thread};
 
 use krs_exec::{ConfigInputs, ConfigValue, RunOptions, Semantics, Value, View};
 use krs_ir::measure::Timings;
+use serde_json::json;
 use sm83_vectors::{Access, Names, bool as cell_bool, finished, int as cell_int, int_map, load};
 
 /// I/O bytes whose initial value matters to the tests.
@@ -25,7 +27,7 @@ const PASS: [i64; 6] = [3, 5, 8, 13, 21, 34];
 const FAIL: [i64; 6] = [0x42; 6];
 
 fn usage() -> ! {
-    eprintln!("usage: sm83-rom --definition-ir PATH --steps N ROM...");
+    eprintln!("usage: sm83-rom --definition-ir PATH --steps N [--report PATH] ROM...");
     std::process::exit(2)
 }
 
@@ -56,7 +58,14 @@ fn inputs(names: &Names, rom: &[u8], steps: u64) -> ConfigInputs {
     }
 }
 
-fn run(semantics: &mut Semantics, names: &Names, rom: &[u8], steps: u64) -> Result<String, String> {
+/// The registers a mooneye test signals its result in, read when the run ends.
+struct Outcome {
+    verdict: &'static str,
+    pc: i64,
+    bcdehl: [i64; 6],
+}
+
+fn run(semantics: &mut Semantics, names: &Names, rom: &[u8], steps: u64) -> Result<Outcome, String> {
     let state = semantics.configure(&inputs(names, rom, steps)).map_err(|error| format!("configure: {error}"))?;
     let report = semantics
         .run(&state, RunOptions { depth: None, trace: false })
@@ -95,18 +104,20 @@ fn run(semantics: &mut Semantics, names: &Names, rom: &[u8], steps: u64) -> Resu
         eprintln!("{start:04x}: {}", bytes.join(" "));
         eprintln!("halted={}", cell_bool(&view, "halted")?);
     }
-    Ok(format!("{verdict} pc={pc:#06x} bcdehl={result:?}"))
+    Ok(Outcome { verdict, pc, bcdehl: result })
 }
 
 fn main() {
     let mut args = env::args().skip(1);
     let mut definition_ir = PathBuf::new();
     let mut steps = 0;
+    let mut report = None;
     let mut roms = Vec::new();
     while let Some(arg) = args.next() {
         match arg.as_str() {
             "--definition-ir" => definition_ir = args.next().unwrap_or_else(|| usage()).into(),
             "--steps" => steps = args.next().and_then(|n| n.parse().ok()).unwrap_or_else(|| usage()),
+            "--report" => report = Some(PathBuf::from(args.next().unwrap_or_else(|| usage()))),
             _ => roms.push(PathBuf::from(arg)),
         }
     }
@@ -114,9 +125,10 @@ fn main() {
         usage();
     }
     let (definition, stage) = load(&definition_ir);
+    let results = Mutex::new(Vec::new());
     thread::scope(|scope| {
         for path in &roms {
-            let (definition, stage) = (&definition, stage.clone());
+            let (definition, stage, results) = (&definition, stage.clone(), &results);
             thread::Builder::new()
                 .stack_size(256 << 20)
                 .spawn_scoped(scope, move || {
@@ -125,12 +137,35 @@ fn main() {
                     let names = Names::new(semantics.values());
                     let rom = fs::read(path).expect("ROM");
                     let name = path.file_stem().and_then(|stem| stem.to_str()).unwrap_or("?");
-                    match run(&mut semantics, &names, &rom, steps) {
-                        Ok(line) => println!("{name}: {line}"),
-                        Err(reason) => println!("{name}: error {reason}"),
-                    }
+                    let record = match run(&mut semantics, &names, &rom, steps) {
+                        Ok(Outcome { verdict, pc, bcdehl }) => {
+                            println!("{name}: {verdict} pc={pc:#06x} bcdehl={bcdehl:?}");
+                            json!({ "rom": rom_id(path), "verdict": verdict, "pc": pc, "bcdehl": bcdehl })
+                        }
+                        Err(reason) => {
+                            println!("{name}: error {reason}");
+                            json!({ "rom": rom_id(path), "verdict": "error", "reason": reason })
+                        }
+                    };
+                    results.lock().expect("results").push(record);
                 })
                 .expect("worker thread");
         }
     });
+    if let Some(path) = report {
+        let mut results = results.into_inner().expect("results");
+        results.sort_by(|a, b| a["rom"].as_str().cmp(&b["rom"].as_str()));
+        let passed = results.iter().filter(|r| r["verdict"] == "pass").count();
+        let report = json!({ "steps": steps, "total": results.len(), "passed": passed, "roms": results });
+        fs::write(path, serde_json::to_string_pretty(&report).expect("report") + "\n").expect("write report");
+    }
+}
+
+/// The ROM's path below the suite's `acceptance/` directory, without extension, as the suite names its tests.
+fn rom_id(path: &Path) -> String {
+    let text = path.with_extension("").to_string_lossy().into_owned();
+    match text.rfind("acceptance/") {
+        Some(start) => text[start + "acceptance/".len()..].to_owned(),
+        None => text,
+    }
 }

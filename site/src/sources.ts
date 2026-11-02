@@ -96,7 +96,7 @@ async function provenance(path: string, gitDir?: string): Promise<Provenance> {
   return { path: display(path), modified: info?.mtime.toISOString(), revision };
 }
 
-async function guard<T>(id: string, problems: Problem[], load: () => Promise<Dataset<T>>): Promise<Dataset<T> | undefined> {
+async function guard<D extends Dataset<unknown>>(id: string, problems: Problem[], load: () => Promise<D>): Promise<D | undefined> {
   try {
     return await load();
   } catch (error) {
@@ -177,8 +177,18 @@ export async function loadMooneye(problems: Problem[]) {
   return guard("mooneye", problems, async () => {
     const dir = resolve(testRoot, "mooneye-test-suite/acceptance");
     const files = (await readdir(dir, { recursive: true })).filter((f) => f.endsWith(".s")).sort();
-    const rows = files.map((f) => ({ suite: "mooneye acceptance", test: f.replace(/\.s$/, "") }));
-    return { id: "mooneye", title: "Mooneye acceptance tests", provenance: [await provenance(dir, resolve(testRoot, "mooneye-test-suite"))], rows };
+    const reportPath = resolve(sm83, "results/mooneye.json");
+    const report = (await Bun.file(reportPath).exists())
+      ? ((await Bun.file(reportPath).json()) as { roms: { rom: string; verdict: string; reason?: string }[] })
+      : undefined;
+    const results = new Map(report?.roms.map((r) => [r.rom, r]));
+    const rows = files.map((f) => {
+      const test = f.replace(/\.s$/, "");
+      return { suite: "mooneye acceptance", test, verdict: results.get(test)?.verdict, reason: results.get(test)?.reason };
+    });
+    const provenances = [await provenance(dir, resolve(testRoot, "mooneye-test-suite"))];
+    if (report) provenances.push(await provenance(reportPath));
+    return { id: "mooneye", title: "Mooneye acceptance tests", provenance: provenances, rows, reported: report !== undefined };
   });
 }
 
@@ -193,6 +203,13 @@ export async function loadStateCells(problems: Problem[]) {
   });
 }
 
+interface ClaimsRun {
+  k_rust: { revision: string; dirty: boolean };
+  foldiboy: { revision: string; dirty: boolean };
+  missing: string[];
+  invocations: { claims: string[]; finished: string; exit_status: number | null; budget_exceeded: boolean }[];
+}
+
 export async function loadClaims(problems: Problem[]) {
   return guard("claims", problems, async () => {
     const path = resolve(sm83, "results/claims.json");
@@ -204,6 +221,20 @@ export async function loadClaims(problems: Problem[]) {
       modality: p.modality,
       source: p.origin ? `${p.origin.file}:${p.origin.line}` : "",
     }));
-    return { id: "claims", title: "Native claim results", provenance: [await provenance(path)], rows };
+    const provenances = [await provenance(path)];
+    const runPath = resolve(sm83, "results/claims-run.json");
+    if (await Bun.file(runPath).exists()) {
+      const run = (await Bun.file(runPath).json()) as ClaimsRun;
+      const rev = (r: { revision: string; dirty: boolean }) => `${r.revision.slice(0, 9)}${r.dirty ? " (dirty)" : ""}`;
+      provenances.push({ path: display(runPath), modified: run.invocations.at(-1)?.finished, revision: `k-rust ${rev(run.k_rust)}, foldiboy ${rev(run.foldiboy)}` });
+      if (run.missing.length) problems.push({ severity: "warning", file: "source:claims", message: `the recorded claims run has no result for ${run.missing.join(", ")}` });
+      for (const inv of run.invocations) {
+        if (inv.budget_exceeded) problems.push({ severity: "info", file: "source:claims", message: `budget exceeded for ${inv.claims.length === 1 ? inv.claims[0] : `${inv.claims.length} claims`}` });
+        else if (inv.exit_status !== 0 && inv.exit_status !== 1) problems.push({ severity: "warning", file: "source:claims", message: `a claims invocation exited with status ${inv.exit_status}` });
+      }
+    } else {
+      problems.push({ severity: "info", file: "source:claims", message: "no claims-run.json: the claims result has no recorded revisions; run bun krs/sm83/run-claims.ts" });
+    }
+    return { id: "claims", title: "Native claim results", provenance: provenances, rows };
   });
 }

@@ -5,6 +5,7 @@
 # and runs each on the definition. Run `run-singlestep-tests.sh` first: it emits the
 # definition IR and builds the harness this script uses.
 # Arguments are extra ROM names (relative to the suite's acceptance/ directory).
+# The report, results/mooneye.json, records each ROM's verdict as the suite prescribes it.
 set -euo pipefail
 cd "$(dirname "$0")"
 project_dir=$(cd ../.. && pwd -L)
@@ -18,4 +19,4 @@ BUILD="$PWD/results/mooneye"
 targets=()
 for rom in "${ROMS[@]}"; do targets+=("$BUILD/acceptance/$rom.gb"); done
 (cd "$MOONEYE" && nix-shell -p wla-dx gnumake --run "make --silent BUILD_PATH=$BUILD ${targets[*]}") >/dev/null
-vectors/target/release/sm83-rom --definition-ir results/emitted/definition-ir.json --steps "$STEPS" "${targets[@]}"
+vectors/target/release/sm83-rom --definition-ir results/emitted/definition-ir.json --steps "$STEPS" --report results/mooneye.json "${targets[@]}"

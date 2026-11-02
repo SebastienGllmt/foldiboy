@@ -244,7 +244,13 @@ The decoder's 46 authored claims cover 512 opcode bytes; regular families need n
 The six bit-index execution claims retain their 48 explicit branches.
 No successful claim in our targeted review reports vacuity, trusted reachability claims or claim applications.
 
-Three contracts remain unqualified:
+On 2026-11-02, `bun run-claims.ts` replayed all 181 contracts with the krs CLI built from k-rust `1a937ef80` (`results/claims.json`, `results/claims-run.json`).
+178 proved: the batch of 178 proved 177 in 18 minutes, and `contract-call-taken` proved alone in 2.6 minutes.
+`contract-unary-daa-accumulator` failed with one stuck leaf at depth 4; it proved on 2026-10-30 at k-rust `d95e77fc9`, so the change between those revisions is under investigation.
+`contract-dispatch-running` and `contract-dispatch-wake` each exceeded a 600-second budget without a verdict.
+The machine's load average exceeded 500 during the run, so the durations are not cost measurements.
+
+Before that replay, three contracts remained unqualified:
 
 - `contract-call-taken`
 - `contract-dispatch-running`
