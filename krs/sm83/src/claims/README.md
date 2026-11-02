@@ -151,7 +151,7 @@ KRS claims remain the authored proof inputs.
 `krust kcompile` supplies KORE and runtime metadata; `k2lean gen` translates the semantics and states its equation obligations; `k2lean claims` translates the selected contracts and attempts their proofs.
 `lake build` checks those proofs and their generated axiom guards.
 The completed decoder run must have no open equation obligations or open claims.
-This workflow validates decoder contracts, not execution of every instruction or the entire 181-contract suite.
+This workflow validates decoder contracts, not execution of every instruction or the entire contract suite.
 
 Run from `krs/sm83/` with matching `KRS_BIN`, `KRUST_BIN`, `K2LEAN_BIN` and `K2LEAN_PRELUDE` (the absolute path of the k2lean Lake package directory).
 The Lean toolchain is selected by the generated projects.
@@ -250,6 +250,9 @@ On 2026-11-02, `bun run-claims.ts` replayed all 181 contracts with the krs CLI b
 `contract-unary-daa-accumulator` failed with one stuck leaf at depth 4; it proved on 2026-10-30 at k-rust `d95e77fc9`, so the change between those revisions is under investigation.
 `contract-dispatch-running` and `contract-dispatch-wake` each exceeded a 600-second budget without a verdict.
 The machine's load average exceeded 500 during the run, so the durations are not cost measurements.
+
+After the perpetual-boundary migration (foldiboy `6693b4d`), `bun run-claims.ts` replayed all 183 contracts with the same krs binary (SHA-256 `e1cffcb3…`).
+180 proved, including the two added contracts (`contract-decode-illegal`, `contract-illegal-locks`) and the restated boundary and decoder-policy contracts; `contract-unary-daa-accumulator` still fails and the two dispatch contracts still exceed 600 seconds, as before the migration.
 
 Before that replay, three contracts remained unqualified:
 
