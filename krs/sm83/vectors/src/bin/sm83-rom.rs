@@ -1,5 +1,8 @@
-//! Runs a Game Boy test ROM on the SM83 KRS semantics for a number of
-//! boundary steps and reports the final registers.
+//! Runs a Game Boy test ROM on the SM83 KRS semantics for at most a number
+//! of rewrite steps and reports the final registers.
+//!
+//! The machine runs forever; a mooneye test ends by looping on itself, so a
+//! run normally ends at the depth bound.
 //!
 //! The address space is flat: the ROM fills `$0000-$7FFF` and every other
 //! byte starts at zero, except the I/O bytes listed in `IO_INIT`. The CPU
@@ -12,10 +15,10 @@ use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use std::{env, fs, thread};
 
-use krs_exec::{ConfigInputs, ConfigValue, RunOptions, Semantics, Value, View};
+use krs_exec::{ConfigInputs, ConfigValue, Halt, RunOptions, Semantics, Value, View};
 use krs_ir::measure::Timings;
 use serde_json::json;
-use sm83_vectors::{Access, Names, bool as cell_bool, finished, int as cell_int, int_map, load};
+use sm83_vectors::{Access, Names, bool as cell_bool, cell, int as cell_int, int_map, load};
 
 /// I/O bytes whose initial value matters to the tests.
 ///
@@ -27,11 +30,11 @@ const PASS: [i64; 6] = [3, 5, 8, 13, 21, 34];
 const FAIL: [i64; 6] = [0x42; 6];
 
 fn usage() -> ! {
-    eprintln!("usage: sm83-rom --definition-ir PATH --steps N [--report PATH] ROM...");
+    eprintln!("usage: sm83-rom --definition-ir PATH --depth N [--report PATH] ROM...");
     std::process::exit(2)
 }
 
-fn inputs(names: &Names, rom: &[u8], steps: u64) -> ConfigInputs {
+fn inputs(names: &Names, rom: &[u8]) -> ConfigInputs {
     let mut memory = vec![0u8; 0x10000];
     memory[..rom.len().min(0x8000)].copy_from_slice(&rom[..rom.len().min(0x8000)]);
     for (address, value) in IO_INIT {
@@ -43,13 +46,15 @@ fn inputs(names: &Names, rom: &[u8], steps: u64) -> ConfigInputs {
             .enumerate()
             .map(|(address, value)| (Value::from(address as i64), Value::from(i64::from(*value)))),
     );
-    let variables: [(&str, ConfigValue); 7] = [
-        ("ENTRY", names.ctor("Step::Run", vec![("steps", Value::from(steps as i64))]).into()),
+    let variables: [(&str, ConfigValue); 9] = [
         ("REGS", names.register_file([1, 0, 19, 0, 216, 1, 77]).into()),
         ("F", Value::from(176).into()),
         ("PC", Value::from(256).into()),
         ("SP", Value::from(65534).into()),
         ("IME", Value::from(false).into()),
+        ("EI_PENDING", Value::from(false).into()),
+        ("HALTED", Value::from(false).into()),
+        ("HALT_BUG", Value::from(false).into()),
         ("MEMORY", memory.into()),
     ];
     ConfigInputs {
@@ -65,15 +70,18 @@ struct Outcome {
     bcdehl: [i64; 6],
 }
 
-fn run(semantics: &mut Semantics, names: &Names, rom: &[u8], steps: u64) -> Result<Outcome, String> {
-    let state = semantics.configure(&inputs(names, rom, steps)).map_err(|error| format!("configure: {error}"))?;
+fn run(semantics: &mut Semantics, names: &Names, rom: &[u8], depth: u64) -> Result<Outcome, String> {
+    let state = semantics.configure(&inputs(names, rom)).map_err(|error| format!("configure: {error}"))?;
     let report = semantics
-        .run(&state, RunOptions::default())
+        .run(&state, RunOptions { depth: Some(depth), ..RunOptions::default() })
         .map_err(|error| format!("run: {error}"))?;
     let View::State(view) = semantics.view(&report.state).map_err(|error| error.to_string())? else {
         return Err("the result is #Bottom".to_owned());
     };
-    finished(&view).map_err(|reason| format!("stuck: {reason}"))?;
+    if report.halt != Halt::DepthBound {
+        let k = format!("{:?}", cell(&view, "k")?);
+        return Err(format!("{:?} after {} steps; <k> is {}", report.halt, report.steps, &k[..k.len().min(1500)]));
+    }
     let registers = names.registers(&view)?;
     let result = ["b", "c", "d", "e", "h", "l"].map(|name| registers[name]);
     let pc = cell_int(&view, "pc")?;
@@ -110,13 +118,13 @@ fn run(semantics: &mut Semantics, names: &Names, rom: &[u8], steps: u64) -> Resu
 fn main() {
     let mut args = env::args().skip(1);
     let mut definition_ir = PathBuf::new();
-    let mut steps = 0;
+    let mut depth = 0;
     let mut report = None;
     let mut roms = Vec::new();
     while let Some(arg) = args.next() {
         match arg.as_str() {
             "--definition-ir" => definition_ir = args.next().unwrap_or_else(|| usage()).into(),
-            "--steps" => steps = args.next().and_then(|n| n.parse().ok()).unwrap_or_else(|| usage()),
+            "--depth" => depth = args.next().and_then(|n| n.parse().ok()).unwrap_or_else(|| usage()),
             "--report" => report = Some(PathBuf::from(args.next().unwrap_or_else(|| usage()))),
             _ => roms.push(PathBuf::from(arg)),
         }
@@ -137,7 +145,7 @@ fn main() {
                     let names = Names::new(semantics.values());
                     let rom = fs::read(path).expect("ROM");
                     let name = path.file_stem().and_then(|stem| stem.to_str()).unwrap_or("?");
-                    let record = match run(&mut semantics, &names, &rom, steps) {
+                    let record = match run(&mut semantics, &names, &rom, depth) {
                         Ok(Outcome { verdict, pc, bcdehl }) => {
                             println!("{name}: {verdict} pc={pc:#06x} bcdehl={bcdehl:?}");
                             json!({ "rom": rom_id(path), "verdict": verdict, "pc": pc, "bcdehl": bcdehl })
@@ -156,7 +164,7 @@ fn main() {
         let mut results = results.into_inner().expect("results");
         results.sort_by(|a, b| a["rom"].as_str().cmp(&b["rom"].as_str()));
         let passed = results.iter().filter(|r| r["verdict"] == "pass").count();
-        let report = json!({ "steps": steps, "total": results.len(), "passed": passed, "roms": results });
+        let report = json!({ "depth": depth, "total": results.len(), "passed": passed, "roms": results });
         fs::write(path, serde_json::to_string_pretty(&report).expect("report") + "\n").expect("write report");
     }
 }

@@ -6,7 +6,7 @@ use k::builtin::{Bool, Int, KSequence, List, Map};
 use crate::alu::{CarrySet, ZeroSet};
 use crate::arith::Pair;
 use crate::decode::{Cond, Condition, Pair16, RegPair};
-use crate::micro::MicroOp;
+use crate::interrupt::Step;
 
 k::sorts! {
     Reg8;
@@ -86,29 +86,34 @@ pub struct Machine {
     pub bus: List<BusCycle>,
 }
 
-/// The initial state; `ENTRY` is `#fetch` to run one instruction, or
-/// `#run(n)` to run `n` boundary steps.
+/// The initial state: an architectural state at an instruction boundary.
+///
+/// Every architectural cell is an input, so any boundary state can start a
+/// run; the internal registers `W` and `Z` start at zero and the bus log
+/// empty.
 impl Machine {
     #[k::init]
     pub fn init(
-        #[k::config_var(name = "ENTRY")] entry: MicroOp,
         #[k::config_var(name = "REGS")] regs: Map<Reg8, Int>,
         #[k::config_var(name = "F")] f: Int,
         #[k::config_var(name = "PC")] pc: Int,
         #[k::config_var(name = "SP")] sp: Int,
         #[k::config_var(name = "IME")] ime: Bool,
+        #[k::config_var(name = "EI_PENDING")] ei_pending: Bool,
+        #[k::config_var(name = "HALTED")] halted: Bool,
+        #[k::config_var(name = "HALT_BUG")] halt_bug: Bool,
         #[k::config_var(name = "MEMORY")] memory: Map<Int, Int>,
     ) -> Self {
         Self {
-            k: k::k![entry],
+            k: k::k![Step::Boundary],
             regs,
             f,
             pc,
             sp,
             ime,
-            ei_pending: false,
-            halted: false,
-            halt_bug: false,
+            ei_pending,
+            halted,
+            halt_bug,
             w: 0,
             z: 0,
             memory,

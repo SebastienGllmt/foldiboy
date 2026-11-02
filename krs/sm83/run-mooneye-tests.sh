@@ -12,11 +12,12 @@ project_dir=$(cd ../.. && pwd -L)
 FOLDIBOY_TEST_ROOT=${FOLDIBOY_TEST_ROOT:-$(dirname -- "$project_dir")/roms/tests}
 MOONEYE=${MOONEYE:-$FOLDIBOY_TEST_ROOT/mooneye-test-suite}
 Z3_LIB=${Z3_LIB:-/nix/store/bncr69nhmgvphbynb1a3g4a2jb9b8vj0-z3-4.12.5-lib/lib}
-STEPS=${STEPS:-20000}
+# A rewrite-step bound: the machine runs forever and each test ends by looping on itself.
+DEPTH=${DEPTH:-100000}
 export LD_LIBRARY_PATH="$Z3_LIB${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 ROMS=(ei_sequence ei_timing rapid_di_ei reti_intr_timing interrupts/ie_push if_ie_registers "$@")
 BUILD="$PWD/results/mooneye"
 targets=()
 for rom in "${ROMS[@]}"; do targets+=("$BUILD/acceptance/$rom.gb"); done
 (cd "$MOONEYE" && nix-shell -p wla-dx gnumake --run "make --silent BUILD_PATH=$BUILD ${targets[*]}") >/dev/null
-vectors/target/release/sm83-rom --definition-ir results/emitted/definition-ir.json --steps "$STEPS" --report results/mooneye.json "${targets[@]}"
+vectors/target/release/sm83-rom --definition-ir results/emitted/definition-ir.json --depth "$DEPTH" --report results/mooneye.json "${targets[@]}"

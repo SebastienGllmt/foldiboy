@@ -2,7 +2,8 @@
 //!
 //! Each vector is one instruction from an initial state.
 //! The harness configures the definition with the vector's registers and
-//! memory, runs it until the step ends, and compares registers, flags,
+//! memory at an instruction boundary, runs it to the next boundary, and
+//! compares registers, flags,
 //! `PC`, `SP`, `IME`, the pending `EI`, the listed memory, and the bus log.
 //! An internal cycle is compared by kind only: the corpus records the
 //! address and data lines left on the bus, which the model does not track.
@@ -13,10 +14,10 @@ use std::sync::Mutex;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::{env, fs, thread};
 
-use krs_exec::{ConfigInputs, ConfigValue, RunOptions, Semantics, StateView, View};
+use krs_exec::{ConfigInputs, ConfigValue, Semantics, StateView, View};
 use krs_ir::measure::Timings;
 use serde_json::{Value, json};
-use sm83_vectors::{Access, Names, REGISTERS, bool as cell_bool, finished, int as cell_int, int_map, load};
+use sm83_vectors::{Access, Names, REGISTERS, bool as cell_bool, int as cell_int, int_map, load, next_boundary};
 
 struct Options {
     definition_ir: PathBuf,
@@ -88,25 +89,34 @@ fn int(value: &Value) -> i64 {
     value.as_i64().expect("integer field")
 }
 
+/// `IE` and `IF`, which every boundary reads.
+const INTERRUPT_REGISTERS: [i64; 2] = [0xFFFF, 0xFF0F];
+
 fn inputs(names: &Names, initial: &Value) -> ConfigInputs {
     let registers = names.register_file(REGISTERS.map(|name| int(&initial[name])));
-    let memory = krs_exec::Value::map(
-        initial["ram"]
-            .as_array()
-            .expect("ram list")
-            .iter()
-            .map(|entry| (int(&entry[0]).into(), int(&entry[1]).into())),
-    );
-    let mut variables: Vec<(String, ConfigValue)> = vec![
-        ("ENTRY".to_owned(), names.ctor("Micro::Fetch", vec![]).into()),
-        ("REGS".to_owned(), registers.into()),
-    ];
+    let mut ram: BTreeMap<i64, i64> = initial["ram"]
+        .as_array()
+        .expect("ram list")
+        .iter()
+        .map(|entry| (int(&entry[0]), int(&entry[1])))
+        .collect();
+    // The corpus does not model interrupts. A register a vector does not
+    // list reads as zero, so no interrupt is requested at the boundary: no
+    // vector lists both.
+    for address in INTERRUPT_REGISTERS {
+        ram.entry(address).or_insert(0);
+    }
+    let memory = krs_exec::Value::map(ram.into_iter().map(|(address, value)| (address.into(), value.into())));
+    let mut variables: Vec<(String, ConfigValue)> = vec![("REGS".to_owned(), registers.into())];
     variables.extend(
         ["f", "pc", "sp"]
             .iter()
             .map(|name| (name.to_uppercase(), krs_exec::Value::from(int(&initial[*name])).into())),
     );
     variables.push(("IME".to_owned(), krs_exec::Value::from(int(&initial["ime"]) != 0).into()));
+    for name in ["EI_PENDING", "HALTED", "HALT_BUG"] {
+        variables.push((name.to_owned(), krs_exec::Value::from(false).into()));
+    }
     variables.push(("MEMORY".to_owned(), memory.into()));
     ConfigInputs {
         variables,
@@ -148,7 +158,6 @@ fn expected(vector: &Value) -> Observed {
 }
 
 fn observed(names: &Names, view: &StateView) -> Result<Observed, String> {
-    finished(view).map_err(|reason| format!("step did not finish: {reason}"))?;
     let mut registers = names.registers(view)?;
     for name in ["f", "pc", "sp"] {
         registers.insert(name.to_owned(), cell_int(view, name)?);
@@ -182,10 +191,8 @@ fn run_vector(semantics: &mut Semantics, names: &Names, vector: &Value) -> Resul
     let state = semantics
         .configure(&inputs(names, &vector["initial"]))
         .map_err(|error| format!("configure: {error}"))?;
-    let report = semantics
-        .run(&state, RunOptions { depth: Some(64), ..RunOptions::default() })
-        .map_err(|error| format!("run: {error}"))?;
-    let View::State(view) = semantics.view(&report.state).map_err(|error| error.to_string())? else {
+    let after = next_boundary(semantics, names, &state, 64)?.ok_or("no boundary within 64 steps")?;
+    let View::State(view) = semantics.view(&after).map_err(|error| error.to_string())? else {
         return Err("the result is #Bottom".to_owned());
     };
     let expected = expected(vector);

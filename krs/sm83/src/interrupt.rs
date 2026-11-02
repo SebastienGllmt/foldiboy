@@ -1,6 +1,12 @@
 //! The instruction boundary: the `EI` delay, `HALT` mode, and interrupt
 //! dispatch.
 //!
+//! The machine runs forever, like the hardware: every boundary step queues
+//! the next `#boundary` after the work it starts, so a computation cell
+//! headed by `#boundary` is a state between two steps. Where to stop is the
+//! observer's choice (a claim's postcondition, a depth bound), not the
+//! machine's.
+//!
 //! `IE` (`$FFFF`) and `IF` (`$FF0F`) are bytes of `memory`. The CPU reads
 //! them over internal wires, not the bus, so these reads add nothing to the
 //! bus log. An interrupt is requested when a bit 0 to 4 is set in both; the
@@ -16,13 +22,13 @@ use crate::micro::{Micro, MicroOp};
 
 #[k::constructors(sort = MicroOp, result = k::KResult)]
 pub enum Step {
-    /// Run `steps` boundary steps.
-    #[k::syntax("#run({steps})")]
-    Run { steps: Int },
     /// Apply the `EI` delay, then dispatch an interrupt, fetch the next
-    /// instruction, or spend one cycle in `HALT` mode.
+    /// instruction, or spend one cycle in `HALT` mode; then the next boundary.
     #[k::syntax("#boundary")]
     Boundary,
+    /// The CPU is locked by an unused opcode: no step follows.
+    #[k::syntax("#locked")]
+    Locked,
     /// Push `PC` and jump to the vector of the requested interrupt.
     #[k::syntax("#dispatch")]
     Dispatch,
@@ -104,20 +110,6 @@ pub fn InterruptVector(requested: Term<Int>) -> Term<Int> {
 k::rules! {
     for Machine;
 
-    #[k::requires(steps > 0)]
-    run_step: {
-        k: [Step::Run { steps }, ..],
-    } => {
-        k: [Step::Boundary, Step::Run { steps: steps - 1 }, ..],
-    };
-
-    #[k::requires(steps <= 0)]
-    run_done: {
-        k: [Step::Run { steps }, ..],
-    } => {
-        k: [..],
-    };
-
     /// The check uses `IME` from before the `EI` delay is applied: `EI` sets
     /// `eiPending`, the boundary after `EI` still sees `IME` clear, and the
     /// boundary after the following instruction can dispatch.
@@ -129,7 +121,7 @@ k::rules! {
         ei_pending: _,
         memory,
     } => {
-        k: [Step::Dispatch, ..],
+        k: [Step::Dispatch, Step::Boundary, ..],
         ei_pending: false,
     };
 
@@ -141,7 +133,7 @@ k::rules! {
         ei_pending: pending,
         memory,
     } => {
-        k: [Micro::Fetch, ..],
+        k: [Micro::Fetch, Step::Boundary, ..],
         ime: ime || pending,
         ei_pending: false,
     };
@@ -164,7 +156,7 @@ k::rules! {
         halted,
         memory,
     } => {
-        k: [Micro::Idle, ..],
+        k: [Micro::Idle, Step::Boundary, ..],
     };
 
     /// Five machine cycles: a discarded opcode fetch, two internal cycles,

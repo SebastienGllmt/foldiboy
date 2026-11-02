@@ -122,7 +122,7 @@ pub mod spec {
             memory: m,
             bus: log,
         } => {
-            k: [],
+            k: [Step::Boundary],
             bus: [..log, Cycle::Internal],
         };
 
@@ -145,7 +145,7 @@ pub mod spec {
             pc: pc,
             bus: log,
         } => {
-            k: [],
+            k: [Step::Boundary],
             halted: false,
             pc: ((pc + 1) % 0x1_0000),
             bus: [..log, Cycle::Read { addr: pc, value: 0x00 }],
@@ -165,7 +165,7 @@ pub mod spec {
             ei_pending: _,
             memory: m,
         } => {
-            k: [Step::Dispatch],
+            k: [Step::Dispatch, Step::Boundary],
             ei_pending: false,
         };
 
@@ -182,7 +182,7 @@ pub mod spec {
             ei_pending: true,
             memory: m,
         } => {
-            k: [Micro::Fetch],
+            k: [Micro::Fetch, Step::Boundary],
             ime: true,
             ei_pending: false,
         };
@@ -217,7 +217,7 @@ pub mod spec {
             memory: m,
             bus: log,
         } => {
-            k: [],
+            k: [Step::Boundary],
             ime: false,
             ei_pending: false,
             pc: ExpectedInterruptVector(m[IE], m[IF]),
@@ -276,7 +276,7 @@ pub mod spec {
             memory: m,
             bus: log,
         } => {
-            k: [],
+            k: [Step::Boundary],
             ime: false,
             ei_pending: false,
             pc: ExpectedInterruptVector(m[IE], m[IF]),
@@ -385,7 +385,7 @@ pub mod spec {
                 && m[0x0101] == 0x00,
         )]
         contract_ei_then_nop: {
-            k: [Step::Run { steps: 2 }],
+            k: [Step::Boundary],
             pc: 0x0100,
             ime: false,
             ei_pending: false,
@@ -394,7 +394,7 @@ pub mod spec {
             memory: m,
             bus: log,
         } => {
-            k: [],
+            k: [Step::Boundary],
             pc: 0x0102,
             ime: true,
             bus: [
@@ -413,7 +413,7 @@ pub mod spec {
                 && m[0x0101] == 0xF3,
         )]
         contract_ei_then_di: {
-            k: [Step::Run { steps: 2 }],
+            k: [Step::Boundary],
             pc: 0x0100,
             ime: false,
             ei_pending: false,
@@ -422,7 +422,7 @@ pub mod spec {
             memory: m,
             bus: log,
         } => {
-            k: [],
+            k: [Step::Boundary],
             pc: 0x0102,
             ime: false,
             bus: [
@@ -441,7 +441,7 @@ pub mod spec {
                 && m[0x0101] == 0x76,
         )]
         contract_ei_then_halt_buffered: {
-            k: [Step::Run { steps: 2 }],
+            k: [Step::Boundary],
             pc: 0x0100,
             ime: false,
             ei_pending: false,
@@ -450,7 +450,7 @@ pub mod spec {
             memory: m,
             bus: log,
         } => {
-            k: [],
+            k: [Step::Boundary],
             pc: 0x0101,
             ime: true,
             bus: [

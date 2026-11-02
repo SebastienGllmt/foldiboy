@@ -518,13 +518,20 @@ pub mod spec {
             k: [Instruction::EnableInterrupts],
         };
 
-        /// Model policy only: STOP is unimplemented; unused opcodes have no execution rule. This is not a hardware STOP claim.
+        /// Model policy only: STOP decodes to an instruction no rule executes. This is not a hardware STOP claim.
         #[k::claim(all_paths)]
-        contract_decode_unsupported_policy: {
+        contract_decode_stop_unsupported: {
+            k: [crate::Decode(0x10)],
+        } => {
+            k: [Instruction::Stop],
+        };
+
+        /// Pan Docs: the eleven unused opcodes lock up the CPU; each decodes to the locking instruction.
+        #[k::claim(all_paths)]
+        contract_decode_illegal: {
             k: [
                 crate::Decode(
-                    opcode @ (0x10
-                    | 0xD3
+                    opcode @ (0xD3
                     | 0xDB
                     | 0xDD
                     | 0xE3
@@ -538,7 +545,7 @@ pub mod spec {
                 ),
             ],
         } => {
-            k: [Instruction::Unimplemented { opcode }],
+            k: [Instruction::Illegal { opcode }],
         };
 
         /// Pan Docs opcode family and independently specified decoded fields.

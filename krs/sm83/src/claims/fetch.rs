@@ -444,7 +444,7 @@ pub mod spec {
                 && m[IF] == 0,
         )]
         contract_boundary_ld_hl_immediate: {
-            k: [Step::Run { steps: 1 }],
+            k: [Step::Boundary],
             pc: pc,
             halt_bug: false,
             halted: false,
@@ -456,7 +456,7 @@ pub mod spec {
             z: _,
             bus: log,
         } => {
-            k: [],
+            k: [Step::Boundary],
             pc: ((pc + 3) % 0x1_0000),
             regs: k::map![
                 Register::H -> m[(pc + 2) % 0x1_0000],

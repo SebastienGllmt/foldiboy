@@ -9,6 +9,7 @@
 use crate::Machine;
 use crate::alu::{Alu, Unary};
 use crate::decode::{Address, Condition, Instruction, Operand, Pair16};
+use crate::interrupt::Step;
 use crate::machine::{Cycle, Register};
 use k::builtin::{Int, int, kequal};
 
@@ -60,6 +61,14 @@ pub mod spec {
             k: [Instruction::Nop],
         } => {
             k: [],
+        };
+
+        /// Pan Docs: an unused opcode locks up the CPU; no further step follows.
+        #[k::claim(all_paths)]
+        contract_illegal_locks: {
+            k: [Instruction::Illegal { opcode }],
+        } => {
+            k: [Step::Locked],
         };
 
         /// LD r8,source: load one byte, preserve flags and all other registers.

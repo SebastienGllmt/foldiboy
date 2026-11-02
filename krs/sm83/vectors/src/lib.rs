@@ -6,7 +6,9 @@ use std::fs;
 use std::path::Path;
 use std::sync::Arc;
 
-use krs_exec::{CompiledStage, Decl, StateView, Value, ValueIndex};
+use krs_exec::{
+    CompiledStage, Decl, SearchMode, SearchOptions, Semantics, State, StateView, Term, Value, ValueIndex, View,
+};
 use krs_ir::measure::Timings;
 use krs_ir_levels::DefinitionIr;
 
@@ -127,14 +129,34 @@ pub fn int_map(view: &StateView, path: &str) -> Result<BTreeMap<i64, i64>, Strin
         .collect()
 }
 
-/// Succeeds when the computation cell is empty; otherwise reports its start.
-pub fn finished(view: &StateView) -> Result<(), String> {
-    let k = cell(view, "k")?;
-    match k.as_seq() {
-        Some([]) => Ok(()),
-        _ => {
-            let text = format!("{k:?}");
-            Err(format!("<k> is {}", &text[..text.len().min(1500)]))
+/// The state one boundary step after `state`, a state at an instruction boundary.
+///
+/// The machine runs forever, so a step ends at the first state, after at
+/// least one rewrite step, whose computation is headed by `#boundary`. The
+/// search follows every path for at most `depth` rewrite steps; `None` when
+/// no boundary is reached within it.
+pub fn next_boundary(
+    semantics: &mut Semantics,
+    names: &Names,
+    state: &State,
+    depth: u64,
+) -> Result<Option<Term>, String> {
+    let report = semantics
+        .search(
+            state,
+            SearchOptions { mode: SearchMode::OneOrMoreSteps, depth: Some(depth), ..SearchOptions::default() },
+        )
+        .map_err(|error| format!("search: {error}"))?;
+    let boundary = names.ctor("Step::Boundary", vec![]);
+    let mut best: Option<(u64, Term)> = None;
+    for solution in report.solutions {
+        let at_boundary = match semantics.view(&solution.state).map_err(|error| error.to_string())? {
+            View::State(view) => cell(&view, "k")?.as_seq().and_then(<[Value]>::first) == Some(&boundary),
+            View::Bottom => false,
+        };
+        if at_boundary && best.as_ref().is_none_or(|(depth, _)| solution.depth < *depth) {
+            best = Some((solution.depth, solution.state));
         }
     }
+    Ok(best.map(|(_, state)| state))
 }

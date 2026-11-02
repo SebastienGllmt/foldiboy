@@ -158,13 +158,16 @@ pub enum Instruction {
     /// `0xCB`: the next byte selects a second-page instruction.
     #[k::syntax("prefix cb")]
     Prefix,
-    /// An opcode this definition does not yet decode.
-    #[k::syntax("#unimplemented({opcode})")]
-    Unimplemented { opcode: Int },
+    /// `STOP`: not supported by this definition; no rule executes it.
+    #[k::syntax("stop")]
+    Stop,
+    /// One of the eleven unused opcodes, which lock the CPU.
+    #[k::syntax("#illegal({opcode})")]
+    Illegal { opcode: Int },
 }
 
-/// The instruction an opcode encodes.
-#[k::function(total, internal)]
+/// The instruction an opcode encodes; every byte has one.
+#[k::function(total, internal, underspecified = "an opcode is a byte")]
 pub fn Decode(opcode: Term<Int>) -> Term<Instr>;
 
 /// The instruction an opcode after the `0xCB` prefix encodes.
@@ -252,8 +255,10 @@ k::equations! {
     decode_call:             0xCD                        => Call(Condition::Always);
     decode_alu_n:            k::bits!("11 yyy 110")      => Alu8(AluTable(y), Operand::Immediate);
     decode_rst:              k::bits!("11 yyy 111")      => Restart(y * 8);
-    #[k::equation(owise)]
-    decode_unimplemented:    opcode                      => Unimplemented(opcode);
+    decode_stop:             0x10                        => Stop;
+    /// The unused opcodes.
+    decode_illegal:          opcode @ (0xD3 | 0xDB | 0xDD | 0xE3 | 0xE4 | 0xEB | 0xEC | 0xED | 0xF4 | 0xFC | 0xFD)
+                                                         => Illegal(opcode);
 }
 
 k::equations! {

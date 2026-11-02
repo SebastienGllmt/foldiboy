@@ -1,0 +1,70 @@
+# The architectural observer of the SM83 definition.
+#
+# Two runs, a run and a mutant, or two definitions agree when their projections through this
+# observer are equal at the states it observes. Every configuration cell is listed, as observed or
+# excluded with a reason, so a new cell needs a decision here (draft-personal/corpus-contract,
+# D-OBSERVER; tickets T-MATRIX-STATE).
+schema_version = 1
+observed_states = "configurations whose computation cell is headed by #boundary (between two steps) or #locked (the CPU locked by an unused opcode)"
+
+[[cell]]
+name = "k"
+observed = "head only"
+projection = "#boundary, #locked, or another head (the run stopped inside a step: stuck on unsupported behavior, or cut by a bound)"
+reason = "The micro-operations queued behind the head are the definition's own decomposition, not architecture."
+
+[[cell]]
+name = "regs"
+observed = true
+projection = "A B C D E H L"
+
+[[cell]]
+name = "f"
+observed = true
+projection = "Z N H C; bits 3 to 0 are always zero"
+
+[[cell]]
+name = "pc"
+observed = true
+
+[[cell]]
+name = "sp"
+observed = true
+
+[[cell]]
+name = "ime"
+observed = true
+
+[[cell]]
+name = "eiPending"
+observed = true
+reason = "Decides IME at the next boundary; a ROM observes it through interrupt timing."
+
+[[cell]]
+name = "halted"
+observed = true
+
+[[cell]]
+name = "haltBug"
+observed = true
+
+[[cell]]
+name = "w"
+observed = false
+reason = "Internal register: each instruction writes W before reading it (read from micro.rs and execute.rs at this revision; not yet checked mechanically)."
+
+[[cell]]
+name = "z"
+observed = false
+reason = "Internal register: each instruction writes Z before reading it (read from micro.rs and execute.rs at this revision; not yet checked mechanically)."
+
+[[cell]]
+name = "memory"
+observed = true
+projection = "the bytes at every address the state holds"
+
+[[cell]]
+name = "bus"
+observed = "partly"
+projection = "each cycle's kind (read, write, internal), address and value; for a write, the new byte"
+excluded = "a write's old byte: bookkeeping equal to the memory byte before the write"

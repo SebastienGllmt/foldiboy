@@ -2,6 +2,7 @@
 
 use crate::decode::{Address, Condition, Instruction, Operand, Pair16};
 use crate::machine::Register;
+use crate::interrupt::Step;
 use crate::micro::Micro;
 use crate::{AddHlFlags, High, Hl, InterruptRequested, Low, Machine, PairValue, Word};
 
@@ -12,6 +13,13 @@ k::rules! {
         k: [Instruction::Nop, ..],
     } => {
         k: [..],
+    };
+
+    /// An unused opcode locks the CPU: nothing follows its fetch.
+    illegal: {
+        k: [Instruction::Illegal { opcode: _ }, ..],
+    } => {
+        k: [Step::Locked, ..],
     };
 
     ld8: {

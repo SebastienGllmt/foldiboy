@@ -107,7 +107,8 @@ The audit also checks that these indices equal the previous quotient at every pe
 ## Scope and exclusions
 
 - Decoded contracts start after opcode fetch and interrupt arbitration; their cycle logs contain only the remaining cycles.
-- Fetch contracts start at `Micro::Fetch`; only the explicitly named `Step::Run`/`Step::Boundary` contracts include arbitration.
+- Fetch contracts start at `Micro::Fetch`; only the explicitly named `Step::Boundary` contracts include arbitration.
+  A contract from `#boundary` ends at the next `#boundary`, the first state of the run its postcondition matches; the two-instruction EI sequences use concrete fixtures whose first boundary differs from their postcondition.
 - Operand/register bounds and valid incoming flag bits are explicit where used. A written memory byte must already exist and be an integer byte because the bus log records its old value.
 - Memory is the current flat map. No cartridge, I/O read masks, timer, DMA, PPU, joypad, STOP execution or peripheral-driven interrupt arrival is established here.
 - The ordinary dispatch contracts exclude writes to IE/IF. IE alias cases are separately specified; writes onto IF and arbitrary asynchronous changes need further contracts and source qualification.
