@@ -68,7 +68,7 @@ struct Outcome {
 fn run(semantics: &mut Semantics, names: &Names, rom: &[u8], steps: u64) -> Result<Outcome, String> {
     let state = semantics.configure(&inputs(names, rom, steps)).map_err(|error| format!("configure: {error}"))?;
     let report = semantics
-        .run(&state, RunOptions { depth: None, trace: false })
+        .run(&state, RunOptions::default())
         .map_err(|error| format!("run: {error}"))?;
     let View::State(view) = semantics.view(&report.state).map_err(|error| error.to_string())? else {
         return Err("the result is #Bottom".to_owned());

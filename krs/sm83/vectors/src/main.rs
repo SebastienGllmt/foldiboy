@@ -183,7 +183,7 @@ fn run_vector(semantics: &mut Semantics, names: &Names, vector: &Value) -> Resul
         .configure(&inputs(names, &vector["initial"]))
         .map_err(|error| format!("configure: {error}"))?;
     let report = semantics
-        .run(&state, RunOptions { depth: Some(64), trace: false })
+        .run(&state, RunOptions { depth: Some(64), ..RunOptions::default() })
         .map_err(|error| format!("run: {error}"))?;
     let View::State(view) = semantics.view(&report.state).map_err(|error| error.to_string())? else {
         return Err("the result is #Bottom".to_owned());
