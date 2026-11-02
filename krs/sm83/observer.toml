@@ -68,3 +68,14 @@ name = "bus"
 observed = "partly"
 projection = "each cycle's kind (read, write, internal), address and value; for a write, the new byte"
 excluded = "a write's old byte: bookkeeping equal to the memory byte before the write"
+
+# The states the observer and the claims quantify over (D-WELLFORMED). A KRS predicate with the same
+# content is to replace the byte-range preconditions each claim restates; until then this list is the
+# contract that case tooling checks initial states against.
+[well_formed]
+registers = "each of A B C D E H L is present and in 0..=0xFF"
+f = "in 0..=0xFF with bits 3 to 0 zero"
+pc = "in 0..=0xFFFF"
+sp = "in 0..=0xFFFF"
+memory = "keys in 0..=0xFFFF, values in 0..=0xFF; IE (0xFFFF) and IF (0xFF0F) present"
+halt = "halted and haltBug are not both true (read from the HALT rules; not yet proved as an invariant)"
