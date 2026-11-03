@@ -1,0 +1,19 @@
+[package]
+name = "foldiboy-sm83-observe"
+description = "The SM83 observation contract: observations, tiers and normalizations"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99"
+publish = false
+
+[dependencies]
+sm83-events = { package = "foldiboy-sm83-events", path = "../sm83-events" }
+k = { package = "krs", path = "/artifacts/worktrees/k-rust-foldiboy-pin/krs/crates/krs" }
+
+[package.metadata.krs]
+k-namespace = "SM83-OBSERVE"
+
+[package.metadata.krs.definitions.observe]
+
+[workspace]
+resolver = "3"

@@ -1,0 +1,113 @@
+{
+ "inputs": {
+  "left": {
+   "Run": {
+    "end": "Locked",
+    "log": {
+     "$list": [
+      {
+       "Event::Idle": []
+      },
+      {
+       "Event::Idle": []
+      },
+      {
+       "Event::Read": {
+        "addr": 1,
+        "value": 2
+       }
+      }
+     ]
+    },
+    "state": {
+     "State": {
+      "a": 1,
+      "b": 0,
+      "c": 19,
+      "d": 0,
+      "e": 216,
+      "h": 1,
+      "l": 77,
+      "zf": true,
+      "nf": false,
+      "hf": true,
+      "cf": true,
+      "pc": 256,
+      "sp": 65534,
+      "ime": false,
+      "ei_pending": false,
+      "halted": false,
+      "halt_bug": false,
+      "memory": {
+       "$map": [
+        [
+         256,
+         0
+        ],
+        [
+         65535,
+         0
+        ]
+       ]
+      }
+     }
+    }
+   }
+  },
+  "right": {
+   "Run": {
+    "end": "Locked",
+    "log": {
+     "$list": [
+      {
+       "Event::Idle": []
+      },
+      {
+       "Event::Read": {
+        "addr": 1,
+        "value": 2
+       }
+      }
+     ]
+    },
+    "state": {
+     "State": {
+      "a": 1,
+      "b": 0,
+      "c": 19,
+      "d": 0,
+      "e": 216,
+      "h": 1,
+      "l": 77,
+      "zf": true,
+      "nf": false,
+      "hf": true,
+      "cf": true,
+      "pc": 256,
+      "sp": 65534,
+      "ime": false,
+      "ei_pending": false,
+      "halted": false,
+      "halt_bug": false,
+      "memory": {
+       "$map": [
+        [
+         256,
+         0
+        ],
+        [
+         65535,
+         0
+        ]
+       ]
+      }
+     }
+    }
+   }
+  },
+  "tier": "Full",
+  "normalizations": [
+   "CompressIdle"
+  ]
+ }
+}
