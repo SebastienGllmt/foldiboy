@@ -48,7 +48,8 @@ fn inputs(names: &Names, rom: &[u8]) -> ConfigInputs {
     );
     let variables: [(&str, ConfigValue); 11] = [
         ("REGS", names.register_file([1, 0, 19, 0, 216, 1, 77]).into()),
-        ("F", Value::from(176).into()),
+        // F = $B0: Z, H and C set.
+        ("F", names.flags(0xB0).into()),
         ("PC", Value::from(256).into()),
         ("SP", Value::from(65534).into()),
         ("IME", Value::from(false).into()),

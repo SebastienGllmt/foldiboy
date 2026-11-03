@@ -11,6 +11,7 @@ use crate::arith::{Byte, FlagBit};
 k::sorts! {
     AluOp;
     UnaryOp;
+    FlagSet;
 }
 
 /// The two-operand operations on `A`, indexed by an opcode's `y` field.
@@ -84,65 +85,84 @@ pub enum Unary {
     Ccf,
 }
 
-/// The flag byte with Z, N, H, C in bits 7 to 4.
-#[k::function(total, internal)]
-pub fn Flags(
-    zero: Term<Bool>,
-    subtract: Term<Bool>,
-    half_carry: Term<Bool>,
-    carry: Term<Bool>,
-) -> Term<Int> {
-    FlagBit(zero) * 0x80
-        + FlagBit(subtract) * 0x40
-        + FlagBit(half_carry) * 0x20
-        + FlagBit(carry) * 0x10
+/// The flag register: zero, subtract, half-carry and carry.
+///
+/// Only `PUSH AF` and `POP AF` see it as a byte (`FlagByte`, `ByteFlags`).
+#[k::constructor(sort = FlagSet, syntax = "flags({z}, {n}, {h}, {c})")]
+pub struct Flags {
+    pub z: Term<Bool>,
+    pub n: Term<Bool>,
+    pub h: Term<Bool>,
+    pub c: Term<Bool>,
 }
 
-/// The carry flag of a flag byte, as `0` or `1`.
+/// The flag byte of `F`: Z, N, H, C in bits 7 to 4, bits 3 to 0 zero.
 #[k::function(total, internal)]
-pub fn CarryIn(flags: Term<Int>) -> Term<Int> {
+pub fn FlagByte(flags: Term<FlagSet>) -> Term<Int> {
+    match flags {
+        Flags { z, n, h, c } => FlagBit(z) * 0x80 + FlagBit(n) * 0x40 + FlagBit(h) * 0x20 + FlagBit(c) * 0x10,
+    }
+}
+
+/// The flags of a flag byte; bits 3 to 0 are ignored.
+#[k::function(total, internal)]
+pub fn ByteFlags(value: Term<Int>) -> Term<FlagSet> {
+    Flags(value & 0x80 != 0, value & 0x40 != 0, value & 0x20 != 0, value & 0x10 != 0)
+}
+
+/// The carry flag, as `0` or `1`.
+#[k::function(total, internal)]
+pub fn CarryIn(flags: Term<FlagSet>) -> Term<Int> {
     FlagBit(CarrySet(flags))
 }
 
-/// Whether the zero flag of a flag byte is set.
+/// Whether the zero flag is set.
 #[k::function(total, internal)]
-pub fn ZeroSet(flags: Term<Int>) -> Term<Bool> {
-    flags & 0x80 != 0
+pub fn ZeroSet(flags: Term<FlagSet>) -> Term<Bool> {
+    match flags {
+        Flags { z, .. } => z,
+    }
 }
 
-/// Whether the subtract flag of a flag byte is set.
+/// Whether the subtract flag is set.
 #[k::function(total, internal)]
-pub fn SubtractSet(flags: Term<Int>) -> Term<Bool> {
-    flags & 0x40 != 0
+pub fn SubtractSet(flags: Term<FlagSet>) -> Term<Bool> {
+    match flags {
+        Flags { n, .. } => n,
+    }
 }
 
-/// Whether the half-carry flag of a flag byte is set.
+/// Whether the half-carry flag is set.
 #[k::function(total, internal)]
-pub fn HalfCarrySet(flags: Term<Int>) -> Term<Bool> {
-    flags & 0x20 != 0
+pub fn HalfCarrySet(flags: Term<FlagSet>) -> Term<Bool> {
+    match flags {
+        Flags { h, .. } => h,
+    }
 }
 
-/// Whether the carry flag of a flag byte is set.
+/// Whether the carry flag is set.
 #[k::function(total, internal)]
-pub fn CarrySet(flags: Term<Int>) -> Term<Bool> {
-    flags & 0x10 != 0
+pub fn CarrySet(flags: Term<FlagSet>) -> Term<Bool> {
+    match flags {
+        Flags { c, .. } => c,
+    }
 }
 
 /// The new `A` after `A <- A op b`.
 #[k::function(total, internal)]
-pub fn AluResult(op: Term<AluOp>, a: Term<Int>, b: Term<Int>, flags: Term<Int>) -> Term<Int>;
+pub fn AluResult(op: Term<AluOp>, a: Term<Int>, b: Term<Int>, flags: Term<FlagSet>) -> Term<Int>;
 
 /// The new flags after `A <- A op b`.
 #[k::function(total, internal)]
-pub fn AluFlags(op: Term<AluOp>, a: Term<Int>, b: Term<Int>, flags: Term<Int>) -> Term<Int>;
+pub fn AluFlags(op: Term<AluOp>, a: Term<Int>, b: Term<Int>, flags: Term<FlagSet>) -> Term<FlagSet>;
 
 /// The new value after `v <- op v`.
 #[k::function(total, internal)]
-pub fn UnaryResult(op: Term<UnaryOp>, value: Term<Int>, flags: Term<Int>) -> Term<Int>;
+pub fn UnaryResult(op: Term<UnaryOp>, value: Term<Int>, flags: Term<FlagSet>) -> Term<Int>;
 
 /// The new flags after `v <- op v`.
 #[k::function(total, internal)]
-pub fn UnaryFlags(op: Term<UnaryOp>, value: Term<Int>, flags: Term<Int>) -> Term<Int>;
+pub fn UnaryFlags(op: Term<UnaryOp>, value: Term<Int>, flags: Term<FlagSet>) -> Term<FlagSet>;
 
 k::equations! {
     for AluResult;
@@ -260,13 +280,13 @@ k::equations! {
 /// The flags of a rotate or shift: Z from the result, C from the bit
 /// shifted out.
 #[k::function(total, internal)]
-pub fn ShiftFlags(result: Term<Int>, carry: Term<Bool>) -> Term<Int> {
+pub fn ShiftFlags(result: Term<Int>, carry: Term<Bool>) -> Term<FlagSet> {
     Flags(result == 0, false, false, carry)
 }
 
 /// The new flags after `BIT bit, value`; the value itself is unchanged.
 #[k::function(total, internal)]
-pub fn BitFlags(bit: Term<Int>, value: Term<Int>, flags: Term<Int>) -> Term<Int> {
+pub fn BitFlags(bit: Term<Int>, value: Term<Int>, flags: Term<FlagSet>) -> Term<FlagSet> {
     Flags(value & 1 << bit == 0, false, true, CarrySet(flags))
 }
 
@@ -275,7 +295,7 @@ pub fn BitFlags(bit: Term<Int>, value: Term<Int>, flags: Term<Int>) -> Term<Int>
 /// After a subtraction a digit is corrected only if it borrowed; after an
 /// addition, also if it exceeds 9.
 #[k::function(total, internal)]
-pub fn DaaHigh(value: Term<Int>, flags: Term<Int>) -> Term<Bool> {
+pub fn DaaHigh(value: Term<Int>, flags: Term<FlagSet>) -> Term<Bool> {
     if SubtractSet(flags) {
         CarrySet(flags)
     } else {
@@ -285,7 +305,7 @@ pub fn DaaHigh(value: Term<Int>, flags: Term<Int>) -> Term<Bool> {
 
 /// Whether `DAA` corrects the low digit.
 #[k::function(total, internal)]
-pub fn DaaLow(value: Term<Int>, flags: Term<Int>) -> Term<Bool> {
+pub fn DaaLow(value: Term<Int>, flags: Term<FlagSet>) -> Term<Bool> {
     if SubtractSet(flags) {
         HalfCarrySet(flags)
     } else {
@@ -296,13 +316,13 @@ pub fn DaaLow(value: Term<Int>, flags: Term<Int>) -> Term<Bool> {
 /// The correction `DAA` adds after an addition or subtracts after a
 /// subtraction.
 #[k::function(total, internal)]
-pub fn DaaCorrection(value: Term<Int>, flags: Term<Int>) -> Term<Int> {
+pub fn DaaCorrection(value: Term<Int>, flags: Term<FlagSet>) -> Term<Int> {
     FlagBit(DaaHigh(value, flags)) * 0x60 + FlagBit(DaaLow(value, flags)) * 0x06
 }
 
 /// The flags of `ADD HL, rr`: Z unchanged, carries out of bits 11 and 15.
 #[k::function(total, internal)]
-pub fn AddHlFlags(hl: Term<Int>, value: Term<Int>, flags: Term<Int>) -> Term<Int> {
+pub fn AddHlFlags(hl: Term<Int>, value: Term<Int>, flags: Term<FlagSet>) -> Term<FlagSet> {
     Flags(
         ZeroSet(flags),
         false,
@@ -314,7 +334,7 @@ pub fn AddHlFlags(hl: Term<Int>, value: Term<Int>, flags: Term<Int>) -> Term<Int
 /// The flags of `SP + e`: carries out of bits 3 and 7 of the low byte,
 /// adding the offset byte unsigned.
 #[k::function(total, internal)]
-pub fn SpOffsetFlags(sp: Term<Int>, offset: Term<Int>) -> Term<Int> {
+pub fn SpOffsetFlags(sp: Term<Int>, offset: Term<Int>) -> Term<FlagSet> {
     Flags(
         false,
         false,

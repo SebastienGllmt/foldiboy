@@ -7,46 +7,56 @@
 //! the remainder's input nonnegative throughout the stated byte domain.
 
 use crate::Machine;
-use crate::alu::{Alu, Unary};
+use crate::alu::{Alu, Flags, Unary};
 use crate::decode::{Address, Condition, Instruction, Operand, Pair16};
 use crate::interrupt::Step;
 use crate::machine::{Event, Register};
-use k::builtin::{Int, int, kequal};
+use k::builtin::{Bool, Int, int, kequal};
 
 /// RGBDS DAA: adjust the high digit after a carry or an addition above BCD 99.
 #[k::function(total, internal)]
-pub fn ExpectedDaaHigh(a: k::Term<Int>, flags: k::Term<Int>) -> k::Term<Int> {
-    kequal::ite(
-        (flags / 0x10) % 2 == 1 || ((flags / 0x40) % 2 == 0 && a > 0x99),
-        0x60,
-        0,
-    )
+pub fn ExpectedDaaHigh(
+    a: k::Term<Int>,
+    subtract: k::Term<Bool>,
+    carry: k::Term<Bool>,
+) -> k::Term<Int> {
+    kequal::ite(carry || (!subtract && a > 0x99), 0x60, 0)
 }
 
 /// RGBDS DAA: adjust the low digit after a half-carry or an invalid added digit.
 #[k::function(total, internal)]
-pub fn ExpectedDaaLow(a: k::Term<Int>, flags: k::Term<Int>) -> k::Term<Int> {
-    kequal::ite(
-        (flags / 0x20) % 2 == 1 || ((flags / 0x40) % 2 == 0 && a % 0x10 > 9),
-        0x06,
-        0,
-    )
+pub fn ExpectedDaaLow(
+    a: k::Term<Int>,
+    subtract: k::Term<Bool>,
+    half_carry: k::Term<Bool>,
+) -> k::Term<Int> {
+    kequal::ite(half_carry || (!subtract && a % 0x10 > 9), 0x06, 0)
 }
 
 /// Apply the correction in the direction of the preceding arithmetic operation.
 #[k::function(total, internal)]
-pub fn ExpectedDaaCorrection(a: k::Term<Int>, flags: k::Term<Int>) -> k::Term<Int> {
+pub fn ExpectedDaaCorrection(
+    a: k::Term<Int>,
+    subtract: k::Term<Bool>,
+    half_carry: k::Term<Bool>,
+    carry: k::Term<Bool>,
+) -> k::Term<Int> {
     kequal::ite(
-        (flags / 0x40) % 2 == 0,
-        ExpectedDaaHigh(a, flags) + ExpectedDaaLow(a, flags),
-        -(ExpectedDaaHigh(a, flags) + ExpectedDaaLow(a, flags)),
+        !subtract,
+        ExpectedDaaHigh(a, subtract, carry) + ExpectedDaaLow(a, subtract, half_carry),
+        -(ExpectedDaaHigh(a, subtract, carry) + ExpectedDaaLow(a, subtract, half_carry)),
     )
 }
 
 /// Independent DAA byte expectation; keep subtraction nonnegative before reduction.
 #[k::function(total, internal)]
-pub fn ExpectedDaaByte(a: k::Term<Int>, flags: k::Term<Int>) -> k::Term<Int> {
-    (a + 0x100 + ExpectedDaaCorrection(a, flags)) % 0x100
+pub fn ExpectedDaaByte(
+    a: k::Term<Int>,
+    subtract: k::Term<Bool>,
+    half_carry: k::Term<Bool>,
+    carry: k::Term<Bool>,
+) -> k::Term<Int> {
+    (a + 0x100 + ExpectedDaaCorrection(a, subtract, half_carry, carry)) % 0x100
 }
 
 #[k::spec_module(name = "SM83-INSTRUCTIONS-SPEC", imports = [crate])]
@@ -271,21 +281,23 @@ pub mod spec {
         #[k::claim(all_paths)]
         #[k::requires(
             (0 <= r[Register::A] && r[Register::A] < 0x100)
-                && (0 <= r[src] && r[src] < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0),
+                && (0 <= r[src] && r[src] < 0x100),
         )]
         contract_alu_add_register: {
             k: [Instruction::Alu8 { op: Alu::Add, src: Operand::Reg { r: src } }],
             regs: r,
-            f: flags,
+            f: _,
             z: _,
             bus: log,
         } => {
             k: [],
             regs: k::map![Register::A -> (((r[Register::A] + r[src] + 0)) % 0x100), ..r],
-            f: kequal::ite((((r[Register::A] + r[src] + 0)) % 0x100) == 0, 0x80, 0) + (
-                (r[Register::A] % 0x10 + r[src] % 0x10 + 0) / 0x10
-            ) * 0x20 + ((r[Register::A] + r[src] + 0) / 0x100) * 0x10,
+            f: Flags {
+                z: (r[Register::A] + r[src]) % 0x100 == 0,
+                n: false,
+                h: r[Register::A] % 0x10 + r[src] % 0x10 >= 0x10,
+                c: r[Register::A] + r[src] >= 0x100,
+            },
             z: r[src],
             bus: log,
         };
@@ -295,13 +307,12 @@ pub mod spec {
         #[k::requires(
             (0 <= r[Register::A] && r[Register::A] < 0x100)
                 && (0 <= m[pc] && m[pc] < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0)
                 && (0 <= pc && pc < 0x1_0000),
         )]
         contract_alu_add_immediate: {
             k: [Instruction::Alu8 { op: Alu::Add, src: Operand::Immediate }],
             regs: r,
-            f: flags,
+            f: _,
             z: _,
             bus: log,
             memory: m,
@@ -309,9 +320,12 @@ pub mod spec {
         } => {
             k: [],
             regs: k::map![Register::A -> (((r[Register::A] + m[pc] + 0)) % 0x100), ..r],
-            f: kequal::ite((((r[Register::A] + m[pc] + 0)) % 0x100) == 0, 0x80, 0) + (
-                (r[Register::A] % 0x10 + m[pc] % 0x10 + 0) / 0x10
-            ) * 0x20 + ((r[Register::A] + m[pc] + 0) / 0x100) * 0x10,
+            f: Flags {
+                z: (r[Register::A] + m[pc]) % 0x100 == 0,
+                n: false,
+                h: r[Register::A] % 0x10 + m[pc] % 0x10 >= 0x10,
+                c: r[Register::A] + m[pc] >= 0x100,
+            },
             z: m[pc],
             bus: [..log, Event::Read { addr: pc, value: m[pc] }],
             pc: ((pc + 1) % 0x1_0000),
@@ -324,14 +338,13 @@ pub mod spec {
                 && (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
                     && m[r[Register::H] * 0x100 + r[Register::L]]
                         < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0)
                 && (0 <= r[Register::H] && r[Register::H] < 0x100)
                 && (0 <= r[Register::L] && r[Register::L] < 0x100),
         )]
         contract_alu_add_indirect: {
             k: [Instruction::Alu8 { op: Alu::Add, src: Operand::HlIndirect }],
             regs: r,
-            f: flags,
+            f: _,
             z: _,
             bus: log,
             memory: m,
@@ -343,17 +356,12 @@ pub mod spec {
                 ),
                 ..r,
             ],
-            f: kequal::ite(
-                (((r[Register::A] + m[r[Register::H] * 0x100 + r[Register::L]] + 0)) % 0x100) == 0,
-                0x80,
-                0,
-            ) + (
-                (
-                    r[Register::A] % 0x10 + m[r[Register::H] * 0x100 + r[Register::L]] % 0x10 + 0
-                ) / 0x10
-            ) * 0x20 + (
-                (r[Register::A] + m[r[Register::H] * 0x100 + r[Register::L]] + 0) / 0x100
-            ) * 0x10,
+            f: Flags {
+                z: (r[Register::A] + m[r[Register::H] * 0x100 + r[Register::L]]) % 0x100 == 0,
+                n: false,
+                h: r[Register::A] % 0x10 + m[r[Register::H] * 0x100 + r[Register::L]] % 0x10 >= 0x10,
+                c: r[Register::A] + m[r[Register::H] * 0x100 + r[Register::L]] >= 0x100,
+            },
             z: m[r[Register::H] * 0x100 + r[Register::L]],
             bus: [
                 ..log,
@@ -368,28 +376,26 @@ pub mod spec {
         #[k::claim(all_paths)]
         #[k::requires(
             (0 <= r[Register::A] && r[Register::A] < 0x100)
-                && (0 <= r[src] && r[src] < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0),
+                && (0 <= r[src] && r[src] < 0x100),
         )]
         contract_alu_adc_register: {
             k: [Instruction::Alu8 { op: Alu::Adc, src: Operand::Reg { r: src } }],
             regs: r,
-            f: flags,
+            f: Flags { c: carry, .. },
             z: _,
             bus: log,
         } => {
             k: [],
             regs: k::map![
-                Register::A -> (((r[Register::A] + r[src] + ((flags / 0x10) % 2))) % 0x100),
+                Register::A -> (((r[Register::A] + r[src] + kequal::ite(carry, 1, 0))) % 0x100),
                 ..r,
             ],
-            f: kequal::ite(
-                (((r[Register::A] + r[src] + ((flags / 0x10) % 2))) % 0x100) == 0,
-                0x80,
-                0,
-            ) + ((r[Register::A] % 0x10 + r[src] % 0x10 + ((flags / 0x10) % 2)) / 0x10) * 0x20 + (
-                (r[Register::A] + r[src] + ((flags / 0x10) % 2)) / 0x100
-            ) * 0x10,
+            f: Flags {
+                z: (r[Register::A] + r[src] + kequal::ite(carry, 1, 0)) % 0x100 == 0,
+                n: false,
+                h: r[Register::A] % 0x10 + r[src] % 0x10 + kequal::ite(carry, 1, 0) >= 0x10,
+                c: r[Register::A] + r[src] + kequal::ite(carry, 1, 0) >= 0x100,
+            },
             z: r[src],
             bus: log,
         };
@@ -399,13 +405,12 @@ pub mod spec {
         #[k::requires(
             (0 <= r[Register::A] && r[Register::A] < 0x100)
                 && (0 <= m[pc] && m[pc] < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0)
                 && (0 <= pc && pc < 0x1_0000),
         )]
         contract_alu_adc_immediate: {
             k: [Instruction::Alu8 { op: Alu::Adc, src: Operand::Immediate }],
             regs: r,
-            f: flags,
+            f: Flags { c: carry, .. },
             z: _,
             bus: log,
             memory: m,
@@ -413,16 +418,15 @@ pub mod spec {
         } => {
             k: [],
             regs: k::map![
-                Register::A -> (((r[Register::A] + m[pc] + ((flags / 0x10) % 2))) % 0x100),
+                Register::A -> (((r[Register::A] + m[pc] + kequal::ite(carry, 1, 0))) % 0x100),
                 ..r,
             ],
-            f: kequal::ite(
-                (((r[Register::A] + m[pc] + ((flags / 0x10) % 2))) % 0x100) == 0,
-                0x80,
-                0,
-            ) + ((r[Register::A] % 0x10 + m[pc] % 0x10 + ((flags / 0x10) % 2)) / 0x10) * 0x20 + (
-                (r[Register::A] + m[pc] + ((flags / 0x10) % 2)) / 0x100
-            ) * 0x10,
+            f: Flags {
+                z: (r[Register::A] + m[pc] + kequal::ite(carry, 1, 0)) % 0x100 == 0,
+                n: false,
+                h: r[Register::A] % 0x10 + m[pc] % 0x10 + kequal::ite(carry, 1, 0) >= 0x10,
+                c: r[Register::A] + m[pc] + kequal::ite(carry, 1, 0) >= 0x100,
+            },
             z: m[pc],
             bus: [..log, Event::Read { addr: pc, value: m[pc] }],
             pc: ((pc + 1) % 0x1_0000),
@@ -435,56 +439,31 @@ pub mod spec {
                 && (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
                     && m[r[Register::H] * 0x100 + r[Register::L]]
                         < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0)
                 && (0 <= r[Register::H] && r[Register::H] < 0x100)
                 && (0 <= r[Register::L] && r[Register::L] < 0x100),
         )]
         contract_alu_adc_indirect: {
             k: [Instruction::Alu8 { op: Alu::Adc, src: Operand::HlIndirect }],
             regs: r,
-            f: flags,
+            f: Flags { c: carry, .. },
             z: _,
             bus: log,
             memory: m,
         } => {
             k: [],
             regs: k::map![
-                Register::A -> (
-                    (
-                        (
-                            r[Register::A] + m[r[Register::H] * 0x100 + r[Register::L]] + (
-                                (flags / 0x10) % 2
-                            )
-                        )
-                    ) % 0x100
-                ),
+                Register::A -> ((r[Register::A] + m[r[Register::H] * 0x100 + r[Register::L]] + kequal::ite(carry, 1, 0)) % 0x100),
                 ..r,
             ],
-            f: kequal::ite(
-                (
-                    (
-                        (
-                            r[Register::A] + m[r[Register::H] * 0x100 + r[Register::L]] + (
-                                (flags / 0x10) % 2
-                            )
-                        )
-                    ) % 0x100
-                ) == 0,
-                0x80,
-                0,
-            ) + (
-                (
-                    r[Register::A] % 0x10 + m[r[Register::H] * 0x100 + r[Register::L]] % 0x10 + (
-                        (flags / 0x10) % 2
-                    )
-                ) / 0x10
-            ) * 0x20 + (
-                (
-                    r[Register::A] + m[r[Register::H] * 0x100 + r[Register::L]] + (
-                        (flags / 0x10) % 2
-                    )
-                ) / 0x100
-            ) * 0x10,
+            f: Flags {
+                z: (r[Register::A] + m[r[Register::H] * 0x100 + r[Register::L]] + kequal::ite(carry, 1, 0)) % 0x100
+                    == 0,
+                n: false,
+                h: r[Register::A] % 0x10 + m[r[Register::H] * 0x100 + r[Register::L]] % 0x10 + kequal::ite(carry, 1, 0)
+                    >= 0x10,
+                c: r[Register::A] + m[r[Register::H] * 0x100 + r[Register::L]] + kequal::ite(carry, 1, 0)
+                    >= 0x100,
+            },
             z: m[r[Register::H] * 0x100 + r[Register::L]],
             bus: [
                 ..log,
@@ -499,27 +478,23 @@ pub mod spec {
         #[k::claim(all_paths)]
         #[k::requires(
             (0 <= r[Register::A] && r[Register::A] < 0x100)
-                && (0 <= r[src] && r[src] < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0),
+                && (0 <= r[src] && r[src] < 0x100),
         )]
         contract_alu_sub_register: {
             k: [Instruction::Alu8 { op: Alu::Sub, src: Operand::Reg { r: src } }],
             regs: r,
-            f: flags,
+            f: _,
             z: _,
             bus: log,
         } => {
             k: [],
             regs: k::map![Register::A -> (((r[Register::A] + 0x200 - r[src] - 0)) % 0x100), ..r],
-            f: kequal::ite(
-                (((r[Register::A] + 0x200 - r[src] - 0)) % 0x100) == 0,
-                0x80,
-                0,
-            ) + 0x40 + kequal::ite(
-                r[Register::A] % 0x10 < r[src] % 0x10 + 0,
-                0x20,
-                0,
-            ) + kequal::ite(r[Register::A] < r[src] + 0, 0x10, 0),
+            f: Flags {
+                z: (r[Register::A] + 0x200 - r[src]) % 0x100 == 0,
+                n: true,
+                h: r[Register::A] % 0x10 < r[src] % 0x10,
+                c: r[Register::A] < r[src],
+            },
             z: r[src],
             bus: log,
         };
@@ -529,13 +504,12 @@ pub mod spec {
         #[k::requires(
             (0 <= r[Register::A] && r[Register::A] < 0x100)
                 && (0 <= m[pc] && m[pc] < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0)
                 && (0 <= pc && pc < 0x1_0000),
         )]
         contract_alu_sub_immediate: {
             k: [Instruction::Alu8 { op: Alu::Sub, src: Operand::Immediate }],
             regs: r,
-            f: flags,
+            f: _,
             z: _,
             bus: log,
             memory: m,
@@ -543,15 +517,12 @@ pub mod spec {
         } => {
             k: [],
             regs: k::map![Register::A -> (((r[Register::A] + 0x200 - m[pc] - 0)) % 0x100), ..r],
-            f: kequal::ite(
-                (((r[Register::A] + 0x200 - m[pc] - 0)) % 0x100) == 0,
-                0x80,
-                0,
-            ) + 0x40 + kequal::ite(r[Register::A] % 0x10 < m[pc] % 0x10 + 0, 0x20, 0) + kequal::ite(
-                r[Register::A] < m[pc] + 0,
-                0x10,
-                0,
-            ),
+            f: Flags {
+                z: (r[Register::A] + 0x200 - m[pc]) % 0x100 == 0,
+                n: true,
+                h: r[Register::A] % 0x10 < m[pc] % 0x10,
+                c: r[Register::A] < m[pc],
+            },
             z: m[pc],
             bus: [..log, Event::Read { addr: pc, value: m[pc] }],
             pc: ((pc + 1) % 0x1_0000),
@@ -564,14 +535,13 @@ pub mod spec {
                 && (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
                     && m[r[Register::H] * 0x100 + r[Register::L]]
                         < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0)
                 && (0 <= r[Register::H] && r[Register::H] < 0x100)
                 && (0 <= r[Register::L] && r[Register::L] < 0x100),
         )]
         contract_alu_sub_indirect: {
             k: [Instruction::Alu8 { op: Alu::Sub, src: Operand::HlIndirect }],
             regs: r,
-            f: flags,
+            f: _,
             z: _,
             bus: log,
             memory: m,
@@ -585,23 +555,12 @@ pub mod spec {
                 ),
                 ..r,
             ],
-            f: kequal::ite(
-                (
-                    (
-                        (r[Register::A] + 0x200 - m[r[Register::H] * 0x100 + r[Register::L]] - 0)
-                    ) % 0x100
-                ) == 0,
-                0x80,
-                0,
-            ) + 0x40 + kequal::ite(
-                r[Register::A] % 0x10 < m[r[Register::H] * 0x100 + r[Register::L]] % 0x10 + 0,
-                0x20,
-                0,
-            ) + kequal::ite(
-                r[Register::A] < m[r[Register::H] * 0x100 + r[Register::L]] + 0,
-                0x10,
-                0,
-            ),
+            f: Flags {
+                z: (r[Register::A] + 0x200 - m[r[Register::H] * 0x100 + r[Register::L]]) % 0x100 == 0,
+                n: true,
+                h: r[Register::A] % 0x10 < m[r[Register::H] * 0x100 + r[Register::L]] % 0x10,
+                c: r[Register::A] < m[r[Register::H] * 0x100 + r[Register::L]],
+            },
             z: m[r[Register::H] * 0x100 + r[Register::L]],
             bus: [
                 ..log,
@@ -616,30 +575,26 @@ pub mod spec {
         #[k::claim(all_paths)]
         #[k::requires(
             (0 <= r[Register::A] && r[Register::A] < 0x100)
-                && (0 <= r[src] && r[src] < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0),
+                && (0 <= r[src] && r[src] < 0x100),
         )]
         contract_alu_sbc_register: {
             k: [Instruction::Alu8 { op: Alu::Sbc, src: Operand::Reg { r: src } }],
             regs: r,
-            f: flags,
+            f: Flags { c: carry, .. },
             z: _,
             bus: log,
         } => {
             k: [],
             regs: k::map![
-                Register::A -> (((r[Register::A] + 0x200 - r[src] - ((flags / 0x10) % 2))) % 0x100),
+                Register::A -> (((r[Register::A] + 0x200 - r[src] - kequal::ite(carry, 1, 0))) % 0x100),
                 ..r,
             ],
-            f: kequal::ite(
-                (((r[Register::A] + 0x200 - r[src] - ((flags / 0x10) % 2))) % 0x100) == 0,
-                0x80,
-                0,
-            ) + 0x40 + kequal::ite(
-                r[Register::A] % 0x10 < r[src] % 0x10 + ((flags / 0x10) % 2),
-                0x20,
-                0,
-            ) + kequal::ite(r[Register::A] < r[src] + ((flags / 0x10) % 2), 0x10, 0),
+            f: Flags {
+                z: (r[Register::A] + 0x200 - r[src] - kequal::ite(carry, 1, 0)) % 0x100 == 0,
+                n: true,
+                h: r[Register::A] % 0x10 < r[src] % 0x10 + kequal::ite(carry, 1, 0),
+                c: r[Register::A] < r[src] + kequal::ite(carry, 1, 0),
+            },
             z: r[src],
             bus: log,
         };
@@ -649,13 +604,12 @@ pub mod spec {
         #[k::requires(
             (0 <= r[Register::A] && r[Register::A] < 0x100)
                 && (0 <= m[pc] && m[pc] < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0)
                 && (0 <= pc && pc < 0x1_0000),
         )]
         contract_alu_sbc_immediate: {
             k: [Instruction::Alu8 { op: Alu::Sbc, src: Operand::Immediate }],
             regs: r,
-            f: flags,
+            f: Flags { c: carry, .. },
             z: _,
             bus: log,
             memory: m,
@@ -663,18 +617,15 @@ pub mod spec {
         } => {
             k: [],
             regs: k::map![
-                Register::A -> (((r[Register::A] + 0x200 - m[pc] - ((flags / 0x10) % 2))) % 0x100),
+                Register::A -> (((r[Register::A] + 0x200 - m[pc] - kequal::ite(carry, 1, 0))) % 0x100),
                 ..r,
             ],
-            f: kequal::ite(
-                (((r[Register::A] + 0x200 - m[pc] - ((flags / 0x10) % 2))) % 0x100) == 0,
-                0x80,
-                0,
-            ) + 0x40 + kequal::ite(
-                r[Register::A] % 0x10 < m[pc] % 0x10 + ((flags / 0x10) % 2),
-                0x20,
-                0,
-            ) + kequal::ite(r[Register::A] < m[pc] + ((flags / 0x10) % 2), 0x10, 0),
+            f: Flags {
+                z: (r[Register::A] + 0x200 - m[pc] - kequal::ite(carry, 1, 0)) % 0x100 == 0,
+                n: true,
+                h: r[Register::A] % 0x10 < m[pc] % 0x10 + kequal::ite(carry, 1, 0),
+                c: r[Register::A] < m[pc] + kequal::ite(carry, 1, 0),
+            },
             z: m[pc],
             bus: [..log, Event::Read { addr: pc, value: m[pc] }],
             pc: ((pc + 1) % 0x1_0000),
@@ -687,14 +638,13 @@ pub mod spec {
                 && (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
                     && m[r[Register::H] * 0x100 + r[Register::L]]
                         < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0)
                 && (0 <= r[Register::H] && r[Register::H] < 0x100)
                 && (0 <= r[Register::L] && r[Register::L] < 0x100),
         )]
         contract_alu_sbc_indirect: {
             k: [Instruction::Alu8 { op: Alu::Sbc, src: Operand::HlIndirect }],
             regs: r,
-            f: flags,
+            f: Flags { c: carry, .. },
             z: _,
             bus: log,
             memory: m,
@@ -702,38 +652,19 @@ pub mod spec {
             k: [],
             regs: k::map![
                 Register::A -> (
-                    (
-                        (
-                            r[Register::A] + 0x200 - m[r[Register::H] * 0x100 + r[Register::L]] - (
-                                (flags / 0x10) % 2
-                            )
-                        )
-                    ) % 0x100
+                    (r[Register::A] + 0x200 - m[r[Register::H] * 0x100 + r[Register::L]] - kequal::ite(carry, 1, 0)) % 0x100
                 ),
                 ..r,
             ],
-            f: kequal::ite(
-                (
-                    (
-                        (
-                            r[Register::A] + 0x200 - m[r[Register::H] * 0x100 + r[Register::L]] - (
-                                (flags / 0x10) % 2
-                            )
-                        )
-                    ) % 0x100
-                ) == 0,
-                0x80,
-                0,
-            ) + 0x40 + kequal::ite(
-                r[Register::A] % 0x10
-                    < m[r[Register::H] * 0x100 + r[Register::L]] % 0x10 + ((flags / 0x10) % 2),
-                0x20,
-                0,
-            ) + kequal::ite(
-                r[Register::A] < m[r[Register::H] * 0x100 + r[Register::L]] + ((flags / 0x10) % 2),
-                0x10,
-                0,
-            ),
+            f: Flags {
+                z: (r[Register::A] + 0x200 - m[r[Register::H] * 0x100 + r[Register::L]] - kequal::ite(carry, 1, 0))
+                    % 0x100
+                    == 0,
+                n: true,
+                h: r[Register::A] % 0x10
+                    < m[r[Register::H] * 0x100 + r[Register::L]] % 0x10 + kequal::ite(carry, 1, 0),
+                c: r[Register::A] < m[r[Register::H] * 0x100 + r[Register::L]] + kequal::ite(carry, 1, 0),
+            },
             z: m[r[Register::H] * 0x100 + r[Register::L]],
             bus: [
                 ..log,
@@ -748,19 +679,18 @@ pub mod spec {
         #[k::claim(all_paths)]
         #[k::requires(
             (0 <= r[Register::A] && r[Register::A] < 0x100)
-                && (0 <= r[src] && r[src] < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0),
+                && (0 <= r[src] && r[src] < 0x100),
         )]
         contract_alu_and_register: {
             k: [Instruction::Alu8 { op: Alu::And, src: Operand::Reg { r: src } }],
             regs: r,
-            f: flags,
+            f: _,
             z: _,
             bus: log,
         } => {
             k: [],
             regs: k::map![Register::A -> (r[Register::A] & r[src]), ..r],
-            f: kequal::ite((r[Register::A] & r[src]) == 0, 0x80, 0) + 0x20,
+            f: Flags { z: (r[Register::A] & r[src]) == 0, n: false, h: true, c: false },
             z: r[src],
             bus: log,
         };
@@ -770,13 +700,12 @@ pub mod spec {
         #[k::requires(
             (0 <= r[Register::A] && r[Register::A] < 0x100)
                 && (0 <= m[pc] && m[pc] < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0)
                 && (0 <= pc && pc < 0x1_0000),
         )]
         contract_alu_and_immediate: {
             k: [Instruction::Alu8 { op: Alu::And, src: Operand::Immediate }],
             regs: r,
-            f: flags,
+            f: _,
             z: _,
             bus: log,
             memory: m,
@@ -784,7 +713,7 @@ pub mod spec {
         } => {
             k: [],
             regs: k::map![Register::A -> (r[Register::A] & m[pc]), ..r],
-            f: kequal::ite((r[Register::A] & m[pc]) == 0, 0x80, 0) + 0x20,
+            f: Flags { z: (r[Register::A] & m[pc]) == 0, n: false, h: true, c: false },
             z: m[pc],
             bus: [..log, Event::Read { addr: pc, value: m[pc] }],
             pc: ((pc + 1) % 0x1_0000),
@@ -797,14 +726,13 @@ pub mod spec {
                 && (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
                     && m[r[Register::H] * 0x100 + r[Register::L]]
                         < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0)
                 && (0 <= r[Register::H] && r[Register::H] < 0x100)
                 && (0 <= r[Register::L] && r[Register::L] < 0x100),
         )]
         contract_alu_and_indirect: {
             k: [Instruction::Alu8 { op: Alu::And, src: Operand::HlIndirect }],
             regs: r,
-            f: flags,
+            f: _,
             z: _,
             bus: log,
             memory: m,
@@ -814,11 +742,12 @@ pub mod spec {
                 Register::A -> (r[Register::A] & m[r[Register::H] * 0x100 + r[Register::L]]),
                 ..r,
             ],
-            f: kequal::ite(
-                (r[Register::A] & m[r[Register::H] * 0x100 + r[Register::L]]) == 0,
-                0x80,
-                0,
-            ) + 0x20,
+            f: Flags {
+                z: (r[Register::A] & m[r[Register::H] * 0x100 + r[Register::L]]) == 0,
+                n: false,
+                h: true,
+                c: false,
+            },
             z: m[r[Register::H] * 0x100 + r[Register::L]],
             bus: [
                 ..log,
@@ -833,19 +762,18 @@ pub mod spec {
         #[k::claim(all_paths)]
         #[k::requires(
             (0 <= r[Register::A] && r[Register::A] < 0x100)
-                && (0 <= r[src] && r[src] < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0),
+                && (0 <= r[src] && r[src] < 0x100),
         )]
         contract_alu_xor_register: {
             k: [Instruction::Alu8 { op: Alu::Xor, src: Operand::Reg { r: src } }],
             regs: r,
-            f: flags,
+            f: _,
             z: _,
             bus: log,
         } => {
             k: [],
             regs: k::map![Register::A -> (r[Register::A] ^ r[src]), ..r],
-            f: kequal::ite((r[Register::A] ^ r[src]) == 0, 0x80, 0),
+            f: Flags { z: (r[Register::A] ^ r[src]) == 0, n: false, h: false, c: false },
             z: r[src],
             bus: log,
         };
@@ -855,13 +783,12 @@ pub mod spec {
         #[k::requires(
             (0 <= r[Register::A] && r[Register::A] < 0x100)
                 && (0 <= m[pc] && m[pc] < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0)
                 && (0 <= pc && pc < 0x1_0000),
         )]
         contract_alu_xor_immediate: {
             k: [Instruction::Alu8 { op: Alu::Xor, src: Operand::Immediate }],
             regs: r,
-            f: flags,
+            f: _,
             z: _,
             bus: log,
             memory: m,
@@ -869,7 +796,7 @@ pub mod spec {
         } => {
             k: [],
             regs: k::map![Register::A -> (r[Register::A] ^ m[pc]), ..r],
-            f: kequal::ite((r[Register::A] ^ m[pc]) == 0, 0x80, 0),
+            f: Flags { z: (r[Register::A] ^ m[pc]) == 0, n: false, h: false, c: false },
             z: m[pc],
             bus: [..log, Event::Read { addr: pc, value: m[pc] }],
             pc: ((pc + 1) % 0x1_0000),
@@ -882,14 +809,13 @@ pub mod spec {
                 && (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
                     && m[r[Register::H] * 0x100 + r[Register::L]]
                         < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0)
                 && (0 <= r[Register::H] && r[Register::H] < 0x100)
                 && (0 <= r[Register::L] && r[Register::L] < 0x100),
         )]
         contract_alu_xor_indirect: {
             k: [Instruction::Alu8 { op: Alu::Xor, src: Operand::HlIndirect }],
             regs: r,
-            f: flags,
+            f: _,
             z: _,
             bus: log,
             memory: m,
@@ -899,11 +825,12 @@ pub mod spec {
                 Register::A -> (r[Register::A] ^ m[r[Register::H] * 0x100 + r[Register::L]]),
                 ..r,
             ],
-            f: kequal::ite(
-                (r[Register::A] ^ m[r[Register::H] * 0x100 + r[Register::L]]) == 0,
-                0x80,
-                0,
-            ),
+            f: Flags {
+                z: (r[Register::A] ^ m[r[Register::H] * 0x100 + r[Register::L]]) == 0,
+                n: false,
+                h: false,
+                c: false,
+            },
             z: m[r[Register::H] * 0x100 + r[Register::L]],
             bus: [
                 ..log,
@@ -918,19 +845,18 @@ pub mod spec {
         #[k::claim(all_paths)]
         #[k::requires(
             (0 <= r[Register::A] && r[Register::A] < 0x100)
-                && (0 <= r[src] && r[src] < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0),
+                && (0 <= r[src] && r[src] < 0x100),
         )]
         contract_alu_or_register: {
             k: [Instruction::Alu8 { op: Alu::Or, src: Operand::Reg { r: src } }],
             regs: r,
-            f: flags,
+            f: _,
             z: _,
             bus: log,
         } => {
             k: [],
             regs: k::map![Register::A -> (r[Register::A] | r[src]), ..r],
-            f: kequal::ite((r[Register::A] | r[src]) == 0, 0x80, 0),
+            f: Flags { z: (r[Register::A] | r[src]) == 0, n: false, h: false, c: false },
             z: r[src],
             bus: log,
         };
@@ -940,13 +866,12 @@ pub mod spec {
         #[k::requires(
             (0 <= r[Register::A] && r[Register::A] < 0x100)
                 && (0 <= m[pc] && m[pc] < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0)
                 && (0 <= pc && pc < 0x1_0000),
         )]
         contract_alu_or_immediate: {
             k: [Instruction::Alu8 { op: Alu::Or, src: Operand::Immediate }],
             regs: r,
-            f: flags,
+            f: _,
             z: _,
             bus: log,
             memory: m,
@@ -954,7 +879,7 @@ pub mod spec {
         } => {
             k: [],
             regs: k::map![Register::A -> (r[Register::A] | m[pc]), ..r],
-            f: kequal::ite((r[Register::A] | m[pc]) == 0, 0x80, 0),
+            f: Flags { z: (r[Register::A] | m[pc]) == 0, n: false, h: false, c: false },
             z: m[pc],
             bus: [..log, Event::Read { addr: pc, value: m[pc] }],
             pc: ((pc + 1) % 0x1_0000),
@@ -967,14 +892,13 @@ pub mod spec {
                 && (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
                     && m[r[Register::H] * 0x100 + r[Register::L]]
                         < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0)
                 && (0 <= r[Register::H] && r[Register::H] < 0x100)
                 && (0 <= r[Register::L] && r[Register::L] < 0x100),
         )]
         contract_alu_or_indirect: {
             k: [Instruction::Alu8 { op: Alu::Or, src: Operand::HlIndirect }],
             regs: r,
-            f: flags,
+            f: _,
             z: _,
             bus: log,
             memory: m,
@@ -984,11 +908,12 @@ pub mod spec {
                 Register::A -> (r[Register::A] | m[r[Register::H] * 0x100 + r[Register::L]]),
                 ..r,
             ],
-            f: kequal::ite(
-                (r[Register::A] | m[r[Register::H] * 0x100 + r[Register::L]]) == 0,
-                0x80,
-                0,
-            ),
+            f: Flags {
+                z: (r[Register::A] | m[r[Register::H] * 0x100 + r[Register::L]]) == 0,
+                n: false,
+                h: false,
+                c: false,
+            },
             z: m[r[Register::H] * 0x100 + r[Register::L]],
             bus: [
                 ..log,
@@ -1003,27 +928,23 @@ pub mod spec {
         #[k::claim(all_paths)]
         #[k::requires(
             (0 <= r[Register::A] && r[Register::A] < 0x100)
-                && (0 <= r[src] && r[src] < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0),
+                && (0 <= r[src] && r[src] < 0x100),
         )]
         contract_alu_cp_register: {
             k: [Instruction::Alu8 { op: Alu::Cp, src: Operand::Reg { r: src } }],
             regs: r,
-            f: flags,
+            f: _,
             z: _,
             bus: log,
         } => {
             k: [],
             regs: k::map![Register::A -> r[Register::A], ..r],
-            f: kequal::ite(
-                (((r[Register::A] + 0x200 - r[src] - 0)) % 0x100) == 0,
-                0x80,
-                0,
-            ) + 0x40 + kequal::ite(
-                r[Register::A] % 0x10 < r[src] % 0x10 + 0,
-                0x20,
-                0,
-            ) + kequal::ite(r[Register::A] < r[src] + 0, 0x10, 0),
+            f: Flags {
+                z: (r[Register::A] + 0x200 - r[src]) % 0x100 == 0,
+                n: true,
+                h: r[Register::A] % 0x10 < r[src] % 0x10,
+                c: r[Register::A] < r[src],
+            },
             z: r[src],
             bus: log,
         };
@@ -1033,13 +954,12 @@ pub mod spec {
         #[k::requires(
             (0 <= r[Register::A] && r[Register::A] < 0x100)
                 && (0 <= m[pc] && m[pc] < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0)
                 && (0 <= pc && pc < 0x1_0000),
         )]
         contract_alu_cp_immediate: {
             k: [Instruction::Alu8 { op: Alu::Cp, src: Operand::Immediate }],
             regs: r,
-            f: flags,
+            f: _,
             z: _,
             bus: log,
             memory: m,
@@ -1047,15 +967,12 @@ pub mod spec {
         } => {
             k: [],
             regs: k::map![Register::A -> r[Register::A], ..r],
-            f: kequal::ite(
-                (((r[Register::A] + 0x200 - m[pc] - 0)) % 0x100) == 0,
-                0x80,
-                0,
-            ) + 0x40 + kequal::ite(r[Register::A] % 0x10 < m[pc] % 0x10 + 0, 0x20, 0) + kequal::ite(
-                r[Register::A] < m[pc] + 0,
-                0x10,
-                0,
-            ),
+            f: Flags {
+                z: (r[Register::A] + 0x200 - m[pc]) % 0x100 == 0,
+                n: true,
+                h: r[Register::A] % 0x10 < m[pc] % 0x10,
+                c: r[Register::A] < m[pc],
+            },
             z: m[pc],
             bus: [..log, Event::Read { addr: pc, value: m[pc] }],
             pc: ((pc + 1) % 0x1_0000),
@@ -1068,37 +985,25 @@ pub mod spec {
                 && (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
                     && m[r[Register::H] * 0x100 + r[Register::L]]
                         < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0)
                 && (0 <= r[Register::H] && r[Register::H] < 0x100)
                 && (0 <= r[Register::L] && r[Register::L] < 0x100),
         )]
         contract_alu_cp_indirect: {
             k: [Instruction::Alu8 { op: Alu::Cp, src: Operand::HlIndirect }],
             regs: r,
-            f: flags,
+            f: _,
             z: _,
             bus: log,
             memory: m,
         } => {
             k: [],
             regs: k::map![Register::A -> r[Register::A], ..r],
-            f: kequal::ite(
-                (
-                    (
-                        (r[Register::A] + 0x200 - m[r[Register::H] * 0x100 + r[Register::L]] - 0)
-                    ) % 0x100
-                ) == 0,
-                0x80,
-                0,
-            ) + 0x40 + kequal::ite(
-                r[Register::A] % 0x10 < m[r[Register::H] * 0x100 + r[Register::L]] % 0x10 + 0,
-                0x20,
-                0,
-            ) + kequal::ite(
-                r[Register::A] < m[r[Register::H] * 0x100 + r[Register::L]] + 0,
-                0x10,
-                0,
-            ),
+            f: Flags {
+                z: (r[Register::A] + 0x200 - m[r[Register::H] * 0x100 + r[Register::L]]) % 0x100 == 0,
+                n: true,
+                h: r[Register::A] % 0x10 < m[r[Register::H] * 0x100 + r[Register::L]] % 0x10,
+                c: r[Register::A] < m[r[Register::H] * 0x100 + r[Register::L]],
+            },
             z: m[r[Register::H] * 0x100 + r[Register::L]],
             bus: [
                 ..log,
@@ -1112,20 +1017,22 @@ pub mod spec {
         /// INC: byte result, flag behavior and read/modify/write ordering where applicable.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[target] && r[target] < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0),
+            (0 <= r[target] && r[target] < 0x100),
         )]
         contract_unary_inc_register: {
             k: [Instruction::Update8 { op: Unary::Inc, target: Operand::Reg { r: target } }],
             regs: r,
-            f: flags,
+            f: Flags { c: carry, .. },
             z: _,
             bus: log,
         } => {
             k: [],
-            f: kequal::ite(((r[target] + 1) % 0x100) == 0, 0x80, 0) + (
-                (r[target] % 0x10 + 1) / 0x10
-            ) * 0x20 + flags % 0x20,
+            f: Flags {
+                z: (r[target] + 1) % 0x100 == 0,
+                n: false,
+                h: r[target] % 0x10 + 1 >= 0x10,
+                c: carry,
+            },
             z: ((r[target] + 1) % 0x100),
             bus: log,
             regs: k::map![target -> ((r[target] + 1) % 0x100), ..r],
@@ -1136,26 +1043,24 @@ pub mod spec {
         #[k::requires(
             (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
                 && m[r[Register::H] * 0x100 + r[Register::L]] < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0)
                 && (0 <= r[Register::H] && r[Register::H] < 0x100)
                 && (0 <= r[Register::L] && r[Register::L] < 0x100),
         )]
         contract_unary_inc_indirect: {
             k: [Instruction::Update8 { op: Unary::Inc, target: Operand::HlIndirect }],
             regs: r,
-            f: flags,
+            f: Flags { c: carry, .. },
             z: _,
             bus: log,
             memory: m,
         } => {
             k: [],
-            f: kequal::ite(
-                ((m[r[Register::H] * 0x100 + r[Register::L]] + 1) % 0x100) == 0,
-                0x80,
-                0,
-            ) + (
-                (m[r[Register::H] * 0x100 + r[Register::L]] % 0x10 + 1) / 0x10
-            ) * 0x20 + flags % 0x20,
+            f: Flags {
+                z: (m[r[Register::H] * 0x100 + r[Register::L]] + 1) % 0x100 == 0,
+                n: false,
+                h: m[r[Register::H] * 0x100 + r[Register::L]] % 0x10 + 1 >= 0x10,
+                c: carry,
+            },
             z: ((m[r[Register::H] * 0x100 + r[Register::L]] + 1) % 0x100),
             bus: [
                 ..log,
@@ -1179,22 +1084,22 @@ pub mod spec {
         /// DEC: byte result, flag behavior and read/modify/write ordering where applicable.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[target] && r[target] < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0),
+            (0 <= r[target] && r[target] < 0x100),
         )]
         contract_unary_dec_register: {
             k: [Instruction::Update8 { op: Unary::Dec, target: Operand::Reg { r: target } }],
             regs: r,
-            f: flags,
+            f: Flags { c: carry, .. },
             z: _,
             bus: log,
         } => {
             k: [],
-            f: kequal::ite(((r[target] + 0xFF) % 0x100) == 0, 0x80, 0) + 0x40 + kequal::ite(
-                r[target] % 0x10 == 0,
-                0x20,
-                0,
-            ) + flags % 0x20,
+            f: Flags {
+                z: (r[target] + 0xFF) % 0x100 == 0,
+                n: true,
+                h: r[target] % 0x10 == 0,
+                c: carry,
+            },
             z: ((r[target] + 0xFF) % 0x100),
             bus: log,
             regs: k::map![target -> ((r[target] + 0xFF) % 0x100), ..r],
@@ -1205,28 +1110,24 @@ pub mod spec {
         #[k::requires(
             (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
                 && m[r[Register::H] * 0x100 + r[Register::L]] < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0)
                 && (0 <= r[Register::H] && r[Register::H] < 0x100)
                 && (0 <= r[Register::L] && r[Register::L] < 0x100),
         )]
         contract_unary_dec_indirect: {
             k: [Instruction::Update8 { op: Unary::Dec, target: Operand::HlIndirect }],
             regs: r,
-            f: flags,
+            f: Flags { c: carry, .. },
             z: _,
             bus: log,
             memory: m,
         } => {
             k: [],
-            f: kequal::ite(
-                ((m[r[Register::H] * 0x100 + r[Register::L]] + 0xFF) % 0x100) == 0,
-                0x80,
-                0,
-            ) + 0x40 + kequal::ite(
-                m[r[Register::H] * 0x100 + r[Register::L]] % 0x10 == 0,
-                0x20,
-                0,
-            ) + flags % 0x20,
+            f: Flags {
+                z: (m[r[Register::H] * 0x100 + r[Register::L]] + 0xFF) % 0x100 == 0,
+                n: true,
+                h: m[r[Register::H] * 0x100 + r[Register::L]] % 0x10 == 0,
+                c: carry,
+            },
             z: ((m[r[Register::H] * 0x100 + r[Register::L]] + 0xFF) % 0x100),
             bus: [
                 ..log,
@@ -1250,20 +1151,22 @@ pub mod spec {
         /// RLC: byte result, flag behavior and read/modify/write ordering where applicable.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[target] && r[target] < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0),
+            (0 <= r[target] && r[target] < 0x100),
         )]
         contract_unary_rlc_register: {
             k: [Instruction::Update8 { op: Unary::Rlc, target: Operand::Reg { r: target } }],
             regs: r,
-            f: flags,
+            f: _,
             z: _,
             bus: log,
         } => {
             k: [],
-            f: kequal::ite(((r[target] * 2) % 0x100 + r[target] / 0x80) == 0, 0x80, 0) + (
-                r[target] / 0x80
-            ) * 0x10,
+            f: Flags {
+                z: (r[target] * 2) % 0x100 + r[target] / 0x80 == 0,
+                n: false,
+                h: false,
+                c: r[target] / 0x80 == 1,
+            },
             z: ((r[target] * 2) % 0x100 + r[target] / 0x80),
             bus: log,
             regs: k::map![target -> ((r[target] * 2) % 0x100 + r[target] / 0x80), ..r],
@@ -1274,28 +1177,25 @@ pub mod spec {
         #[k::requires(
             (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
                 && m[r[Register::H] * 0x100 + r[Register::L]] < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0)
                 && (0 <= r[Register::H] && r[Register::H] < 0x100)
                 && (0 <= r[Register::L] && r[Register::L] < 0x100),
         )]
         contract_unary_rlc_indirect: {
             k: [Instruction::Update8 { op: Unary::Rlc, target: Operand::HlIndirect }],
             regs: r,
-            f: flags,
+            f: _,
             z: _,
             bus: log,
             memory: m,
         } => {
             k: [],
-            f: kequal::ite(
-                (
-                    (m[r[Register::H] * 0x100 + r[Register::L]] * 2) % 0x100 + m[
-                        r[Register::H] * 0x100 + r[Register::L]
-                    ] / 0x80
-                ) == 0,
-                0x80,
-                0,
-            ) + (m[r[Register::H] * 0x100 + r[Register::L]] / 0x80) * 0x10,
+            f: Flags {
+                z: (m[r[Register::H] * 0x100 + r[Register::L]] * 2) % 0x100 + m[r[Register::H] * 0x100 + r[Register::L]] / 0x80
+                    == 0,
+                n: false,
+                h: false,
+                c: m[r[Register::H] * 0x100 + r[Register::L]] / 0x80 == 1,
+            },
             z: (
                 (m[r[Register::H] * 0x100 + r[Register::L]] * 2) % 0x100 + m[
                     r[Register::H] * 0x100 + r[Register::L]
@@ -1327,20 +1227,22 @@ pub mod spec {
         /// RRC: byte result, flag behavior and read/modify/write ordering where applicable.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[target] && r[target] < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0),
+            (0 <= r[target] && r[target] < 0x100),
         )]
         contract_unary_rrc_register: {
             k: [Instruction::Update8 { op: Unary::Rrc, target: Operand::Reg { r: target } }],
             regs: r,
-            f: flags,
+            f: _,
             z: _,
             bus: log,
         } => {
             k: [],
-            f: kequal::ite((r[target] / 2 + (r[target] % 2) * 0x80) == 0, 0x80, 0) + (
-                r[target] % 2
-            ) * 0x10,
+            f: Flags {
+                z: r[target] / 2 + (r[target] % 2) * 0x80 == 0,
+                n: false,
+                h: false,
+                c: r[target] % 2 == 1,
+            },
             z: (r[target] / 2 + (r[target] % 2) * 0x80),
             bus: log,
             regs: k::map![target -> (r[target] / 2 + (r[target] % 2) * 0x80), ..r],
@@ -1351,28 +1253,25 @@ pub mod spec {
         #[k::requires(
             (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
                 && m[r[Register::H] * 0x100 + r[Register::L]] < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0)
                 && (0 <= r[Register::H] && r[Register::H] < 0x100)
                 && (0 <= r[Register::L] && r[Register::L] < 0x100),
         )]
         contract_unary_rrc_indirect: {
             k: [Instruction::Update8 { op: Unary::Rrc, target: Operand::HlIndirect }],
             regs: r,
-            f: flags,
+            f: _,
             z: _,
             bus: log,
             memory: m,
         } => {
             k: [],
-            f: kequal::ite(
-                (
-                    m[r[Register::H] * 0x100 + r[Register::L]] / 2 + (
-                        m[r[Register::H] * 0x100 + r[Register::L]] % 2
-                    ) * 0x80
-                ) == 0,
-                0x80,
-                0,
-            ) + (m[r[Register::H] * 0x100 + r[Register::L]] % 2) * 0x10,
+            f: Flags {
+                z: m[r[Register::H] * 0x100 + r[Register::L]] / 2 + (m[r[Register::H] * 0x100 + r[Register::L]] % 2) * 0x80
+                    == 0,
+                n: false,
+                h: false,
+                c: m[r[Register::H] * 0x100 + r[Register::L]] % 2 == 1,
+            },
             z: (
                 m[r[Register::H] * 0x100 + r[Register::L]] / 2 + (
                     m[r[Register::H] * 0x100 + r[Register::L]] % 2
@@ -1404,23 +1303,25 @@ pub mod spec {
         /// RL: byte result, flag behavior and read/modify/write ordering where applicable.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[target] && r[target] < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0),
+            (0 <= r[target] && r[target] < 0x100),
         )]
         contract_unary_rl_register: {
             k: [Instruction::Update8 { op: Unary::Rl, target: Operand::Reg { r: target } }],
             regs: r,
-            f: flags,
+            f: Flags { c: carry, .. },
             z: _,
             bus: log,
         } => {
             k: [],
-            f: kequal::ite(((r[target] * 2) % 0x100 + ((flags / 0x10) % 2)) == 0, 0x80, 0) + (
-                r[target] / 0x80
-            ) * 0x10,
-            z: ((r[target] * 2) % 0x100 + ((flags / 0x10) % 2)),
+            f: Flags {
+                z: (r[target] * 2) % 0x100 + kequal::ite(carry, 1, 0) == 0,
+                n: false,
+                h: false,
+                c: r[target] / 0x80 == 1,
+            },
+            z: ((r[target] * 2) % 0x100 + kequal::ite(carry, 1, 0)),
             bus: log,
-            regs: k::map![target -> ((r[target] * 2) % 0x100 + ((flags / 0x10) % 2)), ..r],
+            regs: k::map![target -> ((r[target] * 2) % 0x100 + kequal::ite(carry, 1, 0)), ..r],
         };
 
         /// RL: byte result, flag behavior and read/modify/write ordering where applicable.
@@ -1428,26 +1329,25 @@ pub mod spec {
         #[k::requires(
             (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
                 && m[r[Register::H] * 0x100 + r[Register::L]] < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0)
                 && (0 <= r[Register::H] && r[Register::H] < 0x100)
                 && (0 <= r[Register::L] && r[Register::L] < 0x100),
         )]
         contract_unary_rl_indirect: {
             k: [Instruction::Update8 { op: Unary::Rl, target: Operand::HlIndirect }],
             regs: r,
-            f: flags,
+            f: Flags { c: carry, .. },
             z: _,
             bus: log,
             memory: m,
         } => {
             k: [],
-            f: kequal::ite(
-                ((m[r[Register::H] * 0x100 + r[Register::L]] * 2) % 0x100 + ((flags / 0x10) % 2))
-                    == 0,
-                0x80,
-                0,
-            ) + (m[r[Register::H] * 0x100 + r[Register::L]] / 0x80) * 0x10,
-            z: ((m[r[Register::H] * 0x100 + r[Register::L]] * 2) % 0x100 + ((flags / 0x10) % 2)),
+            f: Flags {
+                z: (m[r[Register::H] * 0x100 + r[Register::L]] * 2) % 0x100 + kequal::ite(carry, 1, 0) == 0,
+                n: false,
+                h: false,
+                c: m[r[Register::H] * 0x100 + r[Register::L]] / 0x80 == 1,
+            },
+            z: ((m[r[Register::H] * 0x100 + r[Register::L]] * 2) % 0x100 + kequal::ite(carry, 1, 0)),
             bus: [
                 ..log,
                 Event::Read {
@@ -1455,15 +1355,13 @@ pub mod spec {
                     value: m[r[Register::H] * 0x100 + r[Register::L]],
                 },
                 Event::Write { addr: (r[Register::H] * 0x100 + r[Register::L]), value: (
-                        (m[r[Register::H] * 0x100 + r[Register::L]] * 2) % 0x100 + (
-                            (flags / 0x10) % 2
-                        )
+                        (m[r[Register::H] * 0x100 + r[Register::L]] * 2) % 0x100 + kequal::ite(carry, 1, 0)
                     ),
                 },
             ],
             memory: k::map![
                 (r[Register::H] * 0x100 + r[Register::L]) -> (
-                    (m[r[Register::H] * 0x100 + r[Register::L]] * 2) % 0x100 + ((flags / 0x10) % 2)
+                    (m[r[Register::H] * 0x100 + r[Register::L]] * 2) % 0x100 + kequal::ite(carry, 1, 0)
                 ),
                 ..m,
             ],
@@ -1472,23 +1370,25 @@ pub mod spec {
         /// RR: byte result, flag behavior and read/modify/write ordering where applicable.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[target] && r[target] < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0),
+            (0 <= r[target] && r[target] < 0x100),
         )]
         contract_unary_rr_register: {
             k: [Instruction::Update8 { op: Unary::Rr, target: Operand::Reg { r: target } }],
             regs: r,
-            f: flags,
+            f: Flags { c: carry, .. },
             z: _,
             bus: log,
         } => {
             k: [],
-            f: kequal::ite((r[target] / 2 + ((flags / 0x10) % 2) * 0x80) == 0, 0x80, 0) + (
-                r[target] % 2
-            ) * 0x10,
-            z: (r[target] / 2 + ((flags / 0x10) % 2) * 0x80),
+            f: Flags {
+                z: r[target] / 2 + kequal::ite(carry, 1, 0) * 0x80 == 0,
+                n: false,
+                h: false,
+                c: r[target] % 2 == 1,
+            },
+            z: (r[target] / 2 + kequal::ite(carry, 1, 0) * 0x80),
             bus: log,
-            regs: k::map![target -> (r[target] / 2 + ((flags / 0x10) % 2) * 0x80), ..r],
+            regs: k::map![target -> (r[target] / 2 + kequal::ite(carry, 1, 0) * 0x80), ..r],
         };
 
         /// RR: byte result, flag behavior and read/modify/write ordering where applicable.
@@ -1496,25 +1396,25 @@ pub mod spec {
         #[k::requires(
             (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
                 && m[r[Register::H] * 0x100 + r[Register::L]] < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0)
                 && (0 <= r[Register::H] && r[Register::H] < 0x100)
                 && (0 <= r[Register::L] && r[Register::L] < 0x100),
         )]
         contract_unary_rr_indirect: {
             k: [Instruction::Update8 { op: Unary::Rr, target: Operand::HlIndirect }],
             regs: r,
-            f: flags,
+            f: Flags { c: carry, .. },
             z: _,
             bus: log,
             memory: m,
         } => {
             k: [],
-            f: kequal::ite(
-                (m[r[Register::H] * 0x100 + r[Register::L]] / 2 + ((flags / 0x10) % 2) * 0x80) == 0,
-                0x80,
-                0,
-            ) + (m[r[Register::H] * 0x100 + r[Register::L]] % 2) * 0x10,
-            z: (m[r[Register::H] * 0x100 + r[Register::L]] / 2 + ((flags / 0x10) % 2) * 0x80),
+            f: Flags {
+                z: m[r[Register::H] * 0x100 + r[Register::L]] / 2 + kequal::ite(carry, 1, 0) * 0x80 == 0,
+                n: false,
+                h: false,
+                c: m[r[Register::H] * 0x100 + r[Register::L]] % 2 == 1,
+            },
+            z: (m[r[Register::H] * 0x100 + r[Register::L]] / 2 + kequal::ite(carry, 1, 0) * 0x80),
             bus: [
                 ..log,
                 Event::Read {
@@ -1522,13 +1422,13 @@ pub mod spec {
                     value: m[r[Register::H] * 0x100 + r[Register::L]],
                 },
                 Event::Write { addr: (r[Register::H] * 0x100 + r[Register::L]), value: (
-                        m[r[Register::H] * 0x100 + r[Register::L]] / 2 + ((flags / 0x10) % 2) * 0x80
+                        m[r[Register::H] * 0x100 + r[Register::L]] / 2 + kequal::ite(carry, 1, 0) * 0x80
                     ),
                 },
             ],
             memory: k::map![
                 (r[Register::H] * 0x100 + r[Register::L]) -> (
-                    m[r[Register::H] * 0x100 + r[Register::L]] / 2 + ((flags / 0x10) % 2) * 0x80
+                    m[r[Register::H] * 0x100 + r[Register::L]] / 2 + kequal::ite(carry, 1, 0) * 0x80
                 ),
                 ..m,
             ],
@@ -1537,18 +1437,17 @@ pub mod spec {
         /// SLA: byte result, flag behavior and read/modify/write ordering where applicable.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[target] && r[target] < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0),
+            (0 <= r[target] && r[target] < 0x100),
         )]
         contract_unary_sla_register: {
             k: [Instruction::Update8 { op: Unary::Sla, target: Operand::Reg { r: target } }],
             regs: r,
-            f: flags,
+            f: _,
             z: _,
             bus: log,
         } => {
             k: [],
-            f: kequal::ite(((r[target] * 2) % 0x100) == 0, 0x80, 0) + (r[target] / 0x80) * 0x10,
+            f: Flags { z: (r[target] * 2) % 0x100 == 0, n: false, h: false, c: r[target] / 0x80 == 1 },
             z: ((r[target] * 2) % 0x100),
             bus: log,
             regs: k::map![target -> ((r[target] * 2) % 0x100), ..r],
@@ -1559,24 +1458,24 @@ pub mod spec {
         #[k::requires(
             (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
                 && m[r[Register::H] * 0x100 + r[Register::L]] < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0)
                 && (0 <= r[Register::H] && r[Register::H] < 0x100)
                 && (0 <= r[Register::L] && r[Register::L] < 0x100),
         )]
         contract_unary_sla_indirect: {
             k: [Instruction::Update8 { op: Unary::Sla, target: Operand::HlIndirect }],
             regs: r,
-            f: flags,
+            f: _,
             z: _,
             bus: log,
             memory: m,
         } => {
             k: [],
-            f: kequal::ite(
-                ((m[r[Register::H] * 0x100 + r[Register::L]] * 2) % 0x100) == 0,
-                0x80,
-                0,
-            ) + (m[r[Register::H] * 0x100 + r[Register::L]] / 0x80) * 0x10,
+            f: Flags {
+                z: (m[r[Register::H] * 0x100 + r[Register::L]] * 2) % 0x100 == 0,
+                n: false,
+                h: false,
+                c: m[r[Register::H] * 0x100 + r[Register::L]] / 0x80 == 1,
+            },
             z: ((m[r[Register::H] * 0x100 + r[Register::L]] * 2) % 0x100),
             bus: [
                 ..log,
@@ -1600,20 +1499,22 @@ pub mod spec {
         /// SRA: byte result, flag behavior and read/modify/write ordering where applicable.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[target] && r[target] < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0),
+            (0 <= r[target] && r[target] < 0x100),
         )]
         contract_unary_sra_register: {
             k: [Instruction::Update8 { op: Unary::Sra, target: Operand::Reg { r: target } }],
             regs: r,
-            f: flags,
+            f: _,
             z: _,
             bus: log,
         } => {
             k: [],
-            f: kequal::ite((r[target] / 2 + (r[target] / 0x80) * 0x80) == 0, 0x80, 0) + (
-                r[target] % 2
-            ) * 0x10,
+            f: Flags {
+                z: r[target] / 2 + (r[target] / 0x80) * 0x80 == 0,
+                n: false,
+                h: false,
+                c: r[target] % 2 == 1,
+            },
             z: (r[target] / 2 + (r[target] / 0x80) * 0x80),
             bus: log,
             regs: k::map![target -> (r[target] / 2 + (r[target] / 0x80) * 0x80), ..r],
@@ -1624,28 +1525,25 @@ pub mod spec {
         #[k::requires(
             (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
                 && m[r[Register::H] * 0x100 + r[Register::L]] < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0)
                 && (0 <= r[Register::H] && r[Register::H] < 0x100)
                 && (0 <= r[Register::L] && r[Register::L] < 0x100),
         )]
         contract_unary_sra_indirect: {
             k: [Instruction::Update8 { op: Unary::Sra, target: Operand::HlIndirect }],
             regs: r,
-            f: flags,
+            f: _,
             z: _,
             bus: log,
             memory: m,
         } => {
             k: [],
-            f: kequal::ite(
-                (
-                    m[r[Register::H] * 0x100 + r[Register::L]] / 2 + (
-                        m[r[Register::H] * 0x100 + r[Register::L]] / 0x80
-                    ) * 0x80
-                ) == 0,
-                0x80,
-                0,
-            ) + (m[r[Register::H] * 0x100 + r[Register::L]] % 2) * 0x10,
+            f: Flags {
+                z: m[r[Register::H] * 0x100 + r[Register::L]] / 2 + (m[r[Register::H] * 0x100 + r[Register::L]] / 0x80) * 0x80
+                    == 0,
+                n: false,
+                h: false,
+                c: m[r[Register::H] * 0x100 + r[Register::L]] % 2 == 1,
+            },
             z: (
                 m[r[Register::H] * 0x100 + r[Register::L]] / 2 + (
                     m[r[Register::H] * 0x100 + r[Register::L]] / 0x80
@@ -1677,18 +1575,17 @@ pub mod spec {
         /// SWAP: byte result, flag behavior and read/modify/write ordering where applicable.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[target] && r[target] < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0),
+            (0 <= r[target] && r[target] < 0x100),
         )]
         contract_unary_swap_register: {
             k: [Instruction::Update8 { op: Unary::Swap, target: Operand::Reg { r: target } }],
             regs: r,
-            f: flags,
+            f: _,
             z: _,
             bus: log,
         } => {
             k: [],
-            f: kequal::ite(r[target] == 0, 0x80, 0),
+            f: Flags { z: r[target] == 0, n: false, h: false, c: false },
             z: ((r[target] % 0x10) * 0x10 + r[target] / 0x10),
             bus: log,
             regs: k::map![target -> ((r[target] % 0x10) * 0x10 + r[target] / 0x10), ..r],
@@ -1699,20 +1596,24 @@ pub mod spec {
         #[k::requires(
             (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
                 && m[r[Register::H] * 0x100 + r[Register::L]] < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0)
                 && (0 <= r[Register::H] && r[Register::H] < 0x100)
                 && (0 <= r[Register::L] && r[Register::L] < 0x100),
         )]
         contract_unary_swap_indirect: {
             k: [Instruction::Update8 { op: Unary::Swap, target: Operand::HlIndirect }],
             regs: r,
-            f: flags,
+            f: _,
             z: _,
             bus: log,
             memory: m,
         } => {
             k: [],
-            f: kequal::ite(m[r[Register::H] * 0x100 + r[Register::L]] == 0, 0x80, 0),
+            f: Flags {
+                z: m[r[Register::H] * 0x100 + r[Register::L]] == 0,
+                n: false,
+                h: false,
+                c: false,
+            },
             z: (
                 (m[r[Register::H] * 0x100 + r[Register::L]] % 0x10) * 0x10 + m[
                     r[Register::H] * 0x100 + r[Register::L]
@@ -1744,18 +1645,17 @@ pub mod spec {
         /// SRL: byte result, flag behavior and read/modify/write ordering where applicable.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[target] && r[target] < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0),
+            (0 <= r[target] && r[target] < 0x100),
         )]
         contract_unary_srl_register: {
             k: [Instruction::Update8 { op: Unary::Srl, target: Operand::Reg { r: target } }],
             regs: r,
-            f: flags,
+            f: _,
             z: _,
             bus: log,
         } => {
             k: [],
-            f: kequal::ite((r[target] / 2) == 0, 0x80, 0) + (r[target] % 2) * 0x10,
+            f: Flags { z: r[target] / 2 == 0, n: false, h: false, c: r[target] % 2 == 1 },
             z: (r[target] / 2),
             bus: log,
             regs: k::map![target -> (r[target] / 2), ..r],
@@ -1766,22 +1666,24 @@ pub mod spec {
         #[k::requires(
             (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
                 && m[r[Register::H] * 0x100 + r[Register::L]] < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0)
                 && (0 <= r[Register::H] && r[Register::H] < 0x100)
                 && (0 <= r[Register::L] && r[Register::L] < 0x100),
         )]
         contract_unary_srl_indirect: {
             k: [Instruction::Update8 { op: Unary::Srl, target: Operand::HlIndirect }],
             regs: r,
-            f: flags,
+            f: _,
             z: _,
             bus: log,
             memory: m,
         } => {
             k: [],
-            f: kequal::ite((m[r[Register::H] * 0x100 + r[Register::L]] / 2) == 0, 0x80, 0) + (
-                m[r[Register::H] * 0x100 + r[Register::L]] % 2
-            ) * 0x10,
+            f: Flags {
+                z: m[r[Register::H] * 0x100 + r[Register::L]] / 2 == 0,
+                n: false,
+                h: false,
+                c: m[r[Register::H] * 0x100 + r[Register::L]] % 2 == 1,
+            },
             z: (m[r[Register::H] * 0x100 + r[Register::L]] / 2),
             bus: [
                 ..log,
@@ -1805,18 +1707,17 @@ pub mod spec {
         /// RLCA: byte result, flag behavior and read/modify/write ordering where applicable.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[Register::A] && r[Register::A] < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0),
+            (0 <= r[Register::A] && r[Register::A] < 0x100),
         )]
         contract_unary_rlca_accumulator: {
             k: [Instruction::Update8 { op: Unary::Rlca, target: Operand::Reg { r: Register::A } }],
             regs: r,
-            f: flags,
+            f: _,
             z: _,
             bus: log,
         } => {
             k: [],
-            f: 0 + (r[Register::A] / 0x80) * 0x10,
+            f: Flags { z: false, n: false, h: false, c: r[Register::A] / 0x80 == 1 },
             z: ((r[Register::A] * 2) % 0x100 + r[Register::A] / 0x80),
             bus: log,
             regs: k::map![
@@ -1828,18 +1729,17 @@ pub mod spec {
         /// RRCA: byte result, flag behavior and read/modify/write ordering where applicable.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[Register::A] && r[Register::A] < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0),
+            (0 <= r[Register::A] && r[Register::A] < 0x100),
         )]
         contract_unary_rrca_accumulator: {
             k: [Instruction::Update8 { op: Unary::Rrca, target: Operand::Reg { r: Register::A } }],
             regs: r,
-            f: flags,
+            f: _,
             z: _,
             bus: log,
         } => {
             k: [],
-            f: 0 + (r[Register::A] % 2) * 0x10,
+            f: Flags { z: false, n: false, h: false, c: r[Register::A] % 2 == 1 },
             z: (r[Register::A] / 2 + (r[Register::A] % 2) * 0x80),
             bus: log,
             regs: k::map![Register::A -> (r[Register::A] / 2 + (r[Register::A] % 2) * 0x80), ..r],
@@ -1848,22 +1748,21 @@ pub mod spec {
         /// RLA: byte result, flag behavior and read/modify/write ordering where applicable.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[Register::A] && r[Register::A] < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0),
+            (0 <= r[Register::A] && r[Register::A] < 0x100),
         )]
         contract_unary_rla_accumulator: {
             k: [Instruction::Update8 { op: Unary::Rla, target: Operand::Reg { r: Register::A } }],
             regs: r,
-            f: flags,
+            f: Flags { c: carry, .. },
             z: _,
             bus: log,
         } => {
             k: [],
-            f: 0 + (r[Register::A] / 0x80) * 0x10,
-            z: ((r[Register::A] * 2) % 0x100 + ((flags / 0x10) % 2)),
+            f: Flags { z: false, n: false, h: false, c: r[Register::A] / 0x80 == 1 },
+            z: ((r[Register::A] * 2) % 0x100 + kequal::ite(carry, 1, 0)),
             bus: log,
             regs: k::map![
-                Register::A -> ((r[Register::A] * 2) % 0x100 + ((flags / 0x10) % 2)),
+                Register::A -> ((r[Register::A] * 2) % 0x100 + kequal::ite(carry, 1, 0)),
                 ..r,
             ],
         };
@@ -1871,60 +1770,63 @@ pub mod spec {
         /// RRA: byte result, flag behavior and read/modify/write ordering where applicable.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[Register::A] && r[Register::A] < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0),
+            (0 <= r[Register::A] && r[Register::A] < 0x100),
         )]
         contract_unary_rra_accumulator: {
             k: [Instruction::Update8 { op: Unary::Rra, target: Operand::Reg { r: Register::A } }],
             regs: r,
-            f: flags,
+            f: Flags { c: carry, .. },
             z: _,
             bus: log,
         } => {
             k: [],
-            f: 0 + (r[Register::A] % 2) * 0x10,
-            z: (r[Register::A] / 2 + ((flags / 0x10) % 2) * 0x80),
+            f: Flags { z: false, n: false, h: false, c: r[Register::A] % 2 == 1 },
+            z: (r[Register::A] / 2 + kequal::ite(carry, 1, 0) * 0x80),
             bus: log,
-            regs: k::map![Register::A -> (r[Register::A] / 2 + ((flags / 0x10) % 2) * 0x80), ..r],
+            regs: k::map![Register::A -> (r[Register::A] / 2 + kequal::ite(carry, 1, 0) * 0x80), ..r],
         };
 
         /// DAA: byte result, flag behavior and read/modify/write ordering where applicable.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[Register::A] && r[Register::A] < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0),
+            (0 <= r[Register::A] && r[Register::A] < 0x100),
         )]
         contract_unary_daa_accumulator: {
             k: [Instruction::Update8 { op: Unary::Daa, target: Operand::Reg { r: Register::A } }],
             regs: r,
-            f: flags,
+            f: Flags { n: subtract, h: half_carry, c: carry, .. },
             z: _,
             bus: log,
         } => {
             k: [],
-            f: kequal::ite(ExpectedDaaByte(r[Register::A], flags) == 0, 0x80, 0) + (
-                (flags / 0x40) % 2
-            ) * 0x40 + kequal::ite(ExpectedDaaHigh(r[Register::A], flags) != 0, 0x10, 0),
-            z: ExpectedDaaByte(r[Register::A], flags),
+            f: Flags {
+                z: ExpectedDaaByte(r[Register::A], subtract, half_carry, carry) == 0,
+                n: subtract,
+                h: false,
+                c: ExpectedDaaHigh(r[Register::A], subtract, carry) != 0,
+            },
+            z: ExpectedDaaByte(r[Register::A], subtract, half_carry, carry),
             bus: log,
-            regs: k::map![Register::A -> ExpectedDaaByte(r[Register::A], flags), ..r],
+            regs: k::map![
+                Register::A -> ExpectedDaaByte(r[Register::A], subtract, half_carry, carry),
+                ..r,
+            ],
         };
 
         /// CPL: byte result, flag behavior and read/modify/write ordering where applicable.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[Register::A] && r[Register::A] < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0),
+            (0 <= r[Register::A] && r[Register::A] < 0x100),
         )]
         contract_unary_cpl_accumulator: {
             k: [Instruction::Update8 { op: Unary::Cpl, target: Operand::Reg { r: Register::A } }],
             regs: r,
-            f: flags,
+            f: Flags { z: zero, c: carry, .. },
             z: _,
             bus: log,
         } => {
             k: [],
-            f: (flags / 0x80) * 0x80 + 0x60 + flags % 0x20,
+            f: Flags { z: zero, n: true, h: true, c: carry },
             z: (0xFF - r[Register::A]),
             bus: log,
             regs: k::map![Register::A -> (0xFF - r[Register::A]), ..r],
@@ -1933,18 +1835,17 @@ pub mod spec {
         /// SCF: byte result, flag behavior and read/modify/write ordering where applicable.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[Register::A] && r[Register::A] < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0),
+            (0 <= r[Register::A] && r[Register::A] < 0x100),
         )]
         contract_unary_scf_accumulator: {
             k: [Instruction::Update8 { op: Unary::Scf, target: Operand::Reg { r: Register::A } }],
             regs: r,
-            f: flags,
+            f: Flags { z: zero, .. },
             z: _,
             bus: log,
         } => {
             k: [],
-            f: (flags / 0x80) * 0x80 + 0x10,
+            f: Flags { z: zero, n: false, h: false, c: true },
             z: r[Register::A],
             bus: log,
             regs: k::map![Register::A -> r[Register::A], ..r],
@@ -1953,18 +1854,17 @@ pub mod spec {
         /// CCF: byte result, flag behavior and read/modify/write ordering where applicable.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[Register::A] && r[Register::A] < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0),
+            (0 <= r[Register::A] && r[Register::A] < 0x100),
         )]
         contract_unary_ccf_accumulator: {
             k: [Instruction::Update8 { op: Unary::Ccf, target: Operand::Reg { r: Register::A } }],
             regs: r,
-            f: flags,
+            f: Flags { z: zero, c: carry, .. },
             z: _,
             bus: log,
         } => {
             k: [],
-            f: (flags / 0x80) * 0x80 + (1 - ((flags / 0x10) % 2)) * 0x10,
+            f: Flags { z: zero, n: false, h: false, c: !carry },
             z: r[Register::A],
             bus: log,
             regs: k::map![Register::A -> r[Register::A], ..r],
@@ -1975,8 +1875,7 @@ pub mod spec {
         #[k::requires(
             0 <= bit
                 && bit < 8
-                && (0 <= r[target] && r[target] < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0),
+                && (0 <= r[target] && r[target] < 0x100),
         )]
         contract_bit_resetbit_register: {
             k: [
@@ -1986,7 +1885,6 @@ pub mod spec {
                 },
             ],
             regs: r,
-            f: flags,
             z: _,
             bus: log,
         } => {
@@ -2004,7 +1902,6 @@ pub mod spec {
                 && (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
                     && m[r[Register::H] * 0x100 + r[Register::L]]
                         < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0)
                 && (0 <= r[Register::H] && r[Register::H] < 0x100)
                 && (0 <= r[Register::L] && r[Register::L] < 0x100),
         )]
@@ -2016,7 +1913,6 @@ pub mod spec {
                 },
             ],
             regs: r,
-            f: flags,
             z: _,
             bus: log,
             memory: m,
@@ -2055,8 +1951,7 @@ pub mod spec {
         #[k::requires(
             0 <= bit
                 && bit < 8
-                && (0 <= r[target] && r[target] < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0),
+                && (0 <= r[target] && r[target] < 0x100),
         )]
         contract_bit_setbit_register: {
             k: [
@@ -2066,7 +1961,6 @@ pub mod spec {
                 },
             ],
             regs: r,
-            f: flags,
             z: _,
             bus: log,
         } => {
@@ -2087,7 +1981,6 @@ pub mod spec {
                 && (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
                     && m[r[Register::H] * 0x100 + r[Register::L]]
                         < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0)
                 && (0 <= r[Register::H] && r[Register::H] < 0x100)
                 && (0 <= r[Register::L] && r[Register::L] < 0x100),
         )]
@@ -2099,7 +1992,6 @@ pub mod spec {
                 },
             ],
             regs: r,
-            f: flags,
             z: _,
             bus: log,
             memory: m,
@@ -2138,8 +2030,7 @@ pub mod spec {
         #[k::requires(
             0 <= bit
                 && bit < 8
-                && (0 <= r[target] && r[target] < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0),
+                && (0 <= r[target] && r[target] < 0x100),
         )]
         contract_bit_testbit_register: {
             k: [
@@ -2149,12 +2040,12 @@ pub mod spec {
                 },
             ],
             regs: r,
-            f: flags,
+            f: Flags { c: carry, .. },
             z: _,
             bus: log,
         } => {
             k: [],
-            f: kequal::ite((r[target] / (1 << bit)) % 2 == 0, 0x80, 0) + 0x20 + flags % 0x20,
+            f: Flags { z: (r[target] / (1 << bit)) % 2 == 0, n: false, h: true, c: carry },
             z: r[target],
             bus: log,
         };
@@ -2167,7 +2058,6 @@ pub mod spec {
                 && (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
                     && m[r[Register::H] * 0x100 + r[Register::L]]
                         < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0)
                 && (0 <= r[Register::H] && r[Register::H] < 0x100)
                 && (0 <= r[Register::L] && r[Register::L] < 0x100),
         )]
@@ -2179,17 +2069,18 @@ pub mod spec {
                 },
             ],
             regs: r,
-            f: flags,
+            f: Flags { c: carry, .. },
             z: _,
             bus: log,
             memory: m,
         } => {
             k: [],
-            f: kequal::ite(
-                (m[r[Register::H] * 0x100 + r[Register::L]] / (1 << bit)) % 2 == 0,
-                0x80,
-                0,
-            ) + 0x20 + flags % 0x20,
+            f: Flags {
+                z: (m[r[Register::H] * 0x100 + r[Register::L]] / (1 << bit)) % 2 == 0,
+                n: false,
+                h: true,
+                c: carry,
+            },
             z: m[r[Register::H] * 0x100 + r[Register::L]],
             bus: [
                 ..log,
@@ -2209,7 +2100,6 @@ pub mod spec {
         contract_inc16_registers: {
             k: [Instruction::Inc16 { pair: Pair16::Registers { high, low } }],
             regs: r,
-            f: flags,
             sp: sp,
             bus: log,
         } => {
@@ -2228,7 +2118,6 @@ pub mod spec {
         contract_inc16_sp: {
             k: [Instruction::Inc16 { pair: Pair16::StackPointer }],
             regs: r,
-            f: flags,
             sp: sp,
             bus: log,
         } => {
@@ -2246,7 +2135,6 @@ pub mod spec {
         contract_dec16_registers: {
             k: [Instruction::Dec16 { pair: Pair16::Registers { high, low } }],
             regs: r,
-            f: flags,
             sp: sp,
             bus: log,
         } => {
@@ -2265,7 +2153,6 @@ pub mod spec {
         contract_dec16_sp: {
             k: [Instruction::Dec16 { pair: Pair16::StackPointer }],
             regs: r,
-            f: flags,
             sp: sp,
             bus: log,
         } => {
@@ -2316,14 +2203,13 @@ pub mod spec {
         #[k::requires(
             (0 <= r[Register::H] && r[Register::H] < 0x100)
                 && (0 <= r[Register::L] && r[Register::L] < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0)
                 && (0 <= r[high] && r[high] < 0x100)
                 && (0 <= r[low] && r[low] < 0x100),
         )]
         contract_add_hl_registers: {
             k: [Instruction::AddHl { pair: Pair16::Registers { high, low } }],
             regs: r,
-            f: flags,
+            f: Flags { z: zero, .. },
             bus: log,
         } => {
             k: [],
@@ -2340,15 +2226,13 @@ pub mod spec {
                 ) % 0x100,
                 ..r,
             ],
-            f: (flags / 0x80) * 0x80 + (
-                (
-                    (r[Register::H] * 0x100 + r[Register::L]) % 0x1000 + (
-                        r[high] * 0x100 + r[low]
-                    ) % 0x1000
-                ) / 0x1000
-            ) * 0x20 + (
-                ((r[Register::H] * 0x100 + r[Register::L]) + (r[high] * 0x100 + r[low])) / 0x1_0000
-            ) * 0x10,
+            f: Flags {
+                z: zero,
+                n: false,
+                h: (r[Register::H] * 0x100 + r[Register::L]) % 0x1000 + (r[high] * 0x100 + r[low]) % 0x1000
+                    >= 0x1000,
+                c: (r[Register::H] * 0x100 + r[Register::L]) + (r[high] * 0x100 + r[low]) >= 0x1_0000,
+            },
             bus: [..log, Event::Idle],
         };
 
@@ -2357,13 +2241,12 @@ pub mod spec {
         #[k::requires(
             (0 <= r[Register::H] && r[Register::H] < 0x100)
                 && (0 <= r[Register::L] && r[Register::L] < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0)
                 && (0 <= sp && sp < 0x1_0000),
         )]
         contract_add_hl_sp: {
             k: [Instruction::AddHl { pair: Pair16::StackPointer }],
             regs: r,
-            f: flags,
+            f: Flags { z: zero, .. },
             bus: log,
             sp: sp,
         } => {
@@ -2377,9 +2260,12 @@ pub mod spec {
                 ) % 0x100,
                 ..r,
             ],
-            f: (flags / 0x80) * 0x80 + (
-                ((r[Register::H] * 0x100 + r[Register::L]) % 0x1000 + sp % 0x1000) / 0x1000
-            ) * 0x20 + (((r[Register::H] * 0x100 + r[Register::L]) + sp) / 0x1_0000) * 0x10,
+            f: Flags {
+                z: zero,
+                n: false,
+                h: (r[Register::H] * 0x100 + r[Register::L]) % 0x1000 + sp % 0x1000 >= 0x1000,
+                c: (r[Register::H] * 0x100 + r[Register::L]) + sp >= 0x1_0000,
+            },
             bus: [..log, Event::Idle],
         };
     }

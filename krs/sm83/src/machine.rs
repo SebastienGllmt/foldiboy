@@ -3,7 +3,7 @@
 use k::Term;
 use k::builtin::{Bool, Int, KSequence, List, Map};
 
-use crate::alu::{CarrySet, ZeroSet};
+use crate::alu::{FlagByte, FlagSet, Flags};
 use crate::arith::Pair;
 use crate::decode::{Cond, Condition, Pair16, RegPair};
 use crate::interrupt::Step;
@@ -42,9 +42,9 @@ pub struct Machine {
     /// The 8-bit register file.
     #[k::cell]
     pub regs: Map<Reg8, Int>,
-    /// The flag register: Z, N, H, C in bits 7 to 4; bits 3 to 0 are zero.
+    /// The flag register: zero, subtract, half-carry and carry.
     #[k::cell]
-    pub f: Int,
+    pub f: FlagSet,
     #[k::cell]
     pub pc: Int,
     #[k::cell]
@@ -92,7 +92,7 @@ impl Machine {
     #[k::init]
     pub fn init(
         #[k::config_var(name = "REGS")] regs: Map<Reg8, Int>,
-        #[k::config_var(name = "F")] f: Int,
+        #[k::config_var(name = "F")] f: FlagSet,
         #[k::config_var(name = "PC")] pc: Int,
         #[k::config_var(name = "SP")] sp: Int,
         #[k::config_var(name = "IME")] ime: Bool,
@@ -132,7 +132,7 @@ pub fn Hl(registers: Term<Map<Reg8, Int>>) -> Term<Int> {
 pub fn PairValue(
     pair: Term<RegPair>,
     registers: Term<Map<Reg8, Int>>,
-    flags: Term<Int>,
+    flags: Term<FlagSet>,
     sp: Term<Int>,
 ) -> Term<Int>;
 
@@ -141,19 +141,19 @@ k::equations! {
     pair_value_registers:
         (Pair16::Registers(high, low), registers, _, _)
         => { Pair(registers[high], registers[low]) };
-    pair_value_af: (Pair16::Af, registers, flags, _) => Pair(registers[Register::A], flags);
+    pair_value_af: (Pair16::Af, registers, flags, _) => Pair(registers[Register::A], FlagByte(flags));
     pair_value_sp: (Pair16::StackPointer, _, _, sp)  => sp;
 }
 
-/// Whether a branch condition holds for a flag byte.
+/// Whether a branch condition holds for the flags.
 #[k::function(total, internal)]
-pub fn Holds(cond: Term<Cond>, flags: Term<Int>) -> Term<Bool>;
+pub fn Holds(cond: Term<Cond>, flags: Term<FlagSet>) -> Term<Bool>;
 
 k::equations! {
     for Holds;
-    holds_always   : (Condition::Always, _)       => true;
-    holds_not_zero : (Condition::NotZero, flags)  => !ZeroSet(flags);
-    holds_zero     : (Condition::Zero, flags)     => ZeroSet(flags);
-    holds_not_carry: (Condition::NotCarry, flags) => !CarrySet(flags);
-    holds_carry    : (Condition::Carry, flags)    => CarrySet(flags);
+    holds_always   : (Condition::Always, _)                 => true;
+    holds_not_zero : (Condition::NotZero, Flags { z, .. })  => !z;
+    holds_zero     : (Condition::Zero, Flags { z, .. })     => z;
+    holds_not_carry: (Condition::NotCarry, Flags { c, .. }) => !c;
+    holds_carry    : (Condition::Carry, Flags { c, .. })    => c;
 }

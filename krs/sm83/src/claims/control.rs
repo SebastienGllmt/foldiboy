@@ -6,7 +6,7 @@
 
 use k::builtin::{int, kequal};
 use crate::decode::{Address, Condition, Instruction, Operand, Pair16};
-use crate::alu::{Alu, Unary};
+use crate::alu::{Alu, Flags, Unary};
 use crate::machine::{Event, Register};
 use crate::Machine;
 
@@ -18,11 +18,11 @@ pub mod spec {
 
         /// RGBDS conditional control flow: taken condition, PC result, stack effects and exact bus order.
         #[k::claim(all_paths)]
-        #[k::requires((0 <= pc && pc < 0x1_0000) && (0 <= m[pc] && m[pc] < 0x100) && (0 <= flags && flags < 0x100 && flags % 0x10 == 0) && (kequal::eq(cond, Condition::Always) || (kequal::eq(cond, Condition::Zero) && flags / 0x80 == 1) || (kequal::eq(cond, Condition::NotZero) && flags / 0x80 == 0) || (kequal::eq(cond, Condition::Carry) && (flags / 0x10) % 2 == 1) || (kequal::eq(cond, Condition::NotCarry) && (flags / 0x10) % 2 == 0)))]
+        #[k::requires((0 <= pc && pc < 0x1_0000) && (0 <= m[pc] && m[pc] < 0x100) && (kequal::eq(cond, Condition::Always) || (kequal::eq(cond, Condition::Zero) && zero) || (kequal::eq(cond, Condition::NotZero) && !zero) || (kequal::eq(cond, Condition::Carry) && carry) || (kequal::eq(cond, Condition::NotCarry) && !carry)))]
         contract_jumprelative_taken: {
             k: [Instruction::JumpRelative { cond: cond @ (Condition::Always | Condition::NotZero | Condition::Zero | Condition::NotCarry | Condition::Carry) }],
             pc: pc,
-            f: flags,
+            f: Flags { z: zero, c: carry, .. },
             memory: m,
             z: _,
             bus: log,
@@ -35,11 +35,11 @@ pub mod spec {
 
         /// RGBDS conditional control flow: taken condition, PC result, stack effects and exact bus order.
         #[k::claim(all_paths)]
-        #[k::requires((0 <= pc && pc < 0x1_0000) && (0 <= m[pc] && m[pc] < 0x100) && (0 <= flags && flags < 0x100 && flags % 0x10 == 0) && !(kequal::eq(cond, Condition::Always) || (kequal::eq(cond, Condition::Zero) && flags / 0x80 == 1) || (kequal::eq(cond, Condition::NotZero) && flags / 0x80 == 0) || (kequal::eq(cond, Condition::Carry) && (flags / 0x10) % 2 == 1) || (kequal::eq(cond, Condition::NotCarry) && (flags / 0x10) % 2 == 0)))]
+        #[k::requires((0 <= pc && pc < 0x1_0000) && (0 <= m[pc] && m[pc] < 0x100) && !(kequal::eq(cond, Condition::Always) || (kequal::eq(cond, Condition::Zero) && zero) || (kequal::eq(cond, Condition::NotZero) && !zero) || (kequal::eq(cond, Condition::Carry) && carry) || (kequal::eq(cond, Condition::NotCarry) && !carry)))]
         contract_jumprelative_not_taken: {
             k: [Instruction::JumpRelative { cond: cond @ (Condition::NotZero | Condition::Zero | Condition::NotCarry | Condition::Carry) }],
             pc: pc,
-            f: flags,
+            f: Flags { z: zero, c: carry, .. },
             memory: m,
             z: _,
             bus: log,
@@ -52,11 +52,11 @@ pub mod spec {
 
         /// RGBDS conditional control flow: taken condition, PC result, stack effects and exact bus order.
         #[k::claim(all_paths)]
-        #[k::requires((0 <= pc && pc < 0x1_0000) && (0 <= m[pc] && m[pc] < 0x100) && (0 <= flags && flags < 0x100 && flags % 0x10 == 0) && (kequal::eq(cond, Condition::Always) || (kequal::eq(cond, Condition::Zero) && flags / 0x80 == 1) || (kequal::eq(cond, Condition::NotZero) && flags / 0x80 == 0) || (kequal::eq(cond, Condition::Carry) && (flags / 0x10) % 2 == 1) || (kequal::eq(cond, Condition::NotCarry) && (flags / 0x10) % 2 == 0)) && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100))]
+        #[k::requires((0 <= pc && pc < 0x1_0000) && (0 <= m[pc] && m[pc] < 0x100) && (kequal::eq(cond, Condition::Always) || (kequal::eq(cond, Condition::Zero) && zero) || (kequal::eq(cond, Condition::NotZero) && !zero) || (kequal::eq(cond, Condition::Carry) && carry) || (kequal::eq(cond, Condition::NotCarry) && !carry)) && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100))]
         contract_jump_taken: {
             k: [Instruction::Jump { cond: cond @ (Condition::Always | Condition::NotZero | Condition::Zero | Condition::NotCarry | Condition::Carry) }],
             pc: pc,
-            f: flags,
+            f: Flags { z: zero, c: carry, .. },
             memory: m,
             z: _,
             bus: log,
@@ -71,11 +71,11 @@ pub mod spec {
 
         /// RGBDS conditional control flow: taken condition, PC result, stack effects and exact bus order.
         #[k::claim(all_paths)]
-        #[k::requires((0 <= pc && pc < 0x1_0000) && (0 <= m[pc] && m[pc] < 0x100) && (0 <= flags && flags < 0x100 && flags % 0x10 == 0) && !(kequal::eq(cond, Condition::Always) || (kequal::eq(cond, Condition::Zero) && flags / 0x80 == 1) || (kequal::eq(cond, Condition::NotZero) && flags / 0x80 == 0) || (kequal::eq(cond, Condition::Carry) && (flags / 0x10) % 2 == 1) || (kequal::eq(cond, Condition::NotCarry) && (flags / 0x10) % 2 == 0)) && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100))]
+        #[k::requires((0 <= pc && pc < 0x1_0000) && (0 <= m[pc] && m[pc] < 0x100) && !(kequal::eq(cond, Condition::Always) || (kequal::eq(cond, Condition::Zero) && zero) || (kequal::eq(cond, Condition::NotZero) && !zero) || (kequal::eq(cond, Condition::Carry) && carry) || (kequal::eq(cond, Condition::NotCarry) && !carry)) && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100))]
         contract_jump_not_taken: {
             k: [Instruction::Jump { cond: cond @ (Condition::NotZero | Condition::Zero | Condition::NotCarry | Condition::Carry) }],
             pc: pc,
-            f: flags,
+            f: Flags { z: zero, c: carry, .. },
             memory: m,
             z: _,
             bus: log,
@@ -90,11 +90,11 @@ pub mod spec {
 
         /// RGBDS conditional control flow: taken condition, PC result, stack effects and exact bus order.
         #[k::claim(all_paths)]
-        #[k::requires((0 <= pc && pc < 0x1_0000) && (0 <= m[pc] && m[pc] < 0x100) && (0 <= flags && flags < 0x100 && flags % 0x10 == 0) && (kequal::eq(cond, Condition::Always) || (kequal::eq(cond, Condition::Zero) && flags / 0x80 == 1) || (kequal::eq(cond, Condition::NotZero) && flags / 0x80 == 0) || (kequal::eq(cond, Condition::Carry) && (flags / 0x10) % 2 == 1) || (kequal::eq(cond, Condition::NotCarry) && (flags / 0x10) % 2 == 0)) && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100) && (0 <= sp && sp < 0x1_0000) && m.contains_key((sp + 0xFFFF) % 0x1_0000) && m.contains_key((sp + 0xFFFE) % 0x1_0000) && (0 <= m[(sp + 0xFFFF) % 0x1_0000] && m[(sp + 0xFFFF) % 0x1_0000] < 0x100) && (0 <= m[(sp + 0xFFFE) % 0x1_0000] && m[(sp + 0xFFFE) % 0x1_0000] < 0x100))]
+        #[k::requires((0 <= pc && pc < 0x1_0000) && (0 <= m[pc] && m[pc] < 0x100) && (kequal::eq(cond, Condition::Always) || (kequal::eq(cond, Condition::Zero) && zero) || (kequal::eq(cond, Condition::NotZero) && !zero) || (kequal::eq(cond, Condition::Carry) && carry) || (kequal::eq(cond, Condition::NotCarry) && !carry)) && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100) && (0 <= sp && sp < 0x1_0000) && m.contains_key((sp + 0xFFFF) % 0x1_0000) && m.contains_key((sp + 0xFFFE) % 0x1_0000) && (0 <= m[(sp + 0xFFFF) % 0x1_0000] && m[(sp + 0xFFFF) % 0x1_0000] < 0x100) && (0 <= m[(sp + 0xFFFE) % 0x1_0000] && m[(sp + 0xFFFE) % 0x1_0000] < 0x100))]
         contract_call_taken: {
             k: [Instruction::Call { cond: cond @ (Condition::Always | Condition::NotZero | Condition::Zero | Condition::NotCarry | Condition::Carry) }],
             pc: pc,
-            f: flags,
+            f: Flags { z: zero, c: carry, .. },
             memory: m,
             z: _,
             bus: log,
@@ -116,11 +116,11 @@ pub mod spec {
 
         /// RGBDS conditional control flow: taken condition, PC result, stack effects and exact bus order.
         #[k::claim(all_paths)]
-        #[k::requires((0 <= pc && pc < 0x1_0000) && (0 <= m[pc] && m[pc] < 0x100) && (0 <= flags && flags < 0x100 && flags % 0x10 == 0) && !(kequal::eq(cond, Condition::Always) || (kequal::eq(cond, Condition::Zero) && flags / 0x80 == 1) || (kequal::eq(cond, Condition::NotZero) && flags / 0x80 == 0) || (kequal::eq(cond, Condition::Carry) && (flags / 0x10) % 2 == 1) || (kequal::eq(cond, Condition::NotCarry) && (flags / 0x10) % 2 == 0)) && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100))]
+        #[k::requires((0 <= pc && pc < 0x1_0000) && (0 <= m[pc] && m[pc] < 0x100) && !(kequal::eq(cond, Condition::Always) || (kequal::eq(cond, Condition::Zero) && zero) || (kequal::eq(cond, Condition::NotZero) && !zero) || (kequal::eq(cond, Condition::Carry) && carry) || (kequal::eq(cond, Condition::NotCarry) && !carry)) && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100))]
         contract_call_not_taken: {
             k: [Instruction::Call { cond: cond @ (Condition::NotZero | Condition::Zero | Condition::NotCarry | Condition::Carry) }],
             pc: pc,
-            f: flags,
+            f: Flags { z: zero, c: carry, .. },
             memory: m,
             z: _,
             bus: log,
@@ -140,7 +140,6 @@ pub mod spec {
             k: [Instruction::Return],
             sp: sp,
             pc: _,
-            f: flags,
             memory: m,
             w: _,
             z: _,
@@ -156,12 +155,12 @@ pub mod spec {
 
         /// RET/RETI: pop low then high, final internal cycle; RETI enables IME immediately.
         #[k::claim(all_paths)]
-        #[k::requires((0 <= sp && sp < 0x1_0000) && (0 <= m[sp] && m[sp] < 0x100) && (0 <= m[(sp + 1) % 0x1_0000] && m[(sp + 1) % 0x1_0000] < 0x100) && (0 <= flags && flags < 0x100 && flags % 0x10 == 0) && (kequal::eq(cond, Condition::Always) || (kequal::eq(cond, Condition::Zero) && flags / 0x80 == 1) || (kequal::eq(cond, Condition::NotZero) && flags / 0x80 == 0) || (kequal::eq(cond, Condition::Carry) && (flags / 0x10) % 2 == 1) || (kequal::eq(cond, Condition::NotCarry) && (flags / 0x10) % 2 == 0)))]
+        #[k::requires((0 <= sp && sp < 0x1_0000) && (0 <= m[sp] && m[sp] < 0x100) && (0 <= m[(sp + 1) % 0x1_0000] && m[(sp + 1) % 0x1_0000] < 0x100) && (kequal::eq(cond, Condition::Always) || (kequal::eq(cond, Condition::Zero) && zero) || (kequal::eq(cond, Condition::NotZero) && !zero) || (kequal::eq(cond, Condition::Carry) && carry) || (kequal::eq(cond, Condition::NotCarry) && !carry)))]
         contract_returnif_taken: {
             k: [Instruction::ReturnIf { cond: cond @ (Condition::Always | Condition::NotZero | Condition::Zero | Condition::NotCarry | Condition::Carry) }],
             sp: sp,
             pc: _,
-            f: flags,
+            f: Flags { z: zero, c: carry, .. },
             memory: m,
             w: _,
             z: _,
@@ -182,7 +181,6 @@ pub mod spec {
             k: [Instruction::ReturnFromInterrupt],
             sp: sp,
             pc: _,
-            f: flags,
             memory: m,
             w: _,
             z: _,
@@ -200,10 +198,10 @@ pub mod spec {
 
         /// Untaken conditional RET tests flags for one internal cycle and does not access the stack.
         #[k::claim(all_paths)]
-        #[k::requires((0 <= flags && flags < 0x100 && flags % 0x10 == 0) && !(kequal::eq(cond, Condition::Always) || (kequal::eq(cond, Condition::Zero) && flags / 0x80 == 1) || (kequal::eq(cond, Condition::NotZero) && flags / 0x80 == 0) || (kequal::eq(cond, Condition::Carry) && (flags / 0x10) % 2 == 1) || (kequal::eq(cond, Condition::NotCarry) && (flags / 0x10) % 2 == 0)))]
+        #[k::requires(!(kequal::eq(cond, Condition::Always) || (kequal::eq(cond, Condition::Zero) && zero) || (kequal::eq(cond, Condition::NotZero) && !zero) || (kequal::eq(cond, Condition::Carry) && carry) || (kequal::eq(cond, Condition::NotCarry) && !carry)))]
         contract_returnif_not_taken: {
             k: [Instruction::ReturnIf { cond: cond @ (Condition::NotZero | Condition::Zero | Condition::NotCarry | Condition::Carry) }],
-            f: flags,
+            f: Flags { z: zero, c: carry, .. },
             bus: log,
         } => {
             k: [],

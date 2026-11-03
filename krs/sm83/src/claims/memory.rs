@@ -5,10 +5,24 @@
 //! These are authored proof inputs; none calls the implementation's ALU/result helpers.
 
 use crate::Machine;
-use crate::alu::{Alu, Unary};
+use crate::alu::{Alu, Flags, Unary};
 use crate::decode::{Address, Condition, Instruction, Operand, Pair16};
 use crate::machine::{Event, Register};
-use k::builtin::{int, kequal};
+use k::builtin::{Bool, Int, int, kequal};
+
+/// RGBDS PUSH AF: the F byte holds Z, N, H, C in bits 7 to 4 and zero in bits 3 to 0.
+#[k::function(total, internal)]
+pub fn ExpectedFlagByte(
+    zero: k::Term<Bool>,
+    subtract: k::Term<Bool>,
+    half_carry: k::Term<Bool>,
+    carry: k::Term<Bool>,
+) -> k::Term<Int> {
+    0x80 * kequal::ite(zero, 1, 0)
+        + 0x40 * kequal::ite(subtract, 1, 0)
+        + 0x20 * kequal::ite(half_carry, 1, 0)
+        + 0x10 * kequal::ite(carry, 1, 0)
+}
 
 #[k::spec_module(name = "SM83-MEMORY-SPEC", imports = [crate])]
 pub mod spec {
@@ -412,7 +426,6 @@ pub mod spec {
         contract_push_registers: {
             k: [Instruction::Push { pair: Pair16::Registers { high, low } }],
             regs: r,
-            f: flags,
             sp: sp,
             memory: m,
             bus: log,
@@ -443,10 +456,8 @@ pub mod spec {
         #[k::requires(
             (0 <= sp && sp < 0x1_0000)
                 && (0 <= r[Register::A] && r[Register::A] < 0x100)
-                && (0 <= flags && flags < 0x100)
                 && m.contains_key((sp + 0xFFFF) % 0x1_0000)
                 && m.contains_key((sp + 0xFFFE) % 0x1_0000)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0)
                 && (0 <= m[(sp + 0xFFFF) % 0x1_0000]
                     && m[(sp + 0xFFFF) % 0x1_0000] < 0x100)
                 && (0 <= m[(sp + 0xFFFE) % 0x1_0000]
@@ -455,7 +466,7 @@ pub mod spec {
         contract_push_af: {
             k: [Instruction::Push { pair: Pair16::Af }],
             regs: r,
-            f: flags,
+            f: Flags { z: zero, n: subtract, h: half_carry, c: carry },
             sp: sp,
             memory: m,
             bus: log,
@@ -464,7 +475,7 @@ pub mod spec {
             sp: ((sp + 0xFFFE) % 0x1_0000),
             memory: k::map![
                 ((sp + 0xFFFF) % 0x1_0000) -> r[Register::A],
-                ((sp + 0xFFFE) % 0x1_0000) -> flags,
+                ((sp + 0xFFFE) % 0x1_0000) -> ExpectedFlagByte(zero, subtract, half_carry, carry),
                 ..m,
             ],
             bus: [
@@ -476,7 +487,7 @@ pub mod spec {
                 },
                 Event::Write {
                     addr: ((sp + 0xFFFE) % 0x1_0000),
-                    value: flags,
+                    value: ExpectedFlagByte(zero, subtract, half_carry, carry),
                 },
             ],
         };
@@ -491,7 +502,6 @@ pub mod spec {
         contract_pop_registers: {
             k: [Instruction::Pop { pair: Pair16::Registers { high, low } }],
             regs: r,
-            f: flags,
             sp: sp,
             memory: m,
             bus: log,
@@ -537,7 +547,12 @@ pub mod spec {
                 Event::Read { addr: ((sp + 1) % 0x1_0000), value: m[(sp + 1) % 0x1_0000] },
             ],
             regs: k::map![Register::A -> m[(sp + 1) % 0x1_0000], ..r],
-            f: (m[sp] / 0x10) * 0x10,
+            f: Flags {
+                z: m[sp] / 0x80 == 1,
+                n: (m[sp] / 0x40) % 2 == 1,
+                h: (m[sp] / 0x20) % 2 == 1,
+                c: (m[sp] / 0x10) % 2 == 1,
+            },
         };
 
         /// Signed SP addition: sign extension for the result, unsigned low-byte carry flags, Z=N=0.
@@ -559,7 +574,12 @@ pub mod spec {
         } => {
             k: [],
             pc: ((pc + 1) % 0x1_0000),
-            f: ((sp % 0x10 + m[pc] % 0x10) / 0x10) * 0x20 + ((sp % 0x100 + m[pc]) / 0x100) * 0x10,
+            f: Flags {
+                z: false,
+                n: false,
+                h: sp % 0x10 + m[pc] % 0x10 >= 0x10,
+                c: sp % 0x100 + m[pc] >= 0x100,
+            },
             z: m[pc],
             bus: [..log, Event::Read { addr: pc, value: m[pc] }, Event::Idle],
             regs: k::map![
@@ -593,7 +613,12 @@ pub mod spec {
         } => {
             k: [],
             pc: ((pc + 1) % 0x1_0000),
-            f: ((sp % 0x10 + m[pc] % 0x10) / 0x10) * 0x20 + ((sp % 0x100 + m[pc]) / 0x100) * 0x10,
+            f: Flags {
+                z: false,
+                n: false,
+                h: sp % 0x10 + m[pc] % 0x10 >= 0x10,
+                c: sp % 0x100 + m[pc] >= 0x100,
+            },
             z: m[pc],
             bus: [..log, Event::Read { addr: pc, value: m[pc] }, Event::Idle, Event::Idle],
             sp: int::rem_euclid(sp + kequal::ite(m[pc] < 0x80, m[pc], m[pc] - 0x100), 0x1_0000),

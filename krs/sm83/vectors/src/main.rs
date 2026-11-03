@@ -119,8 +119,9 @@ fn inputs(names: &Names, initial: &Value, (w, z): (i64, i64)) -> ConfigInputs {
     }
     let memory = krs_exec::Value::map(ram.into_iter().map(|(address, value)| (address.into(), value.into())));
     let mut variables: Vec<(String, ConfigValue)> = vec![("REGS".to_owned(), registers.into())];
+    variables.push(("F".to_owned(), names.flags(int(&initial["f"])).into()));
     variables.extend(
-        ["f", "pc", "sp"]
+        ["pc", "sp"]
             .iter()
             .map(|name| (name.to_uppercase(), krs_exec::Value::from(int(&initial[*name])).into())),
     );
@@ -172,7 +173,8 @@ fn expected(vector: &Value) -> Observed {
 
 fn observed(names: &Names, view: &StateView) -> Result<Observed, String> {
     let mut registers = names.registers(view)?;
-    for name in ["f", "pc", "sp"] {
+    registers.insert("f".to_owned(), names.flag_byte(view)?);
+    for name in ["pc", "sp"] {
         registers.insert(name.to_owned(), cell_int(view, name)?);
     }
     let bus = names

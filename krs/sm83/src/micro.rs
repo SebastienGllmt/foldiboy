@@ -11,7 +11,7 @@ use crate::alu::{AluOp, UnaryOp};
 use crate::decode::{AddrMode, Address, Cond, Condition, Operand, Operand8, Pair16, RegPair};
 use crate::machine::{Event, Register};
 use crate::{
-    AluFlags, AluResult, BitFlags, Decode, DecodeCb, High, Hl, Holds, Low, Machine, Pair, Signed,
+    AluFlags, AluResult, BitFlags, ByteFlags, Decode, DecodeCb, High, Hl, Holds, Low, Machine, Pair, Signed,
     SpOffsetFlags, UnaryFlags, UnaryResult, Word,
 };
 
@@ -198,7 +198,7 @@ k::rules! {
         regs: k::map![high -> High(value), low -> Low(value), ..registers],
     };
 
-    /// The low four bits of `F` are always zero.
+    /// `F` takes the flags of the low byte, whose bits 3 to 0 it has no place for.
     set_pair_af: {
         k: [Micro::SetPair { pair: Pair16::Af, value }, ..],
         regs: registers,
@@ -206,7 +206,7 @@ k::rules! {
     } => {
         k: [..],
         regs: k::map![Register::A -> High(value), ..registers],
-        f: Low(value) & 0xF0,
+        f: ByteFlags(Low(value)),
     };
 
     set_pair_sp: {

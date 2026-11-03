@@ -59,6 +59,23 @@ impl Names {
         self.index.ctor(name, fields).unwrap_or_else(|error| panic!("{name}: {error}"))
     }
 
+    /// The flags of a flag byte, which holds Z, N, H, C in bits 7 to 4.
+    pub fn flags(&self, byte: i64) -> Value {
+        let bit = |weight: i64| Value::from(byte & weight != 0);
+        self.ctor("Flags", vec![("z", bit(0x80)), ("n", bit(0x40)), ("h", bit(0x20)), ("c", bit(0x10))])
+    }
+
+    /// The flag byte of a result's flags, Z, N, H, C in bits 7 to 4.
+    pub fn flag_byte(&self, view: &StateView) -> Result<i64, String> {
+        let value = cell(view, "f")?;
+        let flags = value.as_ctor().ok_or("<f> is not a constructor")?;
+        let bit = |name: &str, weight: i64| {
+            let set = flags.field(name).and_then(Value::as_bool).ok_or(format!("{name} of <f>"))?;
+            Ok::<i64, String>(if set { weight } else { 0 })
+        };
+        Ok(bit("z", 0x80)? | bit("n", 0x40)? | bit("h", 0x20)? | bit("c", 0x10)?)
+    }
+
     /// The register file, from each register's value in `REGISTERS` order.
     pub fn register_file(&self, values: [i64; 7]) -> Value {
         Value::map(self.registers.iter().cloned().zip(values.map(Value::from)))

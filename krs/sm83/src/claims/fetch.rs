@@ -5,7 +5,7 @@
 //! These are authored proof inputs; none calls the implementation's ALU/result helpers.
 
 use crate::Machine;
-use crate::alu::{Alu, Unary};
+use crate::alu::{Alu, Flags, Unary};
 use crate::decode::{Address, Condition, Instruction, Operand, Pair16};
 use crate::interrupt::{IE, IF, Step};
 use crate::machine::{Event, Register};
@@ -403,8 +403,7 @@ pub mod spec {
             (0 <= pc && pc < 0x1_0000)
                 && m[pc] == 0xCB
                 && m[(pc + 1) % 0x1_0000] == 0x07
-                && (0 <= r[Register::A] && r[Register::A] < 0x100)
-                && (0 <= flags && flags < 0x100 && flags % 0x10 == 0),
+                && (0 <= r[Register::A] && r[Register::A] < 0x100),
         )]
         contract_fetch_cb_rlc_a: {
             k: [Micro::Fetch],
@@ -412,7 +411,7 @@ pub mod spec {
             halt_bug: false,
             regs: r,
             memory: m,
-            f: flags,
+            f: _,
             z: _,
             bus: log,
         } => {
@@ -422,9 +421,12 @@ pub mod spec {
                 Register::A -> ((r[Register::A] * 2) % 0x100 + r[Register::A] / 0x80),
                 ..r,
             ],
-            f: kequal::ite(((r[Register::A] * 2) % 0x100 + r[Register::A] / 0x80) == 0, 0x80, 0) + (
-                r[Register::A] / 0x80
-            ) * 0x10,
+            f: Flags {
+                z: (r[Register::A] * 2) % 0x100 + r[Register::A] / 0x80 == 0,
+                n: false,
+                h: false,
+                c: r[Register::A] / 0x80 == 1,
+            },
             z: ((r[Register::A] * 2) % 0x100 + r[Register::A] / 0x80),
             bus: [
                 ..log,

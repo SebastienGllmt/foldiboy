@@ -10,7 +10,7 @@ schema_version = 2
 # contract that case tooling checks initial states against.
 [well_formed]
 registers = "each of A B C D E H L is present and in 0..=0xFF"
-f = "in 0..=0xFF with bits 3 to 0 zero"
+f = "any Flags value (four Booleans; no premise needed)"
 pc = "in 0..=0xFFFF"
 sp = "in 0..=0xFFFF"
 memory = "keys in 0..=0xFFFF, values in 0..=0xFF; IE (0xFFFF) and IF (0xFF0F) present"

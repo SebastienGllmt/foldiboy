@@ -6,9 +6,10 @@ The native spec module `SM83-CONTRACTS-SPEC` imports the individual modules and 
 
 ## Sources and justification
 
-The expected results are specified independently of the implementation's `AluResult`, `AluFlags`, `UnaryResult`, `UnaryFlags`, `AddHlFlags`, `Holds`, operand tables and arithmetic helpers.
+The expected results are specified independently of the implementation's `AluResult`, `AluFlags`, `UnaryResult`, `UnaryFlags`, `AddHlFlags`, `Holds`, `FlagByte`, `ByteFlags`, operand tables and arithmetic helpers.
+Flags are written as the `Flags { z, n, h, c }` constructor: a claim binds the incoming fields it reads (`f: Flags { c: carry, .. }`), states each outgoing field as a Boolean expression, and leaves `f` out where the flags are unchanged.
 Using builtin integer arithmetic, bitwise operations, map updates and conditional terms is intentional.
-Repeated decision tables and long formulas use `Expected*` functions beside the claims: decoder field tables in `decode.rs`, DAA corrections in `instructions.rs`, and interrupt priority in `boundaries.rs`.
+Repeated decision tables and long formulas use `Expected*` functions beside the claims: decoder field tables in `decode.rs`, DAA corrections in `instructions.rs`, the pushed flag byte in `memory.rs`, and interrupt priority in `boundaries.rs`.
 These functions must remain independent of the implementation helpers; sharing an implementation table with an expected result would hide errors in that table.
 The decoder tables use root `match` bodies and interrupt priority uses root `if` bodies, which KRS turns into defining equations.
 The DAA formulas use short scalar conditional expressions inside named helpers.
@@ -36,7 +37,7 @@ Numbers are written according to their role, rather than giving every repeated v
 | --- | --- | --- |
 | Memory-mapped register identity | Existing architectural constants | `IE` (`0xFFFF`), `IF` (`0xFF0F`) |
 | Opcode or byte value | Two-digit hex | `0xFB` (EI), `0x76` (HALT), `0x06` (LD B,d8) |
-| Flag weight or byte mask | Hex | Z/N/H/C use `0x80`/`0x40`/`0x20`/`0x10`; a byte mask is `0xFF` |
+| Flag weight or byte mask | Hex | Z/N/H/C use `0x80`/`0x40`/`0x20`/`0x10` in the `PUSH AF`/`POP AF` byte; a byte mask is `0xFF` |
 | Interrupt bit set | Binary, grouped into nibbles | `0b0001_1111` for the five interrupt bits; `0b0000_0100` for timer |
 | Fixed address or interrupt vector | Four-digit hex | `0x0100`, `0x0200`, `0x0040`, `0x0058` |
 | Arithmetic radix or modulus | Hex power of two | `0x10` for nibbles, `0x100` for bytes, `0x1000` for the bit-11 carry boundary, `0x1_0000` for words |
@@ -108,7 +109,7 @@ The audit also checks that these indices equal the previous quotient at every pe
 - Decoded contracts start after opcode fetch and interrupt arbitration; their cycle logs contain only the remaining cycles.
 - Fetch contracts start at `Micro::Fetch`; only the explicitly named `Step::Boundary` contracts include arbitration.
   A contract from `#boundary` ends at the next `#boundary`, the first state of the run its postcondition matches; the two-instruction EI sequences use concrete fixtures whose first boundary differs from their postcondition.
-- Operand/register bounds and valid incoming flag bits are explicit where used. A written address must already be in the memory map (the write rule requires it).
+- Operand/register bounds are explicit where used; every `Flags` value is a valid flag state, so incoming flags need no premise. A written address must already be in the memory map (the write rule requires it).
 - Memory is the current flat map. No cartridge, I/O read masks, timer, DMA, PPU, joypad, STOP execution or peripheral-driven interrupt arrival is established here.
 - The ordinary dispatch contracts exclude writes to IE/IF. IE alias cases are separately specified; writes onto IF and arbitrary asynchronous changes need further contracts and source qualification.
 - Full decoder coverage plus decoded family contracts does not yet constitute a proof that every fetched instruction composes correctly. The fetch contracts above are the present composition coverage.
