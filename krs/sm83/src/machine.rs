@@ -1,7 +1,7 @@
 //! Architectural state, the bus, and the initial configuration.
 
 use k::Term;
-use k::builtin::{Bool, Int, KSequence, List, Map};
+use k::builtin::{Bool, Bytes, Int, KSequence, List, Map, bytes};
 
 use crate::alu::{FlagByte, FlagSet, Flags};
 use crate::arith::Pair;
@@ -73,7 +73,14 @@ pub struct Machine {
     /// same reason as `w`, tested the same way.
     #[k::cell(unobservable)]
     pub z: Int,
-    /// The address space, as a flat map from address to byte.
+    /// The cartridge ROM: read-only, at addresses 0 up to its length, at most
+    /// 32 KiB (so `IE`, `IF` and RAM are always in `memory`). Empty for
+    /// a flat-RAM machine (SingleStepTests, the claims), where `memory` holds
+    /// every address.
+    #[k::cell]
+    pub rom: Bytes,
+    /// Every other address, as a map from address to byte. A read of an address
+    /// the map does not hold is stuck: the model gives unwritten RAM no value.
     #[k::cell]
     pub memory: Map<Int, Int>,
     /// The event log: what the CPU showed outside itself since the start, one
@@ -99,6 +106,7 @@ impl Machine {
         #[k::config_var(name = "EI_PENDING")] ei_pending: Bool,
         #[k::config_var(name = "HALTED")] halted: Bool,
         #[k::config_var(name = "HALT_BUG")] halt_bug: Bool,
+        #[k::config_var(name = "ROM")] rom: Bytes,
         #[k::config_var(name = "MEMORY")] memory: Map<Int, Int>,
         #[k::config_var(name = "W")] w: Int,
         #[k::config_var(name = "Z")] z: Int,
@@ -115,10 +123,17 @@ impl Machine {
             halt_bug,
             w,
             z,
+            rom,
             memory,
             bus: k::builtin::list::empty(),
         }
     }
+}
+
+/// Whether `addr` is in the ROM region, 0 up to the ROM's length.
+#[k::function(total, internal)]
+pub fn InRom(rom: Term<Bytes>, addr: Term<Int>) -> Term<Bool> {
+    0 <= addr && addr < bytes::length(rom)
 }
 
 /// The value of the register pair `HL`.

@@ -129,6 +129,8 @@ fn inputs(names: &Names, initial: &Value, (w, z): (i64, i64)) -> ConfigInputs {
     for name in ["EI_PENDING", "HALTED", "HALT_BUG"] {
         variables.push((name.to_owned(), krs_exec::Value::from(false).into()));
     }
+    // SingleStepTests treats all 64 KiB as RAM: no ROM region.
+    variables.push(("ROM".to_owned(), krs_exec::Value::Bytes(Vec::new()).into()));
     variables.push(("MEMORY".to_owned(), memory.into()));
     variables.push(("W".to_owned(), krs_exec::Value::from(w).into()));
     variables.push(("Z".to_owned(), krs_exec::Value::from(z).into()));

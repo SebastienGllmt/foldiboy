@@ -35,8 +35,10 @@ fn usage() -> ! {
 }
 
 fn inputs(names: &Names, rom: &[u8]) -> ConfigInputs {
+    // The cartridge's first 32 KiB are the read-only ROM region (no mapper);
+    // every address above it starts as zero, with the I/O bytes the tests need.
+    let rom_region = rom[..rom.len().min(0x8000)].to_vec();
     let mut memory = vec![0u8; 0x10000];
-    memory[..rom.len().min(0x8000)].copy_from_slice(&rom[..rom.len().min(0x8000)]);
     for (address, value) in IO_INIT {
         memory[address] = value;
     }
@@ -44,9 +46,10 @@ fn inputs(names: &Names, rom: &[u8]) -> ConfigInputs {
         memory
             .iter()
             .enumerate()
+            .skip(rom_region.len())
             .map(|(address, value)| (Value::from(address as i64), Value::from(i64::from(*value)))),
     );
-    let variables: [(&str, ConfigValue); 11] = [
+    let variables: [(&str, ConfigValue); 12] = [
         ("REGS", names.register_file([1, 0, 19, 0, 216, 1, 77]).into()),
         // F = $B0: Z, H and C set.
         ("F", names.flags(0xB0).into()),
@@ -56,6 +59,7 @@ fn inputs(names: &Names, rom: &[u8]) -> ConfigInputs {
         ("EI_PENDING", Value::from(false).into()),
         ("HALTED", Value::from(false).into()),
         ("HALT_BUG", Value::from(false).into()),
+        ("ROM", Value::Bytes(rom_region).into()),
         ("MEMORY", memory.into()),
         ("W", Value::from(0).into()),
         ("Z", Value::from(0).into()),

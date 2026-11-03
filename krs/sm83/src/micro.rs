@@ -5,13 +5,13 @@
 //! `WriteByte`, `Idle`) takes one machine cycle and appends one entry to
 //! the bus log; every other micro-operation takes no time.
 
-use k::builtin::Int;
+use k::builtin::{Int, bytes};
 
 use crate::alu::{AluOp, UnaryOp};
 use crate::decode::{AddrMode, Address, Cond, Condition, Operand, Operand8, Pair16, RegPair};
 use crate::machine::{Event, Register};
 use crate::{
-    AluFlags, AluResult, BitFlags, ByteFlags, Decode, DecodeCb, High, Hl, Holds, Low, Machine, Pair, Signed,
+    AluFlags, AluResult, BitFlags, ByteFlags, Decode, DecodeCb, High, Hl, Holds, InRom, Low, Machine, Pair, Signed,
     SpOffsetFlags, UnaryFlags, UnaryResult, Word,
 };
 
@@ -95,11 +95,12 @@ pub enum Micro {
 k::rules! {
     for Machine;
 
-    #[k::requires(!bug)]
+    #[k::requires(!bug && !InRom(rom, pc))]
     fetch: {
         k: [Micro::Fetch, ..],
         pc,
         halt_bug: bug,
+        rom,
         memory: { pc -> opcode, .. },
         bus: log,
     } => {
@@ -108,12 +109,27 @@ k::rules! {
         bus: [..log, Event::Read { addr: pc, value: opcode }],
     };
 
+    /// As `fetch`, reading the ROM.
+    #[k::requires(!bug && InRom(rom, pc))]
+    fetch_rom: {
+        k: [Micro::Fetch, ..],
+        pc,
+        halt_bug: bug,
+        rom,
+        bus: log,
+    } => {
+        k: [Decode(bytes::get(rom, pc)), ..],
+        pc: Word(pc + 1),
+        bus: [..log, Event::Read { addr: pc, value: bytes::get(rom, pc) }],
+    };
+
     /// After the `HALT` bug, the fetch leaves `PC` on the opcode it read.
-    #[k::requires(bug)]
+    #[k::requires(bug && !InRom(rom, pc))]
     fetch_halt_bug: {
         k: [Micro::Fetch, ..],
         pc,
         halt_bug: bug,
+        rom,
         memory: { pc -> opcode, .. },
         bus: log,
     } => {
@@ -122,15 +138,44 @@ k::rules! {
         bus: [..log, Event::Read { addr: pc, value: opcode }],
     };
 
+    /// As `fetch_halt_bug`, reading the ROM.
+    #[k::requires(bug && InRom(rom, pc))]
+    fetch_halt_bug_rom: {
+        k: [Micro::Fetch, ..],
+        pc,
+        halt_bug: bug,
+        rom,
+        bus: log,
+    } => {
+        k: [Decode(bytes::get(rom, pc)), ..],
+        halt_bug: false,
+        bus: [..log, Event::Read { addr: pc, value: bytes::get(rom, pc) }],
+    };
+
+    #[k::requires(!InRom(rom, pc))]
     fetch_cb: {
         k: [Micro::FetchCb, ..],
         pc,
+        rom,
         memory: { pc -> opcode, .. },
         bus: log,
     } => {
         k: [DecodeCb(opcode), ..],
         pc: Word(pc + 1),
         bus: [..log, Event::Read { addr: pc, value: opcode }],
+    };
+
+    /// As `fetch_cb`, reading the ROM.
+    #[k::requires(InRom(rom, pc))]
+    fetch_cb_rom: {
+        k: [Micro::FetchCb, ..],
+        pc,
+        rom,
+        bus: log,
+    } => {
+        k: [DecodeCb(bytes::get(rom, pc)), ..],
+        pc: Word(pc + 1),
+        bus: [..log, Event::Read { addr: pc, value: bytes::get(rom, pc) }],
     };
 
     load_z_register: {
@@ -301,8 +346,10 @@ k::rules! {
         ],
     };
 
+    #[k::requires(!InRom(rom, addr))]
     read_z: {
         k: [Micro::ReadZ { addr }, ..],
+        rom,
         memory: { addr -> value, .. },
         z: _,
         bus: log,
@@ -312,8 +359,23 @@ k::rules! {
         bus: [..log, Event::Read { addr, value }],
     };
 
+    /// As `read_z`, reading the ROM.
+    #[k::requires(InRom(rom, addr))]
+    read_z_rom: {
+        k: [Micro::ReadZ { addr }, ..],
+        rom,
+        z: _,
+        bus: log,
+    } => {
+        k: [..],
+        z: bytes::get(rom, addr),
+        bus: [..log, Event::Read { addr, value: bytes::get(rom, addr) }],
+    };
+
+    #[k::requires(!InRom(rom, addr))]
     read_w: {
         k: [Micro::ReadW { addr }, ..],
+        rom,
         memory: { addr -> value, .. },
         w: _,
         bus: log,
@@ -323,14 +385,41 @@ k::rules! {
         bus: [..log, Event::Read { addr, value }],
     };
 
-    #[k::requires(memory.contains_key(addr))]
+    /// As `read_w`, reading the ROM.
+    #[k::requires(InRom(rom, addr))]
+    read_w_rom: {
+        k: [Micro::ReadW { addr }, ..],
+        rom,
+        w: _,
+        bus: log,
+    } => {
+        k: [..],
+        w: bytes::get(rom, addr),
+        bus: [..log, Event::Read { addr, value: bytes::get(rom, addr) }],
+    };
+
+    /// A write outside the ROM stores the byte, at an address the map holds or not.
+    #[k::requires(!InRom(rom, addr))]
     write_byte: {
         k: [Micro::WriteByte { addr, value }, ..],
+        rom,
         memory,
         bus: log,
     } => {
         k: [..],
         memory: k::map![addr -> value, ..memory],
+        bus: [..log, Event::Write { addr, value }],
+    };
+
+    /// A write to the ROM changes nothing a cartridge without a mapper holds; the
+    /// cycle still drives the bus.
+    #[k::requires(InRom(rom, addr))]
+    write_byte_rom: {
+        k: [Micro::WriteByte { addr, value }, ..],
+        rom,
+        bus: log,
+    } => {
+        k: [..],
         bus: [..log, Event::Write { addr, value }],
     };
 

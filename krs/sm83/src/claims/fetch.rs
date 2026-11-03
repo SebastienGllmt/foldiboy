@@ -10,7 +10,7 @@ use crate::decode::{Address, Condition, Instruction, Operand, Pair16};
 use crate::interrupt::{IE, IF, Step};
 use crate::machine::{Event, Register};
 use crate::micro::Micro;
-use k::builtin::{int, kequal};
+use k::builtin::{bytes, int, kequal};
 
 #[k::spec_module(name = "SM83-FETCH-SPEC", imports = [crate])]
 pub mod spec {
@@ -20,8 +20,9 @@ pub mod spec {
 
         /// NOP: full opcode fetch, wrapping PC and preservation of every other cell.
         #[k::claim(all_paths)]
-        #[k::requires((0 <= pc && pc < 0x1_0000) && m[pc] == 0x00)]
+        #[k::requires(bytes::length(rom) == 0 && ((0 <= pc && pc < 0x1_0000) && m[pc] == 0x00))]
         contract_fetch_nop: {
+            rom,
             k: [Micro::Fetch],
             pc: pc,
             halt_bug: false,
@@ -36,11 +37,15 @@ pub mod spec {
         /// LD r8,d8: independent opcode encoding, operand read, final PC and preserved flags.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= pc && pc < 0x1_0000)
-                && m[pc] == 0x06
-                && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100),
+            bytes::length(rom) == 0
+                && (
+                    (0 <= pc && pc < 0x1_0000)
+                        && m[pc] == 0x06
+                        && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100)
+                ),
         )]
         contract_fetch_ld_b_immediate: {
+            rom,
             k: [Micro::Fetch],
             pc: pc,
             halt_bug: false,
@@ -63,11 +68,15 @@ pub mod spec {
         /// LD r8,d8: independent opcode encoding, operand read, final PC and preserved flags.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= pc && pc < 0x1_0000)
-                && m[pc] == 0x0E
-                && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100),
+            bytes::length(rom) == 0
+                && (
+                    (0 <= pc && pc < 0x1_0000)
+                        && m[pc] == 0x0E
+                        && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100)
+                ),
         )]
         contract_fetch_ld_c_immediate: {
+            rom,
             k: [Micro::Fetch],
             pc: pc,
             halt_bug: false,
@@ -90,11 +99,15 @@ pub mod spec {
         /// LD r8,d8: independent opcode encoding, operand read, final PC and preserved flags.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= pc && pc < 0x1_0000)
-                && m[pc] == 0x16
-                && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100),
+            bytes::length(rom) == 0
+                && (
+                    (0 <= pc && pc < 0x1_0000)
+                        && m[pc] == 0x16
+                        && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100)
+                ),
         )]
         contract_fetch_ld_d_immediate: {
+            rom,
             k: [Micro::Fetch],
             pc: pc,
             halt_bug: false,
@@ -117,11 +130,15 @@ pub mod spec {
         /// LD r8,d8: independent opcode encoding, operand read, final PC and preserved flags.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= pc && pc < 0x1_0000)
-                && m[pc] == 0x1E
-                && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100),
+            bytes::length(rom) == 0
+                && (
+                    (0 <= pc && pc < 0x1_0000)
+                        && m[pc] == 0x1E
+                        && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100)
+                ),
         )]
         contract_fetch_ld_e_immediate: {
+            rom,
             k: [Micro::Fetch],
             pc: pc,
             halt_bug: false,
@@ -144,11 +161,15 @@ pub mod spec {
         /// LD r8,d8: independent opcode encoding, operand read, final PC and preserved flags.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= pc && pc < 0x1_0000)
-                && m[pc] == 0x26
-                && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100),
+            bytes::length(rom) == 0
+                && (
+                    (0 <= pc && pc < 0x1_0000)
+                        && m[pc] == 0x26
+                        && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100)
+                ),
         )]
         contract_fetch_ld_h_immediate: {
+            rom,
             k: [Micro::Fetch],
             pc: pc,
             halt_bug: false,
@@ -171,11 +192,15 @@ pub mod spec {
         /// LD r8,d8: independent opcode encoding, operand read, final PC and preserved flags.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= pc && pc < 0x1_0000)
-                && m[pc] == 0x2E
-                && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100),
+            bytes::length(rom) == 0
+                && (
+                    (0 <= pc && pc < 0x1_0000)
+                        && m[pc] == 0x2E
+                        && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100)
+                ),
         )]
         contract_fetch_ld_l_immediate: {
+            rom,
             k: [Micro::Fetch],
             pc: pc,
             halt_bug: false,
@@ -198,11 +223,15 @@ pub mod spec {
         /// LD r8,d8: independent opcode encoding, operand read, final PC and preserved flags.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= pc && pc < 0x1_0000)
-                && m[pc] == 0x3E
-                && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100),
+            bytes::length(rom) == 0
+                && (
+                    (0 <= pc && pc < 0x1_0000)
+                        && m[pc] == 0x3E
+                        && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100)
+                ),
         )]
         contract_fetch_ld_a_immediate: {
+            rom,
             k: [Micro::Fetch],
             pc: pc,
             halt_bug: false,
@@ -225,12 +254,16 @@ pub mod spec {
         /// LD r16,d16: three reads, little-endian assembly and PC wrapping, flags unchanged.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= pc && pc < 0x1_0000)
-                && m[pc] == 0x01
-                && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100)
-                && (0 <= m[(pc + 2) % 0x1_0000] && m[(pc + 2) % 0x1_0000] < 0x100),
+            bytes::length(rom) == 0
+                && (
+                    (0 <= pc && pc < 0x1_0000)
+                        && m[pc] == 0x01
+                        && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100)
+                        && (0 <= m[(pc + 2) % 0x1_0000] && m[(pc + 2) % 0x1_0000] < 0x100)
+                ),
         )]
         contract_fetch_ld_bc_immediate: {
+            rom,
             k: [Micro::Fetch],
             pc: pc,
             halt_bug: false,
@@ -260,12 +293,16 @@ pub mod spec {
         /// LD r16,d16: three reads, little-endian assembly and PC wrapping, flags unchanged.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= pc && pc < 0x1_0000)
-                && m[pc] == 0x11
-                && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100)
-                && (0 <= m[(pc + 2) % 0x1_0000] && m[(pc + 2) % 0x1_0000] < 0x100),
+            bytes::length(rom) == 0
+                && (
+                    (0 <= pc && pc < 0x1_0000)
+                        && m[pc] == 0x11
+                        && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100)
+                        && (0 <= m[(pc + 2) % 0x1_0000] && m[(pc + 2) % 0x1_0000] < 0x100)
+                ),
         )]
         contract_fetch_ld_de_immediate: {
+            rom,
             k: [Micro::Fetch],
             pc: pc,
             halt_bug: false,
@@ -295,12 +332,16 @@ pub mod spec {
         /// LD r16,d16: three reads, little-endian assembly and PC wrapping, flags unchanged.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= pc && pc < 0x1_0000)
-                && m[pc] == 0x21
-                && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100)
-                && (0 <= m[(pc + 2) % 0x1_0000] && m[(pc + 2) % 0x1_0000] < 0x100),
+            bytes::length(rom) == 0
+                && (
+                    (0 <= pc && pc < 0x1_0000)
+                        && m[pc] == 0x21
+                        && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100)
+                        && (0 <= m[(pc + 2) % 0x1_0000] && m[(pc + 2) % 0x1_0000] < 0x100)
+                ),
         )]
         contract_fetch_ld_hl_immediate: {
+            rom,
             k: [Micro::Fetch],
             pc: pc,
             halt_bug: false,
@@ -330,12 +371,16 @@ pub mod spec {
         /// LD r16,d16: three reads, little-endian assembly and PC wrapping, flags unchanged.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= pc && pc < 0x1_0000)
-                && m[pc] == 0x31
-                && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100)
-                && (0 <= m[(pc + 2) % 0x1_0000] && m[(pc + 2) % 0x1_0000] < 0x100),
+            bytes::length(rom) == 0
+                && (
+                    (0 <= pc && pc < 0x1_0000)
+                        && m[pc] == 0x31
+                        && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100)
+                        && (0 <= m[(pc + 2) % 0x1_0000] && m[(pc + 2) % 0x1_0000] < 0x100)
+                ),
         )]
         contract_fetch_ld_sp_immediate: {
+            rom,
             k: [Micro::Fetch],
             pc: pc,
             halt_bug: false,
@@ -360,8 +405,9 @@ pub mod spec {
 
         /// Pan Docs HALT bug: consume the bug flag and suppress precisely this opcode-fetch increment.
         #[k::claim(all_paths)]
-        #[k::requires((0 <= pc && pc < 0x1_0000) && m[pc] == 0x00)]
+        #[k::requires(bytes::length(rom) == 0 && ((0 <= pc && pc < 0x1_0000) && m[pc] == 0x00))]
         contract_halt_bug_fetch_nop: {
+            rom,
             k: [Micro::Fetch],
             pc: pc,
             halt_bug: true,
@@ -375,8 +421,9 @@ pub mod spec {
 
         /// HALT bug followed by LD B,d8: opcode is reread as the immediate byte.
         #[k::claim(all_paths)]
-        #[k::requires((0 <= pc && pc < 0x1_0000) && m[pc] == 0x06)]
+        #[k::requires(bytes::length(rom) == 0 && ((0 <= pc && pc < 0x1_0000) && m[pc] == 0x06))]
         contract_halt_bug_repeats_immediate: {
+            rom,
             k: [Micro::Fetch],
             pc: pc,
             halt_bug: true,
@@ -400,12 +447,16 @@ pub mod spec {
         /// CB RLC A: prefix consumes its own fetch; unlike RLCA, zero follows the result.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= pc && pc < 0x1_0000)
-                && m[pc] == 0xCB
-                && m[(pc + 1) % 0x1_0000] == 0x07
-                && (0 <= r[Register::A] && r[Register::A] < 0x100),
+            bytes::length(rom) == 0
+                && (
+                    (0 <= pc && pc < 0x1_0000)
+                        && m[pc] == 0xCB
+                        && m[(pc + 1) % 0x1_0000] == 0x07
+                        && (0 <= r[Register::A] && r[Register::A] < 0x100)
+                ),
         )]
         contract_fetch_cb_rlc_a: {
+            rom,
             k: [Micro::Fetch],
             pc: pc,
             halt_bug: false,
@@ -438,14 +489,18 @@ pub mod spec {
         /// LD HL,d16 from the boundary, with no interrupt requested: arbitration, fetch, decode and execution compose.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= pc && pc < 0x1_0000)
-                && m[pc] == 0x21
-                && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100)
-                && (0 <= m[(pc + 2) % 0x1_0000] && m[(pc + 2) % 0x1_0000] < 0x100)
-                && m[IE] == 0
-                && m[IF] == 0,
+            bytes::length(rom) == 0
+                && (
+                    (0 <= pc && pc < 0x1_0000)
+                        && m[pc] == 0x21
+                        && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100)
+                        && (0 <= m[(pc + 2) % 0x1_0000] && m[(pc + 2) % 0x1_0000] < 0x100)
+                        && m[IE] == 0
+                        && m[IF] == 0
+                ),
         )]
         contract_boundary_ld_hl_immediate: {
+            rom,
             k: [Step::Boundary],
             pc: pc,
             halt_bug: false,

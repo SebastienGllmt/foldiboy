@@ -13,11 +13,11 @@
 //! lowest such bit is the one served.
 
 use k::Term;
-use k::builtin::{Bool, Int, Map};
+use k::builtin::{Bool, Int, Map, bytes};
 
 use crate::Machine;
 use crate::arith::{High, Low, Word};
-use crate::machine::Event;
+use crate::machine::{Event, InRom};
 use crate::micro::{Micro, MicroOp};
 
 #[k::constructors(sort = MicroOp, result = k::KResult)]
@@ -177,14 +177,28 @@ k::rules! {
         sp: Word(sp - 2),
     };
 
+    #[k::requires(!InRom(rom, pc))]
     discard_fetch: {
         k: [Step::DiscardFetch, ..],
         pc,
+        rom,
         memory: { pc -> opcode, .. },
         bus: log,
     } => {
         k: [..],
         bus: [..log, Event::Read { addr: pc, value: opcode }],
+    };
+
+    /// As `discard_fetch`, reading the ROM.
+    #[k::requires(InRom(rom, pc))]
+    discard_fetch_rom: {
+        k: [Step::DiscardFetch, ..],
+        pc,
+        rom,
+        bus: log,
+    } => {
+        k: [..],
+        bus: [..log, Event::Read { addr: pc, value: bytes::get(rom, pc) }],
     };
 
     /// `IE` is sampled after the high-byte push, so a push of the high byte

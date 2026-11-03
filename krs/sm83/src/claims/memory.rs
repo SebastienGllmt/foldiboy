@@ -8,7 +8,7 @@ use crate::Machine;
 use crate::alu::{Alu, Flags, Unary};
 use crate::decode::{Address, Condition, Instruction, Operand, Pair16};
 use crate::machine::{Event, Register};
-use k::builtin::{Bool, Int, int, kequal};
+use k::builtin::{Bool, Int, bytes, int, kequal};
 
 /// RGBDS PUSH AF: the F byte holds Z, N, H, C in bits 7 to 4 and zero in bits 3 to 0.
 #[k::function(total, internal)]
@@ -33,12 +33,16 @@ pub mod spec {
         /// LD through A: specified address calculation, HL step where present, bus order and preserved flags.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[high] && r[high] < 0x100)
-                && (0 <= r[low] && r[low] < 0x100)
-                && (0 <= m[r[high] * 0x100 + r[low]]
-                    && m[r[high] * 0x100 + r[low]] < 0x100),
+            bytes::length(rom) == 0
+                && (
+                    (0 <= r[high] && r[high] < 0x100)
+                        && (0 <= r[low] && r[low] < 0x100)
+                        && (0 <= m[r[high] * 0x100 + r[low]]
+                            && m[r[high] * 0x100 + r[low]] < 0x100)
+                ),
         )]
         contract_load_a_pair: {
+            rom,
             k: [Instruction::LoadA { addr: Address::ViaPair { high, low } }],
             regs: r,
             memory: m,
@@ -62,14 +66,18 @@ pub mod spec {
         /// LD through A: specified address calculation, HL step where present, bus order and preserved flags.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[high] && r[high] < 0x100)
-                && (0 <= r[low] && r[low] < 0x100)
-                && (0 <= r[Register::A] && r[Register::A] < 0x100)
-                && m.contains_key(r[high] * 0x100 + r[low])
-                && (0 <= m[r[high] * 0x100 + r[low]]
-                    && m[r[high] * 0x100 + r[low]] < 0x100),
+            bytes::length(rom) == 0
+                && (
+                    (0 <= r[high] && r[high] < 0x100)
+                        && (0 <= r[low] && r[low] < 0x100)
+                        && (0 <= r[Register::A] && r[Register::A] < 0x100)
+                        && m.contains_key(r[high] * 0x100 + r[low])
+                        && (0 <= m[r[high] * 0x100 + r[low]]
+                            && m[r[high] * 0x100 + r[low]] < 0x100)
+                ),
         )]
         contract_store_a_pair: {
+            rom,
             k: [Instruction::StoreA { addr: Address::ViaPair { high, low } }],
             regs: r,
             memory: m,
@@ -93,14 +101,18 @@ pub mod spec {
         /// LD through A: specified address calculation, HL step where present, bus order and preserved flags.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[Register::H] && r[Register::H] < 0x100)
-                && (0 <= r[Register::L] && r[Register::L] < 0x100)
-                && (delta == 1 || delta == -1)
-                && (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
-                    && m[r[Register::H] * 0x100 + r[Register::L]]
-                        < 0x100),
+            bytes::length(rom) == 0
+                && (
+                    (0 <= r[Register::H] && r[Register::H] < 0x100)
+                        && (0 <= r[Register::L] && r[Register::L] < 0x100)
+                        && (delta == 1 || delta == -1)
+                        && (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
+                            && m[r[Register::H] * 0x100 + r[Register::L]]
+                                < 0x100)
+                ),
         )]
         contract_load_a_hl_step: {
+            rom,
             k: [Instruction::LoadA { addr: Address::ViaHlStep { delta } }],
             regs: r,
             memory: m,
@@ -133,16 +145,20 @@ pub mod spec {
         /// LD through A: specified address calculation, HL step where present, bus order and preserved flags.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[Register::H] && r[Register::H] < 0x100)
-                && (0 <= r[Register::L] && r[Register::L] < 0x100)
-                && (delta == 1 || delta == -1)
-                && (0 <= r[Register::A] && r[Register::A] < 0x100)
-                && m.contains_key(r[Register::H] * 0x100 + r[Register::L])
-                && (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
-                    && m[r[Register::H] * 0x100 + r[Register::L]]
-                        < 0x100),
+            bytes::length(rom) == 0
+                && (
+                    (0 <= r[Register::H] && r[Register::H] < 0x100)
+                        && (0 <= r[Register::L] && r[Register::L] < 0x100)
+                        && (delta == 1 || delta == -1)
+                        && (0 <= r[Register::A] && r[Register::A] < 0x100)
+                        && m.contains_key(r[Register::H] * 0x100 + r[Register::L])
+                        && (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
+                            && m[r[Register::H] * 0x100 + r[Register::L]]
+                                < 0x100)
+                ),
         )]
         contract_store_a_hl_step: {
+            rom,
             k: [Instruction::StoreA { addr: Address::ViaHlStep { delta } }],
             regs: r,
             memory: m,
@@ -175,11 +191,15 @@ pub mod spec {
         /// LD through A: specified address calculation, HL step where present, bus order and preserved flags.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[Register::C] && r[Register::C] < 0x100)
-                && (0 <= m[0xFF00 + r[Register::C]]
-                    && m[0xFF00 + r[Register::C]] < 0x100),
+            bytes::length(rom) == 0
+                && (
+                    (0 <= r[Register::C] && r[Register::C] < 0x100)
+                        && (0 <= m[0xFF00 + r[Register::C]]
+                            && m[0xFF00 + r[Register::C]] < 0x100)
+                ),
         )]
         contract_load_a_high_c: {
+            rom,
             k: [Instruction::LoadA { addr: Address::HighC }],
             regs: r,
             memory: m,
@@ -200,13 +220,17 @@ pub mod spec {
         /// LD through A: specified address calculation, HL step where present, bus order and preserved flags.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[Register::C] && r[Register::C] < 0x100)
-                && (0 <= r[Register::A] && r[Register::A] < 0x100)
-                && m.contains_key(0xFF00 + r[Register::C])
-                && (0 <= m[0xFF00 + r[Register::C]]
-                    && m[0xFF00 + r[Register::C]] < 0x100),
+            bytes::length(rom) == 0
+                && (
+                    (0 <= r[Register::C] && r[Register::C] < 0x100)
+                        && (0 <= r[Register::A] && r[Register::A] < 0x100)
+                        && m.contains_key(0xFF00 + r[Register::C])
+                        && (0 <= m[0xFF00 + r[Register::C]]
+                            && m[0xFF00 + r[Register::C]] < 0x100)
+                ),
         )]
         contract_store_a_high_c: {
+            rom,
             k: [Instruction::StoreA { addr: Address::HighC }],
             regs: r,
             memory: m,
@@ -230,12 +254,16 @@ pub mod spec {
         /// LD through A: specified address calculation, HL step where present, bus order and preserved flags.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= pc && pc < 0x1_0000)
-                && (0 <= m[pc] && m[pc] < 0x100)
-                && (0 <= m[0xFF00 + m[pc]]
-                    && m[0xFF00 + m[pc]] < 0x100),
+            bytes::length(rom) == 0
+                && (
+                    (0 <= pc && pc < 0x1_0000)
+                        && (0 <= m[pc] && m[pc] < 0x100)
+                        && (0 <= m[0xFF00 + m[pc]]
+                            && m[0xFF00 + m[pc]] < 0x100)
+                ),
         )]
         contract_load_a_high_immediate: {
+            rom,
             k: [Instruction::LoadA { addr: Address::HighImmediate }],
             regs: r,
             memory: m,
@@ -259,14 +287,18 @@ pub mod spec {
         /// LD through A: specified address calculation, HL step where present, bus order and preserved flags.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= pc && pc < 0x1_0000)
-                && (0 <= m[pc] && m[pc] < 0x100)
-                && (0 <= r[Register::A] && r[Register::A] < 0x100)
-                && m.contains_key(0xFF00 + m[pc])
-                && (0 <= m[0xFF00 + m[pc]]
-                    && m[0xFF00 + m[pc]] < 0x100),
+            bytes::length(rom) == 0
+                && (
+                    (0 <= pc && pc < 0x1_0000)
+                        && (0 <= m[pc] && m[pc] < 0x100)
+                        && (0 <= r[Register::A] && r[Register::A] < 0x100)
+                        && m.contains_key(0xFF00 + m[pc])
+                        && (0 <= m[0xFF00 + m[pc]]
+                            && m[0xFF00 + m[pc]] < 0x100)
+                ),
         )]
         contract_store_a_high_immediate: {
+            rom,
             k: [Instruction::StoreA { addr: Address::HighImmediate }],
             regs: r,
             memory: m,
@@ -293,14 +325,18 @@ pub mod spec {
         /// LD through A: specified address calculation, HL step where present, bus order and preserved flags.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= pc && pc < 0x1_0000)
-                && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100)
-                && (0 <= m[pc] && m[pc] < 0x100)
-                && (0 <= m[m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]]
-                    && m[m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]]
-                        < 0x100),
+            bytes::length(rom) == 0
+                && (
+                    (0 <= pc && pc < 0x1_0000)
+                        && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100)
+                        && (0 <= m[pc] && m[pc] < 0x100)
+                        && (0 <= m[m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]]
+                            && m[m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]]
+                                < 0x100)
+                ),
         )]
         contract_load_a_absolute: {
+            rom,
             k: [Instruction::LoadA { addr: Address::Absolute }],
             regs: r,
             memory: m,
@@ -328,16 +364,20 @@ pub mod spec {
         /// LD through A: specified address calculation, HL step where present, bus order and preserved flags.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= pc && pc < 0x1_0000)
-                && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100)
-                && (0 <= m[pc] && m[pc] < 0x100)
-                && (0 <= r[Register::A] && r[Register::A] < 0x100)
-                && m.contains_key(m[(pc + 1) % 0x1_0000] * 0x100 + m[pc])
-                && (0 <= m[m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]]
-                    && m[m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]]
-                        < 0x100),
+            bytes::length(rom) == 0
+                && (
+                    (0 <= pc && pc < 0x1_0000)
+                        && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100)
+                        && (0 <= m[pc] && m[pc] < 0x100)
+                        && (0 <= r[Register::A] && r[Register::A] < 0x100)
+                        && m.contains_key(m[(pc + 1) % 0x1_0000] * 0x100 + m[pc])
+                        && (0 <= m[m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]]
+                            && m[m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]]
+                                < 0x100)
+                ),
         )]
         contract_store_a_absolute: {
+            rom,
             k: [Instruction::StoreA { addr: Address::Absolute }],
             regs: r,
             memory: m,
@@ -365,19 +405,23 @@ pub mod spec {
         /// LD [d16],SP: read address little-endian, then write SP low byte before high byte, wrapping addresses.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= pc && pc < 0x1_0000)
-                && (0 <= sp && sp < 0x1_0000)
-                && (0 <= m[pc] && m[pc] < 0x100)
-                && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100)
-                && m.contains_key(m[(pc + 1) % 0x1_0000] * 0x100 + m[pc])
-                && m.contains_key(((m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]) + 1) % 0x1_0000)
-                && (0 <= m[m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]]
-                    && m[m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]] < 0x100)
-                && (0
-                    <= m[((m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]) + 1) % 0x1_0000]
-                    && m[((m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]) + 1) % 0x1_0000] < 0x100),
+            bytes::length(rom) == 0
+                && (
+                    (0 <= pc && pc < 0x1_0000)
+                        && (0 <= sp && sp < 0x1_0000)
+                        && (0 <= m[pc] && m[pc] < 0x100)
+                        && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100)
+                        && m.contains_key(m[(pc + 1) % 0x1_0000] * 0x100 + m[pc])
+                        && m.contains_key(((m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]) + 1) % 0x1_0000)
+                        && (0 <= m[m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]]
+                            && m[m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]] < 0x100)
+                        && (0
+                            <= m[((m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]) + 1) % 0x1_0000]
+                            && m[((m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]) + 1) % 0x1_0000] < 0x100)
+                ),
         )]
         contract_store_sp: {
+            rom,
             k: [Instruction::StoreSp],
             pc: pc,
             sp: sp,
@@ -413,17 +457,21 @@ pub mod spec {
         /// Stack transfer: wrapping SP, hardware byte order, preserved state; POP AF masks the low flag nibble.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= sp && sp < 0x1_0000)
-                && (0 <= r[high] && r[high] < 0x100)
-                && (0 <= r[low] && r[low] < 0x100)
-                && m.contains_key((sp + 0xFFFF) % 0x1_0000)
-                && m.contains_key((sp + 0xFFFE) % 0x1_0000)
-                && (0 <= m[(sp + 0xFFFF) % 0x1_0000]
-                    && m[(sp + 0xFFFF) % 0x1_0000] < 0x100)
-                && (0 <= m[(sp + 0xFFFE) % 0x1_0000]
-                    && m[(sp + 0xFFFE) % 0x1_0000] < 0x100),
+            bytes::length(rom) == 0
+                && (
+                    (0 <= sp && sp < 0x1_0000)
+                        && (0 <= r[high] && r[high] < 0x100)
+                        && (0 <= r[low] && r[low] < 0x100)
+                        && m.contains_key((sp + 0xFFFF) % 0x1_0000)
+                        && m.contains_key((sp + 0xFFFE) % 0x1_0000)
+                        && (0 <= m[(sp + 0xFFFF) % 0x1_0000]
+                            && m[(sp + 0xFFFF) % 0x1_0000] < 0x100)
+                        && (0 <= m[(sp + 0xFFFE) % 0x1_0000]
+                            && m[(sp + 0xFFFE) % 0x1_0000] < 0x100)
+                ),
         )]
         contract_push_registers: {
+            rom,
             k: [Instruction::Push { pair: Pair16::Registers { high, low } }],
             regs: r,
             sp: sp,
@@ -454,16 +502,20 @@ pub mod spec {
         /// Stack transfer: wrapping SP, hardware byte order, preserved state; POP AF masks the low flag nibble.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= sp && sp < 0x1_0000)
-                && (0 <= r[Register::A] && r[Register::A] < 0x100)
-                && m.contains_key((sp + 0xFFFF) % 0x1_0000)
-                && m.contains_key((sp + 0xFFFE) % 0x1_0000)
-                && (0 <= m[(sp + 0xFFFF) % 0x1_0000]
-                    && m[(sp + 0xFFFF) % 0x1_0000] < 0x100)
-                && (0 <= m[(sp + 0xFFFE) % 0x1_0000]
-                    && m[(sp + 0xFFFE) % 0x1_0000] < 0x100),
+            bytes::length(rom) == 0
+                && (
+                    (0 <= sp && sp < 0x1_0000)
+                        && (0 <= r[Register::A] && r[Register::A] < 0x100)
+                        && m.contains_key((sp + 0xFFFF) % 0x1_0000)
+                        && m.contains_key((sp + 0xFFFE) % 0x1_0000)
+                        && (0 <= m[(sp + 0xFFFF) % 0x1_0000]
+                            && m[(sp + 0xFFFF) % 0x1_0000] < 0x100)
+                        && (0 <= m[(sp + 0xFFFE) % 0x1_0000]
+                            && m[(sp + 0xFFFE) % 0x1_0000] < 0x100)
+                ),
         )]
         contract_push_af: {
+            rom,
             k: [Instruction::Push { pair: Pair16::Af }],
             regs: r,
             f: Flags { z: zero, n: subtract, h: half_carry, c: carry },
@@ -495,11 +547,15 @@ pub mod spec {
         /// Stack transfer: wrapping SP, hardware byte order, preserved state; POP AF masks the low flag nibble.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= sp && sp < 0x1_0000)
-                && (0 <= m[sp] && m[sp] < 0x100)
-                && (0 <= m[(sp + 1) % 0x1_0000] && m[(sp + 1) % 0x1_0000] < 0x100),
+            bytes::length(rom) == 0
+                && (
+                    (0 <= sp && sp < 0x1_0000)
+                        && (0 <= m[sp] && m[sp] < 0x100)
+                        && (0 <= m[(sp + 1) % 0x1_0000] && m[(sp + 1) % 0x1_0000] < 0x100)
+                ),
         )]
         contract_pop_registers: {
+            rom,
             k: [Instruction::Pop { pair: Pair16::Registers { high, low } }],
             regs: r,
             sp: sp,
@@ -523,11 +579,15 @@ pub mod spec {
         /// Stack transfer: wrapping SP, hardware byte order, preserved state; POP AF masks the low flag nibble.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= sp && sp < 0x1_0000)
-                && (0 <= m[sp] && m[sp] < 0x100)
-                && (0 <= m[(sp + 1) % 0x1_0000] && m[(sp + 1) % 0x1_0000] < 0x100),
+            bytes::length(rom) == 0
+                && (
+                    (0 <= sp && sp < 0x1_0000)
+                        && (0 <= m[sp] && m[sp] < 0x100)
+                        && (0 <= m[(sp + 1) % 0x1_0000] && m[(sp + 1) % 0x1_0000] < 0x100)
+                ),
         )]
         contract_pop_af: {
+            rom,
             k: [Instruction::Pop { pair: Pair16::Af }],
             regs: r,
             f: _,
@@ -558,11 +618,15 @@ pub mod spec {
         /// Signed SP addition: sign extension for the result, unsigned low-byte carry flags, Z=N=0.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= pc && pc < 0x1_0000)
-                && (0 <= sp && sp < 0x1_0000)
-                && (0 <= m[pc] && m[pc] < 0x100),
+            bytes::length(rom) == 0
+                && (
+                    (0 <= pc && pc < 0x1_0000)
+                        && (0 <= sp && sp < 0x1_0000)
+                        && (0 <= m[pc] && m[pc] < 0x100)
+                ),
         )]
         contract_sp_offset_hl: {
+            rom,
             k: [Instruction::LdHlSpOffset],
             pc: pc,
             sp: sp,
@@ -598,11 +662,15 @@ pub mod spec {
         /// Signed SP addition: sign extension for the result, unsigned low-byte carry flags, Z=N=0.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= pc && pc < 0x1_0000)
-                && (0 <= sp && sp < 0x1_0000)
-                && (0 <= m[pc] && m[pc] < 0x100),
+            bytes::length(rom) == 0
+                && (
+                    (0 <= pc && pc < 0x1_0000)
+                        && (0 <= sp && sp < 0x1_0000)
+                        && (0 <= m[pc] && m[pc] < 0x100)
+                ),
         )]
         contract_sp_offset_sp: {
+            rom,
             k: [Instruction::AddSpOffset],
             pc: pc,
             sp: sp,

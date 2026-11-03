@@ -24,4 +24,4 @@ pub use decode::{
     AccumulatorTable, AluTable, Cc, Decode, DecodeCb, IndirectTable, R8, Rot, Rp, Rp2,
 };
 pub use interrupt::{Dispatches, InterruptRequested, InterruptVector, LowestRequest, Requested};
-pub use machine::{Hl, Holds, Machine, PairValue};
+pub use machine::{Hl, Holds, InRom, Machine, PairValue};
