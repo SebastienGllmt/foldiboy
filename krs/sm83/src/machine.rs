@@ -60,10 +60,18 @@ pub struct Machine {
     /// Set by the `HALT` bug: the next opcode fetch does not advance `PC`.
     #[k::cell(name = "haltBug")]
     pub halt_bug: Bool,
-    /// Internal temporary registers; `W` is the high byte of `WZ`.
-    #[k::cell]
+    /// Internal temporary register, the high byte of `WZ`.
+    ///
+    /// Unobservable: every instruction that reads `W` writes it earlier in the
+    /// same instruction, so its value at a boundary never reaches an event or an
+    /// architectural cell. Tested by running SingleStepTests with two different
+    /// initial values of `W` and `Z` (every vector starts at a boundary): every
+    /// vector gives the same result (`vectors --wz`).
+    #[k::cell(unobservable)]
     pub w: Int,
-    #[k::cell]
+    /// Internal temporary register, the low byte of `WZ`. Unobservable for the
+    /// same reason as `w`, tested the same way.
+    #[k::cell(unobservable)]
     pub z: Int,
     /// The address space, as a flat map from address to byte.
     #[k::cell]
@@ -77,7 +85,8 @@ pub struct Machine {
 /// The initial state: an architectural state at an instruction boundary.
 ///
 /// Every architectural cell is an input, so any boundary state can start a
-/// run; the internal registers `W` and `Z` start at zero and the bus log
+/// run. The unobservable registers `W` and `Z` are inputs too, so a run can
+/// test that their initial value changes no observation; the bus log starts
 /// empty.
 impl Machine {
     #[k::init]
@@ -91,6 +100,8 @@ impl Machine {
         #[k::config_var(name = "HALTED")] halted: Bool,
         #[k::config_var(name = "HALT_BUG")] halt_bug: Bool,
         #[k::config_var(name = "MEMORY")] memory: Map<Int, Int>,
+        #[k::config_var(name = "W")] w: Int,
+        #[k::config_var(name = "Z")] z: Int,
     ) -> Self {
         Self {
             k: k::k![Step::Boundary],
@@ -102,8 +113,8 @@ impl Machine {
             ei_pending,
             halted,
             halt_bug,
-            w: 0,
-            z: 0,
+            w,
+            z,
             memory,
             bus: k::builtin::list::empty(),
         }

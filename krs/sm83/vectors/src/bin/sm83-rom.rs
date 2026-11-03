@@ -46,7 +46,7 @@ fn inputs(names: &Names, rom: &[u8]) -> ConfigInputs {
             .enumerate()
             .map(|(address, value)| (Value::from(address as i64), Value::from(i64::from(*value)))),
     );
-    let variables: [(&str, ConfigValue); 9] = [
+    let variables: [(&str, ConfigValue); 11] = [
         ("REGS", names.register_file([1, 0, 19, 0, 216, 1, 77]).into()),
         ("F", Value::from(176).into()),
         ("PC", Value::from(256).into()),
@@ -56,6 +56,8 @@ fn inputs(names: &Names, rom: &[u8]) -> ConfigInputs {
         ("HALTED", Value::from(false).into()),
         ("HALT_BUG", Value::from(false).into()),
         ("MEMORY", memory.into()),
+        ("W", Value::from(0).into()),
+        ("Z", Value::from(0).into()),
     ];
     ConfigInputs {
         variables: variables.into_iter().map(|(name, value)| (name.to_owned(), value)).collect(),

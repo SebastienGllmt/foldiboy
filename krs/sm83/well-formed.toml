@@ -1,0 +1,17 @@
+# The well-formed states of the SM83 definition (draft-personal/corpus-contract D-WELLFORMED).
+#
+# What two runs compare is the observation (end class, event log, end state) of the observation contract
+# (draft-personal/observer-design/design.md); the cells no comparison reads are declared in the
+# specification itself, as #[k::cell(unobservable)] in src/machine.rs (w and z), each with its tested reason.
+schema_version = 2
+
+# The states the claims and case tooling quantify over (D-WELLFORMED). A KRS predicate with the same
+# content is to replace the byte-range preconditions each claim restates; until then this list is the
+# contract that case tooling checks initial states against.
+[well_formed]
+registers = "each of A B C D E H L is present and in 0..=0xFF"
+f = "in 0..=0xFF with bits 3 to 0 zero"
+pc = "in 0..=0xFFFF"
+sp = "in 0..=0xFFFF"
+memory = "keys in 0..=0xFFFF, values in 0..=0xFF; IE (0xFFFF) and IF (0xFF0F) present"
+halt = "halted and haltBug are not both true (read from the HALT rules; not yet proved as an invariant)"

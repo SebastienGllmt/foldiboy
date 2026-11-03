@@ -13,8 +13,8 @@ A step is a sequence of micro-operations.
 An unused opcode locks the CPU: its step ends at `#locked`, after which nothing happens.
 `STOP` decodes to `stop`, which no rule executes: the model does not support it.
 
-The initializer takes the whole architectural state at a boundary: `REGS`, `F`, `PC`, `SP`, `IME`, `EI_PENDING`, `HALTED`, `HALT_BUG` and `MEMORY`.
-`W`, `Z` and the bus log start at zero and empty; they are not architectural.
+The initializer takes the whole architectural state at a boundary: `REGS`, `F`, `PC`, `SP`, `IME`, `EI_PENDING`, `HALTED`, `HALT_BUG` and `MEMORY`; and the unobservable registers `W` and `Z` (the harnesses pass 0), so a run can test that their initial value changes nothing observed.
+The bus log starts empty.
 Each machine cycle of the instruction is one bus micro-operation, which appends one event to the `bus` cell:
 `read(addr, value)`, `write(addr, value)`, or `idle` (a cycle with no bus access).
 The events are the observation contract's vocabulary, the `CpuEvent` sort of `../sm83-events`, which every implementation compared with this one reports in.
@@ -34,7 +34,7 @@ The state is:
 | `eiPending` | set by `EI`; the next boundary sets `IME` after its interrupt check |
 | `halted` | `HALT` mode |
 | `haltBug` | the next opcode fetch leaves `PC` unchanged |
-| `w`, `z` | internal temporary registers |
+| `w`, `z` | internal temporary registers, declared `#[k::cell(unobservable)]`: no comparison of runs reads them |
 | `memory` | the address space, a map from address to byte |
 | `bus` | the bus log since the start |
 

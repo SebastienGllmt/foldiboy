@@ -26,11 +26,13 @@ struct Options {
     limit: usize,
     jobs: usize,
     report: Option<PathBuf>,
+    /// Initial values of the unobservable registers `W` and `Z`.
+    wz: (i64, i64),
 }
 
 fn usage() -> ! {
     eprintln!(
-        "usage: sm83-vectors --definition-ir PATH --corpus DIR [--files a,b,..] [--limit N] [--jobs N] [--report PATH]"
+        "usage: sm83-vectors --definition-ir PATH --corpus DIR [--files a,b,..] [--limit N] [--jobs N] [--report PATH] [--wz W,Z]"
     );
     std::process::exit(2)
 }
@@ -44,6 +46,7 @@ fn options() -> Options {
         limit: usize::MAX,
         jobs: thread::available_parallelism().map_or(1, usize::from),
         report: None,
+        wz: (0, 0),
     };
     while let Some(flag) = args.next() {
         let value = args.next().unwrap_or_else(|| usage());
@@ -54,6 +57,14 @@ fn options() -> Options {
             "--limit" => options.limit = value.parse().unwrap_or_else(|_| usage()),
             "--jobs" => options.jobs = value.parse().unwrap_or_else(|_| usage()),
             "--report" => options.report = Some(value.into()),
+            "--wz" => {
+                let parse = |text: &str| {
+                    let text = text.trim();
+                    text.strip_prefix("0x").map_or_else(|| text.parse(), |hex| i64::from_str_radix(hex, 16))
+                };
+                let (w, z) = value.split_once(',').unwrap_or_else(|| usage());
+                options.wz = (parse(w).unwrap_or_else(|_| usage()), parse(z).unwrap_or_else(|_| usage()));
+            }
             _ => usage(),
         }
     }
@@ -92,7 +103,7 @@ fn int(value: &Value) -> i64 {
 /// `IE` and `IF`, which every boundary reads.
 const INTERRUPT_REGISTERS: [i64; 2] = [0xFFFF, 0xFF0F];
 
-fn inputs(names: &Names, initial: &Value) -> ConfigInputs {
+fn inputs(names: &Names, initial: &Value, (w, z): (i64, i64)) -> ConfigInputs {
     let registers = names.register_file(REGISTERS.map(|name| int(&initial[name])));
     let mut ram: BTreeMap<i64, i64> = initial["ram"]
         .as_array()
@@ -118,6 +129,8 @@ fn inputs(names: &Names, initial: &Value) -> ConfigInputs {
         variables.push((name.to_owned(), krs_exec::Value::from(false).into()));
     }
     variables.push(("MEMORY".to_owned(), memory.into()));
+    variables.push(("W".to_owned(), krs_exec::Value::from(w).into()));
+    variables.push(("Z".to_owned(), krs_exec::Value::from(z).into()));
     ConfigInputs {
         variables,
         ..ConfigInputs::default()
@@ -187,9 +200,9 @@ fn listed(mut actual: Observed, expected: &Observed) -> Observed {
     actual
 }
 
-fn run_vector(semantics: &mut Semantics, names: &Names, vector: &Value) -> Result<(), String> {
+fn run_vector(semantics: &mut Semantics, names: &Names, vector: &Value, wz: (i64, i64)) -> Result<(), String> {
     let state = semantics
-        .configure(&inputs(names, &vector["initial"]))
+        .configure(&inputs(names, &vector["initial"], wz))
         .map_err(|error| format!("configure: {error}"))?;
     let after = next_boundary(semantics, &state, 64)?.ok_or("no boundary rule within 64 steps")?;
     let View::State(view) = semantics.view(&after).map_err(|error| error.to_string())? else {
@@ -212,7 +225,7 @@ fn run_file(semantics: &mut Semantics, names: &Names, options: &Options, file: &
     let mut failures = Vec::new();
     let total = vectors.len().min(options.limit);
     for vector in vectors.iter().take(total) {
-        match run_vector(semantics, names, vector) {
+        match run_vector(semantics, names, vector, options.wz) {
             Ok(()) => passed += 1,
             Err(reason) if failures.len() < 3 => {
                 failures.push(json!({ "name": vector["name"], "reason": reason }));
