@@ -10,42 +10,64 @@ use crate::decode::{Address, Condition, Instruction, Operand, Pair16};
 use crate::interrupt::{IE, IF, Step};
 use crate::machine::{Cycle, Register};
 use crate::micro::Micro;
-use k::builtin::Int;
+use k::builtin::{Int, kequal};
 
 /// Pan Docs interrupt priority; test requests from bit 0 through bit 4.
+/// One expression, not an `if` chain: a branching body becomes one equation per branch, and
+/// the prover cannot equate it with the semantics' own `InterruptVector` without splitting on
+/// both functions' guards (k-rust OT-17); a single `kequal::ite` unfolds to a term the solver decides.
 #[k::function(total, internal)]
 pub fn ExpectedInterruptVector(ie: k::Term<Int>, requests: k::Term<Int>) -> k::Term<Int> {
-    if ((ie / 1) % 2 == 1 && (requests / 1) % 2 == 1) {
-        0x0040
-    } else if ((ie / 2) % 2 == 1 && (requests / 2) % 2 == 1) {
-        0x0048
-    } else if ((ie / 4) % 2 == 1 && (requests / 4) % 2 == 1) {
-        0x0050
-    } else if ((ie / 8) % 2 == 1 && (requests / 8) % 2 == 1) {
-        0x0058
-    } else if ((ie / 0x10) % 2 == 1 && (requests / 0x10) % 2 == 1) {
-        0x0060
-    } else {
-        0x0000
-    }
+    kequal::ite(
+        (ie / 1) % 2 == 1 && (requests / 1) % 2 == 1,
+        0x0040,
+        kequal::ite(
+            (ie / 2) % 2 == 1 && (requests / 2) % 2 == 1,
+            0x0048,
+            kequal::ite(
+                (ie / 4) % 2 == 1 && (requests / 4) % 2 == 1,
+                0x0050,
+                kequal::ite(
+                    (ie / 8) % 2 == 1 && (requests / 8) % 2 == 1,
+                    0x0058,
+                    kequal::ite(
+                        (ie / 0x10) % 2 == 1 && (requests / 0x10) % 2 == 1,
+                        0x0060,
+                        0x0000,
+                    ),
+                ),
+            ),
+        ),
+    )
 }
 
 /// Pan Docs interrupt priority; test requests from bit 0 through bit 4.
+/// One expression, not an `if` chain: a branching body becomes one equation per branch, and
+/// the prover cannot equate it with the semantics' own `InterruptVector` without splitting on
+/// both functions' guards (k-rust OT-17); a single `kequal::ite` unfolds to a term the solver decides.
 #[k::function(total, internal)]
 pub fn ExpectedInterruptMask(ie: k::Term<Int>, requests: k::Term<Int>) -> k::Term<Int> {
-    if ((ie / 1) % 2 == 1 && (requests / 1) % 2 == 1) {
-        0b0000_0001
-    } else if ((ie / 2) % 2 == 1 && (requests / 2) % 2 == 1) {
-        0b0000_0010
-    } else if ((ie / 4) % 2 == 1 && (requests / 4) % 2 == 1) {
-        0b0000_0100
-    } else if ((ie / 8) % 2 == 1 && (requests / 8) % 2 == 1) {
-        0b0000_1000
-    } else if ((ie / 0x10) % 2 == 1 && (requests / 0x10) % 2 == 1) {
-        0b0001_0000
-    } else {
-        0
-    }
+    kequal::ite(
+        (ie / 1) % 2 == 1 && (requests / 1) % 2 == 1,
+        0b0000_0001,
+        kequal::ite(
+            (ie / 2) % 2 == 1 && (requests / 2) % 2 == 1,
+            0b0000_0010,
+            kequal::ite(
+                (ie / 4) % 2 == 1 && (requests / 4) % 2 == 1,
+                0b0000_0100,
+                kequal::ite(
+                    (ie / 8) % 2 == 1 && (requests / 8) % 2 == 1,
+                    0b0000_1000,
+                    kequal::ite(
+                        (ie / 0x10) % 2 == 1 && (requests / 0x10) % 2 == 1,
+                        0b0001_0000,
+                        0,
+                    ),
+                ),
+            ),
+        ),
+    )
 }
 
 #[k::spec_module(name = "SM83-BOUNDARIES-SPEC", imports = [crate])]
