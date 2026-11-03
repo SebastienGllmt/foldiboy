@@ -13,9 +13,10 @@ use crate::micro::Micro;
 use k::builtin::{Int, kequal};
 
 /// Pan Docs interrupt priority; test requests from bit 0 through bit 4.
-/// One expression, not an `if` chain: a branching body becomes one equation per branch, and
-/// the prover cannot equate it with the semantics' own `InterruptVector` without splitting on
-/// both functions' guards (k-rust OT-17); a single `kequal::ite` unfolds to a term the solver decides.
+/// Workaround, to undo when k-rust's prover splits on guards (Foldiboy request FB-20):
+/// written as one `kequal::ite` expression instead of the `if` chain it should be, because
+/// the prover does not decide an equality between this and the semantics' own branching
+/// function, and the dispatch claims then end undecided (k-rust OT-17).
 #[k::function(total, internal)]
 pub fn ExpectedInterruptVector(ie: k::Term<Int>, requests: k::Term<Int>) -> k::Term<Int> {
     kequal::ite(
@@ -42,9 +43,10 @@ pub fn ExpectedInterruptVector(ie: k::Term<Int>, requests: k::Term<Int>) -> k::T
 }
 
 /// Pan Docs interrupt priority; test requests from bit 0 through bit 4.
-/// One expression, not an `if` chain: a branching body becomes one equation per branch, and
-/// the prover cannot equate it with the semantics' own `InterruptVector` without splitting on
-/// both functions' guards (k-rust OT-17); a single `kequal::ite` unfolds to a term the solver decides.
+/// Workaround, to undo when k-rust's prover splits on guards (Foldiboy request FB-20):
+/// written as one `kequal::ite` expression instead of the `if` chain it should be, because
+/// the prover does not decide an equality between this and the semantics' own branching
+/// function, and the dispatch claims then end undecided (k-rust OT-17).
 #[k::function(total, internal)]
 pub fn ExpectedInterruptMask(ie: k::Term<Int>, requests: k::Term<Int>) -> k::Term<Int> {
     kequal::ite(
