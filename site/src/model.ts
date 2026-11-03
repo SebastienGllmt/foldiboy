@@ -2,6 +2,7 @@
 // The site renders this model; it never writes to the tracking directory.
 
 import { resolve } from "node:path";
+import { loadDocuments, type Document } from "./documents";
 import { loadCoverage, type CoverageDataset } from "./coverage";
 import { loadEvaluations, type EvaluationSet } from "./evaluations";
 
@@ -80,6 +81,7 @@ export interface Model {
   loadedAt: string;
   fileStatus: Record<string, string>;
   readmeHtml: string;
+  documents: Document[];
   loops: Loop[];
   gaps: Gap[];
   tickets: Ticket[];
@@ -267,5 +269,6 @@ export async function loadModel(dir = trackingDir()): Promise<Model> {
     if (typeof doc.status === "string") fileStatus[file] = doc.status;
   }
 
-  return { dir, loadedAt: new Date().toISOString(), fileStatus, readmeHtml, loops, gaps, tickets, capabilities, vocabulary, coverage, evaluations, derived, problems };
+  const documents = await loadDocuments();
+  return { documents, dir, loadedAt: new Date().toISOString(), fileStatus, readmeHtml, loops, gaps, tickets, capabilities, vocabulary, coverage, evaluations, derived, problems };
 }

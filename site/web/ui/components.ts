@@ -169,7 +169,7 @@ export function split(parts: Part[], caption?: Child): HTMLElement {
 
 // ---------- prose ----------
 
-/** Rendered Markdown from a trusted local file (the tracking README). The only place innerHTML is allowed. */
+/** Rendered Markdown from a trusted local repository file. The only place innerHTML is allowed. */
 export function prose(html: string, rewrite?: (a: HTMLAnchorElement) => void): HTMLElement {
   const el = h("div", { class: "prose" });
   el.innerHTML = html;

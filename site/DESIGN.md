@@ -157,7 +157,7 @@ Each builder is in `web/ui/`; each has a section in `#/guide`.
 | `slotMatrix`, `miniGrid`, `slotLegend` | A universe of 16 × 16 slots | Anything not laid out as a 16 × 16 grid |
 | `recordChart`, `frontierChart` | The two chart kinds | Ad-hoc SVG |
 | `empty(text)` | An empty block: say what is missing in a sentence | |
-| `prose(html)` | Rendered Markdown from a trusted local file (the README) | Anything else; it is the only `innerHTML` |
+| `prose(html, rewrite?)` | Rendered Markdown from a trusted local repository file | Anything else; it is the only `innerHTML` |
 | `route(…)`, `link(href, text)` | Links between pages (`#/loops/<id>`) | |
 
 Domain helpers built on these live in `views/common.ts` (record links, vocabulary statuses, the file-status notice) and `views/evaluation.ts` (an evaluation set).

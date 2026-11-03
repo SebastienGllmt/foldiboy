@@ -3,6 +3,7 @@
 
 import type { Model } from "../../src/model";
 import { coverageDetail, coverageIndex } from "./coverage";
+import { docsIndex, docsDetail } from "./docs";
 import { guideView } from "./guide";
 import { krustView } from "./krust";
 import { loopDetail, loopsView } from "./loops";
@@ -30,6 +31,7 @@ export interface Route {
 }
 
 export const ROUTES: Route[] = [
+  { id: "docs", label: "Docs", menu: true, count: (m) => m.documents.length, list: docsIndex, detail: docsDetail, about: "Repository guides, managed design documents and AI-assisted documentation.", detailAbout: "A repository document, rendered from its Markdown source." },
   { id: "overview", label: "Overview", menu: true, about: "Counters for every tracking file, the opcode map in miniature, and the tracking README.", list: overview },
   {
     id: "loops", label: "Loops", menu: true, count: (m) => m.loops.length, list: loopsView, detail: loopDetail,

@@ -5,6 +5,7 @@
 import { watch, type FSWatcher } from "node:fs";
 import { resolve } from "node:path";
 import index from "./web/index.html";
+import { repositoryDir } from "./src/documents";
 import { loadModel, trackingDir, type Model } from "./src/model";
 
 type Client = ReadableStreamDefaultController<Uint8Array>;
@@ -15,6 +16,7 @@ const state = globalThis as {
   clients?: Set<Client>;
   trackingWatcher?: FSWatcher;
   webWatcher?: FSWatcher;
+  documentWatchers?: FSWatcher[];
   reloadTimer?: Timer;
   webTimer?: Timer;
   evaluated?: boolean;
@@ -36,14 +38,31 @@ function broadcast(event: "model" | "reload") {
   }
 }
 
-state.trackingWatcher?.close();
-state.trackingWatcher = watch(dir, { recursive: true }, () => {
+function refreshModel() {
   clearTimeout(state.reloadTimer);
   state.reloadTimer = setTimeout(async () => {
     model = await loadModel(dir);
     broadcast("model");
   }, 100);
-});
+}
+
+state.documentWatchers?.forEach((watcher) => watcher.close());
+state.documentWatchers = ["docs", "machine-docs", "host/desktop", "krs/sm83", "roms", "site"].map((directory) =>
+  watch(resolve(repositoryDir, directory), { recursive: false }, (_event, filename) => {
+    if (filename?.endsWith(".md")) refreshModel();
+  }),
+);
+state.documentWatchers.push(watch(repositoryDir, (_event, filename) => {
+  if (filename === "README.md") refreshModel();
+}));
+state.documentWatchers.push(...["host/desktop/vendor", "krs/sm83/src/claims"].map((directory) =>
+  watch(resolve(repositoryDir, directory), (_event, filename) => {
+    if (filename === "README.md") refreshModel();
+  }),
+));
+
+state.trackingWatcher?.close();
+state.trackingWatcher = watch(dir, { recursive: true }, refreshModel);
 
 state.webWatcher?.close();
 state.webWatcher = watch(webDir, { recursive: true }, () => {
