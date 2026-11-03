@@ -22,12 +22,12 @@ pub fn load(path: &Path) -> (DefinitionIr, CompiledStage) {
 /// The 8-bit registers, as the corpus spells them.
 pub const REGISTERS: [&str; 7] = ["a", "b", "c", "d", "e", "h", "l"];
 
-/// One entry of the bus log.
+/// One event of the bus log (the observation contract's vocabulary, `sm83-events`).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Access {
     Read { addr: i64, value: i64 },
-    Write { addr: i64, old: i64, new: i64 },
-    Internal,
+    Write { addr: i64, value: i64 },
+    Idle,
 }
 
 /// The declarations the harnesses build and read.
@@ -36,7 +36,7 @@ pub struct Names {
     registers: [Value; 7],
     read: Decl,
     write: Decl,
-    internal: Decl,
+    idle: Decl,
 }
 
 impl Names {
@@ -48,9 +48,9 @@ impl Names {
                 let name = format!("Register::{}", name.to_uppercase());
                 index.ctor(&name, []).unwrap_or_else(|error| panic!("{name}: {error}"))
             }),
-            read: decl("Cycle::Read"),
-            write: decl("Cycle::Write"),
-            internal: decl("Cycle::Internal"),
+            read: decl("Event::Read"),
+            write: decl("Event::Write"),
+            idle: decl("Event::Idle"),
         }
     }
 
@@ -93,9 +93,9 @@ impl Names {
                 if *decl == self.read {
                     Ok(Access::Read { addr: field("addr")?, value: field("value")? })
                 } else if *decl == self.write {
-                    Ok(Access::Write { addr: field("addr")?, old: field("old")?, new: field("new")? })
-                } else if *decl == self.internal {
-                    Ok(Access::Internal)
+                    Ok(Access::Write { addr: field("addr")?, value: field("value")? })
+                } else if *decl == self.idle {
+                    Ok(Access::Idle)
                 } else {
                     Err(format!("unknown bus entry {decl}"))
                 }

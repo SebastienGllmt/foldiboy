@@ -14,7 +14,7 @@ CORPUS=${CORPUS:-$FOLDIBOY_TEST_ROOT/sm83/v1}
 Z3_LIB=${Z3_LIB:-/nix/store/bncr69nhmgvphbynb1a3g4a2jb9b8vj0-z3-4.12.5-lib/lib}
 export LD_LIBRARY_PATH="$Z3_LIB${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 export LIBRARY_PATH="$Z3_LIB${LIBRARY_PATH:+:$LIBRARY_PATH}"
-CARGO_TARGET_DIR="$PWD/target" "$KRS_BIN" check --manifest-path Cargo.toml --package foldiboy-sm83 --definition main --dependency foldiboy-sm83-core:core
-CARGO_TARGET_DIR="$PWD/target" "$KRS_BIN" emit-k --manifest-path Cargo.toml --package foldiboy-sm83 --definition main --dependency foldiboy-sm83-core:core --output results/emitted >/dev/null
+CARGO_TARGET_DIR="$PWD/target" "$KRS_BIN" check --manifest-path Cargo.toml --package foldiboy-sm83 --definition main --dependency foldiboy-sm83-core:core --dependency foldiboy-sm83-events:events
+CARGO_TARGET_DIR="$PWD/target" "$KRS_BIN" emit-k --manifest-path Cargo.toml --package foldiboy-sm83 --definition main --dependency foldiboy-sm83-core:core --dependency foldiboy-sm83-events:events --output results/emitted >/dev/null
 (cd vectors && cargo build --release --offline --quiet)
 vectors/target/release/sm83-vectors --definition-ir results/emitted/definition-ir.json --corpus "$CORPUS" --report results/vectors.json "$@"

@@ -10,7 +10,7 @@ use crate::alu::{Alu, AluOp, Unary, UnaryOp};
 use crate::decode::{
     AddrMode, Address, Cond, Condition, Instruction, Operand, Operand8, Pair16, RegPair,
 };
-use crate::machine::{Cycle, Register};
+use crate::machine::{Event, Register};
 use k::builtin::Int;
 
 /// HALT occupies the register-load family's LD (HL),(HL) encoding.

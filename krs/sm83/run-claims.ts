@@ -31,7 +31,7 @@ const childEnv = {
   LD_LIBRARY_PATH: [Z3_LIB, env.LD_LIBRARY_PATH].filter(Boolean).join(":"),
   LIBRARY_PATH: [Z3_LIB, env.LIBRARY_PATH].filter(Boolean).join(":"),
 };
-const base = ["--manifest-path", "Cargo.toml", "--package", "foldiboy-sm83", "--definition", "main", "--dependency", "foldiboy-sm83-core:core"];
+const base = ["--manifest-path", "Cargo.toml", "--package", "foldiboy-sm83", "--definition", "main", "--dependency", "foldiboy-sm83-core:core", "--dependency", "foldiboy-sm83-events:events"];
 
 function git(dir: string) {
   const rev = Bun.spawnSync(["git", "-C", dir, "rev-parse", "HEAD"]).stdout.toString().trim();

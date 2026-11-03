@@ -1,0 +1,18 @@
+[package]
+name = "foldiboy-sm83-events"
+description = "The SM83 observation contract's event vocabulary, shared by every implementation"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99"
+publish = false
+
+[dependencies]
+k = { package = "krs", path = "/artifacts/worktrees/k-rust-foldiboy-pin/krs/crates/krs" }
+
+[package.metadata.krs]
+k-namespace = "SM83-EVENTS"
+
+[package.metadata.krs.definitions.events]
+
+[workspace]
+resolver = "3"

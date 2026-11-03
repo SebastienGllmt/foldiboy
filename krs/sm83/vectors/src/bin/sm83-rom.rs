@@ -96,8 +96,8 @@ fn run(semantics: &mut Semantics, names: &Names, rom: &[u8], depth: u64) -> Resu
         for access in names.bus(&view)? {
             match access {
                 Access::Read { addr, value } => eprintln!("read {addr:04x} {value:02x}"),
-                Access::Write { addr, old, new } => eprintln!("write {addr:04x} {old:02x} -> {new:02x}"),
-                Access::Internal => eprintln!("internal"),
+                Access::Write { addr, value } => eprintln!("write {addr:04x} {value:02x}"),
+                Access::Idle => eprintln!("idle"),
             }
         }
     }

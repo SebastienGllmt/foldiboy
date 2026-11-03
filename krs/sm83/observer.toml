@@ -65,9 +65,8 @@ projection = "the bytes at every address the state holds"
 
 [[cell]]
 name = "bus"
-observed = "partly"
-projection = "each cycle's kind (read, write, internal), address and value; for a write, the new byte"
-excluded = "a write's old byte: bookkeeping equal to the memory byte before the write"
+observed = true
+projection = "each event (sm83-events: read, write, idle), with its address and value"
 
 # The states the observer and the claims quantify over (D-WELLFORMED). A KRS predicate with the same
 # content is to replace the byte-range preconditions each claim restates; until then this list is the

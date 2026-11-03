@@ -26,7 +26,6 @@ The decoder tables retain the previous expressions' fallback values, while the c
 | [SameSuite `ei_delay_halt.asm`](https://github.com/LIJI32/SameSuite/blob/f15645fb049a47ea235f6d2c9a033e72d8087901/interrupt/ei_delay_halt.asm) | EI/HALT with prebuffered VBlank and STAT requests; the timer-arrival portion is outside this model. |
 
 The five-cycle dispatch bus order follows the existing model's SameBoy-based interpretation; Pan Docs establishes the total cycle count but does not alone establish that precise bus log.
-The log's `old` value on a write is Foldiboy bookkeeping: it must equal the replaced memory byte, not an additional hardware read cycle.
 An external specification justifies a contract; proving the contract checks the implementation against that statement, not the authority or completeness of the specification itself.
 
 ## Numeric notation
@@ -109,7 +108,7 @@ The audit also checks that these indices equal the previous quotient at every pe
 - Decoded contracts start after opcode fetch and interrupt arbitration; their cycle logs contain only the remaining cycles.
 - Fetch contracts start at `Micro::Fetch`; only the explicitly named `Step::Boundary` contracts include arbitration.
   A contract from `#boundary` ends at the next `#boundary`, the first state of the run its postcondition matches; the two-instruction EI sequences use concrete fixtures whose first boundary differs from their postcondition.
-- Operand/register bounds and valid incoming flag bits are explicit where used. A written memory byte must already exist and be an integer byte because the bus log records its old value.
+- Operand/register bounds and valid incoming flag bits are explicit where used. A written address must already be in the memory map (the write rule requires it).
 - Memory is the current flat map. No cartridge, I/O read masks, timer, DMA, PPU, joypad, STOP execution or peripheral-driven interrupt arrival is established here.
 - The ordinary dispatch contracts exclude writes to IE/IF. IE alias cases are separately specified; writes onto IF and arbitrary asynchronous changes need further contracts and source qualification.
 - Full decoder coverage plus decoded family contracts does not yet constitute a proof that every fetched instruction composes correctly. The fetch contracts above are the present composition coverage.
@@ -121,7 +120,7 @@ From `krs/sm83/`, using the CLI build and library environment described in the p
 
 ```bash
 "$KRS_BIN" prove --package foldiboy-sm83 --definition main \
-  --dependency foldiboy-sm83-core:core \
+  --dependency foldiboy-sm83-core:core --dependency foldiboy-sm83-events:events \
   --spec-module SM83-CONTRACTS-SPEC --depth 32
 ```
 
@@ -129,7 +128,7 @@ For the six bit-index contracts:
 
 ```bash
 "$KRS_BIN" prove --package foldiboy-sm83 --definition main \
-  --dependency foldiboy-sm83-core:core \
+  --dependency foldiboy-sm83-core:core --dependency foldiboy-sm83-events:events \
   --spec-module SM83-INSTRUCTIONS-SPEC --depth 32 \
   --claim contract-bit-resetbit-register --claim contract-bit-resetbit-indirect \
   --claim contract-bit-setbit-register --claim contract-bit-setbit-indirect \
@@ -159,7 +158,7 @@ Build large projects sequentially and use the memory cap described above.
 
 ```bash
 "$KRS_BIN" emit-k --package foldiboy-sm83 --definition main \
-  --dependency foldiboy-sm83-core:core --output results/emitted
+  --dependency foldiboy-sm83-core:core --dependency foldiboy-sm83-events:events --output results/emitted
 "$KRUST_BIN" kcompile results/emitted/definition.k \
   --main-module SM83 --syntax-module SM83-SYNTAX \
   --output-directory results/lean/semantics

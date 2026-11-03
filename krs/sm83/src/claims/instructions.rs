@@ -10,7 +10,7 @@ use crate::Machine;
 use crate::alu::{Alu, Unary};
 use crate::decode::{Address, Condition, Instruction, Operand, Pair16};
 use crate::interrupt::Step;
-use crate::machine::{Cycle, Register};
+use crate::machine::{Event, Register};
 use k::builtin::{Int, int, kequal};
 
 /// RGBDS DAA: adjust the high digit after a carry or an addition above BCD 99.
@@ -99,7 +99,7 @@ pub mod spec {
             regs: k::map![dst -> m[pc], ..r],
             z: m[pc],
             pc: ((pc + 1) % 0x1_0000),
-            bus: [..log, Cycle::Read { addr: pc, value: m[pc] }],
+            bus: [..log, Event::Read { addr: pc, value: m[pc] }],
         };
 
         /// LD r8,source: load one byte, preserve flags and all other registers.
@@ -123,7 +123,7 @@ pub mod spec {
             z: m[r[Register::H] * 0x100 + r[Register::L]],
             bus: [
                 ..log,
-                Cycle::Read {
+                Event::Read {
                     addr: (r[Register::H] * 0x100 + r[Register::L]),
                     value: m[r[Register::H] * 0x100 + r[Register::L]],
                 },
@@ -153,10 +153,9 @@ pub mod spec {
             z: r[src],
             bus: [
                 ..log,
-                Cycle::Write {
+                Event::Write {
                     addr: (r[Register::H] * 0x100 + r[Register::L]),
-                    old: m[r[Register::H] * 0x100 + r[Register::L]],
-                    new: r[src],
+                    value: r[src],
                 },
             ],
         };
@@ -186,11 +185,10 @@ pub mod spec {
             z: m[pc],
             bus: [
                 ..log,
-                Cycle::Read { addr: pc, value: m[pc] },
-                Cycle::Write {
+                Event::Read { addr: pc, value: m[pc] },
+                Event::Write {
                     addr: (r[Register::H] * 0x100 + r[Register::L]),
-                    old: m[r[Register::H] * 0x100 + r[Register::L]],
-                    new: m[pc],
+                    value: m[pc],
                 },
             ],
             pc: ((pc + 1) % 0x1_0000),
@@ -218,8 +216,8 @@ pub mod spec {
             z: m[pc],
             bus: [
                 ..log,
-                Cycle::Read { addr: pc, value: m[pc] },
-                Cycle::Read { addr: ((pc + 1) % 0x1_0000), value: m[(pc + 1) % 0x1_0000] },
+                Event::Read { addr: pc, value: m[pc] },
+                Event::Read { addr: ((pc + 1) % 0x1_0000), value: m[(pc + 1) % 0x1_0000] },
             ],
             regs: k::map![high -> m[(pc + 1) % 0x1_0000], low -> m[pc], ..r],
         };
@@ -246,8 +244,8 @@ pub mod spec {
             z: m[pc],
             bus: [
                 ..log,
-                Cycle::Read { addr: pc, value: m[pc] },
-                Cycle::Read { addr: ((pc + 1) % 0x1_0000), value: m[(pc + 1) % 0x1_0000] },
+                Event::Read { addr: pc, value: m[pc] },
+                Event::Read { addr: ((pc + 1) % 0x1_0000), value: m[(pc + 1) % 0x1_0000] },
             ],
             sp: (m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]),
         };
@@ -266,7 +264,7 @@ pub mod spec {
         } => {
             k: [],
             sp: (r[Register::H] * 0x100 + r[Register::L]),
-            bus: [..log, Cycle::Internal],
+            bus: [..log, Event::Idle],
         };
 
         /// ADD A,source: independent byte arithmetic/logic and all four flags.
@@ -315,7 +313,7 @@ pub mod spec {
                 (r[Register::A] % 0x10 + m[pc] % 0x10 + 0) / 0x10
             ) * 0x20 + ((r[Register::A] + m[pc] + 0) / 0x100) * 0x10,
             z: m[pc],
-            bus: [..log, Cycle::Read { addr: pc, value: m[pc] }],
+            bus: [..log, Event::Read { addr: pc, value: m[pc] }],
             pc: ((pc + 1) % 0x1_0000),
         };
 
@@ -359,7 +357,7 @@ pub mod spec {
             z: m[r[Register::H] * 0x100 + r[Register::L]],
             bus: [
                 ..log,
-                Cycle::Read {
+                Event::Read {
                     addr: (r[Register::H] * 0x100 + r[Register::L]),
                     value: m[r[Register::H] * 0x100 + r[Register::L]],
                 },
@@ -426,7 +424,7 @@ pub mod spec {
                 (r[Register::A] + m[pc] + ((flags / 0x10) % 2)) / 0x100
             ) * 0x10,
             z: m[pc],
-            bus: [..log, Cycle::Read { addr: pc, value: m[pc] }],
+            bus: [..log, Event::Read { addr: pc, value: m[pc] }],
             pc: ((pc + 1) % 0x1_0000),
         };
 
@@ -490,7 +488,7 @@ pub mod spec {
             z: m[r[Register::H] * 0x100 + r[Register::L]],
             bus: [
                 ..log,
-                Cycle::Read {
+                Event::Read {
                     addr: (r[Register::H] * 0x100 + r[Register::L]),
                     value: m[r[Register::H] * 0x100 + r[Register::L]],
                 },
@@ -555,7 +553,7 @@ pub mod spec {
                 0,
             ),
             z: m[pc],
-            bus: [..log, Cycle::Read { addr: pc, value: m[pc] }],
+            bus: [..log, Event::Read { addr: pc, value: m[pc] }],
             pc: ((pc + 1) % 0x1_0000),
         };
 
@@ -607,7 +605,7 @@ pub mod spec {
             z: m[r[Register::H] * 0x100 + r[Register::L]],
             bus: [
                 ..log,
-                Cycle::Read {
+                Event::Read {
                     addr: (r[Register::H] * 0x100 + r[Register::L]),
                     value: m[r[Register::H] * 0x100 + r[Register::L]],
                 },
@@ -678,7 +676,7 @@ pub mod spec {
                 0,
             ) + kequal::ite(r[Register::A] < m[pc] + ((flags / 0x10) % 2), 0x10, 0),
             z: m[pc],
-            bus: [..log, Cycle::Read { addr: pc, value: m[pc] }],
+            bus: [..log, Event::Read { addr: pc, value: m[pc] }],
             pc: ((pc + 1) % 0x1_0000),
         };
 
@@ -739,7 +737,7 @@ pub mod spec {
             z: m[r[Register::H] * 0x100 + r[Register::L]],
             bus: [
                 ..log,
-                Cycle::Read {
+                Event::Read {
                     addr: (r[Register::H] * 0x100 + r[Register::L]),
                     value: m[r[Register::H] * 0x100 + r[Register::L]],
                 },
@@ -788,7 +786,7 @@ pub mod spec {
             regs: k::map![Register::A -> (r[Register::A] & m[pc]), ..r],
             f: kequal::ite((r[Register::A] & m[pc]) == 0, 0x80, 0) + 0x20,
             z: m[pc],
-            bus: [..log, Cycle::Read { addr: pc, value: m[pc] }],
+            bus: [..log, Event::Read { addr: pc, value: m[pc] }],
             pc: ((pc + 1) % 0x1_0000),
         };
 
@@ -824,7 +822,7 @@ pub mod spec {
             z: m[r[Register::H] * 0x100 + r[Register::L]],
             bus: [
                 ..log,
-                Cycle::Read {
+                Event::Read {
                     addr: (r[Register::H] * 0x100 + r[Register::L]),
                     value: m[r[Register::H] * 0x100 + r[Register::L]],
                 },
@@ -873,7 +871,7 @@ pub mod spec {
             regs: k::map![Register::A -> (r[Register::A] ^ m[pc]), ..r],
             f: kequal::ite((r[Register::A] ^ m[pc]) == 0, 0x80, 0),
             z: m[pc],
-            bus: [..log, Cycle::Read { addr: pc, value: m[pc] }],
+            bus: [..log, Event::Read { addr: pc, value: m[pc] }],
             pc: ((pc + 1) % 0x1_0000),
         };
 
@@ -909,7 +907,7 @@ pub mod spec {
             z: m[r[Register::H] * 0x100 + r[Register::L]],
             bus: [
                 ..log,
-                Cycle::Read {
+                Event::Read {
                     addr: (r[Register::H] * 0x100 + r[Register::L]),
                     value: m[r[Register::H] * 0x100 + r[Register::L]],
                 },
@@ -958,7 +956,7 @@ pub mod spec {
             regs: k::map![Register::A -> (r[Register::A] | m[pc]), ..r],
             f: kequal::ite((r[Register::A] | m[pc]) == 0, 0x80, 0),
             z: m[pc],
-            bus: [..log, Cycle::Read { addr: pc, value: m[pc] }],
+            bus: [..log, Event::Read { addr: pc, value: m[pc] }],
             pc: ((pc + 1) % 0x1_0000),
         };
 
@@ -994,7 +992,7 @@ pub mod spec {
             z: m[r[Register::H] * 0x100 + r[Register::L]],
             bus: [
                 ..log,
-                Cycle::Read {
+                Event::Read {
                     addr: (r[Register::H] * 0x100 + r[Register::L]),
                     value: m[r[Register::H] * 0x100 + r[Register::L]],
                 },
@@ -1059,7 +1057,7 @@ pub mod spec {
                 0,
             ),
             z: m[pc],
-            bus: [..log, Cycle::Read { addr: pc, value: m[pc] }],
+            bus: [..log, Event::Read { addr: pc, value: m[pc] }],
             pc: ((pc + 1) % 0x1_0000),
         };
 
@@ -1104,7 +1102,7 @@ pub mod spec {
             z: m[r[Register::H] * 0x100 + r[Register::L]],
             bus: [
                 ..log,
-                Cycle::Read {
+                Event::Read {
                     addr: (r[Register::H] * 0x100 + r[Register::L]),
                     value: m[r[Register::H] * 0x100 + r[Register::L]],
                 },
@@ -1161,14 +1159,13 @@ pub mod spec {
             z: ((m[r[Register::H] * 0x100 + r[Register::L]] + 1) % 0x100),
             bus: [
                 ..log,
-                Cycle::Read {
+                Event::Read {
                     addr: (r[Register::H] * 0x100 + r[Register::L]),
                     value: m[r[Register::H] * 0x100 + r[Register::L]],
                 },
-                Cycle::Write {
+                Event::Write {
                     addr: (r[Register::H] * 0x100 + r[Register::L]),
-                    old: m[r[Register::H] * 0x100 + r[Register::L]],
-                    new: ((m[r[Register::H] * 0x100 + r[Register::L]] + 1) % 0x100),
+                    value: ((m[r[Register::H] * 0x100 + r[Register::L]] + 1) % 0x100),
                 },
             ],
             memory: k::map![
@@ -1233,14 +1230,13 @@ pub mod spec {
             z: ((m[r[Register::H] * 0x100 + r[Register::L]] + 0xFF) % 0x100),
             bus: [
                 ..log,
-                Cycle::Read {
+                Event::Read {
                     addr: (r[Register::H] * 0x100 + r[Register::L]),
                     value: m[r[Register::H] * 0x100 + r[Register::L]],
                 },
-                Cycle::Write {
+                Event::Write {
                     addr: (r[Register::H] * 0x100 + r[Register::L]),
-                    old: m[r[Register::H] * 0x100 + r[Register::L]],
-                    new: ((m[r[Register::H] * 0x100 + r[Register::L]] + 0xFF) % 0x100),
+                    value: ((m[r[Register::H] * 0x100 + r[Register::L]] + 0xFF) % 0x100),
                 },
             ],
             memory: k::map![
@@ -1307,14 +1303,11 @@ pub mod spec {
             ),
             bus: [
                 ..log,
-                Cycle::Read {
+                Event::Read {
                     addr: (r[Register::H] * 0x100 + r[Register::L]),
                     value: m[r[Register::H] * 0x100 + r[Register::L]],
                 },
-                Cycle::Write {
-                    addr: (r[Register::H] * 0x100 + r[Register::L]),
-                    old: m[r[Register::H] * 0x100 + r[Register::L]],
-                    new: (
+                Event::Write { addr: (r[Register::H] * 0x100 + r[Register::L]), value: (
                         (m[r[Register::H] * 0x100 + r[Register::L]] * 2) % 0x100 + m[
                             r[Register::H] * 0x100 + r[Register::L]
                         ] / 0x80
@@ -1387,14 +1380,11 @@ pub mod spec {
             ),
             bus: [
                 ..log,
-                Cycle::Read {
+                Event::Read {
                     addr: (r[Register::H] * 0x100 + r[Register::L]),
                     value: m[r[Register::H] * 0x100 + r[Register::L]],
                 },
-                Cycle::Write {
-                    addr: (r[Register::H] * 0x100 + r[Register::L]),
-                    old: m[r[Register::H] * 0x100 + r[Register::L]],
-                    new: (
+                Event::Write { addr: (r[Register::H] * 0x100 + r[Register::L]), value: (
                         m[r[Register::H] * 0x100 + r[Register::L]] / 2 + (
                             m[r[Register::H] * 0x100 + r[Register::L]] % 2
                         ) * 0x80
@@ -1460,14 +1450,11 @@ pub mod spec {
             z: ((m[r[Register::H] * 0x100 + r[Register::L]] * 2) % 0x100 + ((flags / 0x10) % 2)),
             bus: [
                 ..log,
-                Cycle::Read {
+                Event::Read {
                     addr: (r[Register::H] * 0x100 + r[Register::L]),
                     value: m[r[Register::H] * 0x100 + r[Register::L]],
                 },
-                Cycle::Write {
-                    addr: (r[Register::H] * 0x100 + r[Register::L]),
-                    old: m[r[Register::H] * 0x100 + r[Register::L]],
-                    new: (
+                Event::Write { addr: (r[Register::H] * 0x100 + r[Register::L]), value: (
                         (m[r[Register::H] * 0x100 + r[Register::L]] * 2) % 0x100 + (
                             (flags / 0x10) % 2
                         )
@@ -1530,14 +1517,11 @@ pub mod spec {
             z: (m[r[Register::H] * 0x100 + r[Register::L]] / 2 + ((flags / 0x10) % 2) * 0x80),
             bus: [
                 ..log,
-                Cycle::Read {
+                Event::Read {
                     addr: (r[Register::H] * 0x100 + r[Register::L]),
                     value: m[r[Register::H] * 0x100 + r[Register::L]],
                 },
-                Cycle::Write {
-                    addr: (r[Register::H] * 0x100 + r[Register::L]),
-                    old: m[r[Register::H] * 0x100 + r[Register::L]],
-                    new: (
+                Event::Write { addr: (r[Register::H] * 0x100 + r[Register::L]), value: (
                         m[r[Register::H] * 0x100 + r[Register::L]] / 2 + ((flags / 0x10) % 2) * 0x80
                     ),
                 },
@@ -1596,14 +1580,13 @@ pub mod spec {
             z: ((m[r[Register::H] * 0x100 + r[Register::L]] * 2) % 0x100),
             bus: [
                 ..log,
-                Cycle::Read {
+                Event::Read {
                     addr: (r[Register::H] * 0x100 + r[Register::L]),
                     value: m[r[Register::H] * 0x100 + r[Register::L]],
                 },
-                Cycle::Write {
+                Event::Write {
                     addr: (r[Register::H] * 0x100 + r[Register::L]),
-                    old: m[r[Register::H] * 0x100 + r[Register::L]],
-                    new: ((m[r[Register::H] * 0x100 + r[Register::L]] * 2) % 0x100),
+                    value: ((m[r[Register::H] * 0x100 + r[Register::L]] * 2) % 0x100),
                 },
             ],
             memory: k::map![
@@ -1670,14 +1653,11 @@ pub mod spec {
             ),
             bus: [
                 ..log,
-                Cycle::Read {
+                Event::Read {
                     addr: (r[Register::H] * 0x100 + r[Register::L]),
                     value: m[r[Register::H] * 0x100 + r[Register::L]],
                 },
-                Cycle::Write {
-                    addr: (r[Register::H] * 0x100 + r[Register::L]),
-                    old: m[r[Register::H] * 0x100 + r[Register::L]],
-                    new: (
+                Event::Write { addr: (r[Register::H] * 0x100 + r[Register::L]), value: (
                         m[r[Register::H] * 0x100 + r[Register::L]] / 2 + (
                             m[r[Register::H] * 0x100 + r[Register::L]] / 0x80
                         ) * 0x80
@@ -1740,14 +1720,11 @@ pub mod spec {
             ),
             bus: [
                 ..log,
-                Cycle::Read {
+                Event::Read {
                     addr: (r[Register::H] * 0x100 + r[Register::L]),
                     value: m[r[Register::H] * 0x100 + r[Register::L]],
                 },
-                Cycle::Write {
-                    addr: (r[Register::H] * 0x100 + r[Register::L]),
-                    old: m[r[Register::H] * 0x100 + r[Register::L]],
-                    new: (
+                Event::Write { addr: (r[Register::H] * 0x100 + r[Register::L]), value: (
                         (m[r[Register::H] * 0x100 + r[Register::L]] % 0x10) * 0x10 + m[
                             r[Register::H] * 0x100 + r[Register::L]
                         ] / 0x10
@@ -1808,14 +1785,13 @@ pub mod spec {
             z: (m[r[Register::H] * 0x100 + r[Register::L]] / 2),
             bus: [
                 ..log,
-                Cycle::Read {
+                Event::Read {
                     addr: (r[Register::H] * 0x100 + r[Register::L]),
                     value: m[r[Register::H] * 0x100 + r[Register::L]],
                 },
-                Cycle::Write {
+                Event::Write {
                     addr: (r[Register::H] * 0x100 + r[Register::L]),
-                    old: m[r[Register::H] * 0x100 + r[Register::L]],
-                    new: (m[r[Register::H] * 0x100 + r[Register::L]] / 2),
+                    value: (m[r[Register::H] * 0x100 + r[Register::L]] / 2),
                 },
             ],
             memory: k::map![
@@ -2061,14 +2037,11 @@ pub mod spec {
             ],
             bus: [
                 ..log,
-                Cycle::Read {
+                Event::Read {
                     addr: (r[Register::H] * 0x100 + r[Register::L]),
                     value: m[r[Register::H] * 0x100 + r[Register::L]],
                 },
-                Cycle::Write {
-                    addr: (r[Register::H] * 0x100 + r[Register::L]),
-                    old: m[r[Register::H] * 0x100 + r[Register::L]],
-                    new: (
+                Event::Write { addr: (r[Register::H] * 0x100 + r[Register::L]), value: (
                         m[r[Register::H] * 0x100 + r[Register::L]] - (
                             (m[r[Register::H] * 0x100 + r[Register::L]] / (1 << bit)) % 2
                         ) * (1 << bit)
@@ -2147,14 +2120,11 @@ pub mod spec {
             ],
             bus: [
                 ..log,
-                Cycle::Read {
+                Event::Read {
                     addr: (r[Register::H] * 0x100 + r[Register::L]),
                     value: m[r[Register::H] * 0x100 + r[Register::L]],
                 },
-                Cycle::Write {
-                    addr: (r[Register::H] * 0x100 + r[Register::L]),
-                    old: m[r[Register::H] * 0x100 + r[Register::L]],
-                    new: (
+                Event::Write { addr: (r[Register::H] * 0x100 + r[Register::L]), value: (
                         m[r[Register::H] * 0x100 + r[Register::L]] - (
                             (m[r[Register::H] * 0x100 + r[Register::L]] / (1 << bit)) % 2
                         ) * (1 << bit) + (1 << bit)
@@ -2223,7 +2193,7 @@ pub mod spec {
             z: m[r[Register::H] * 0x100 + r[Register::L]],
             bus: [
                 ..log,
-                Cycle::Read {
+                Event::Read {
                     addr: (r[Register::H] * 0x100 + r[Register::L]),
                     value: m[r[Register::H] * 0x100 + r[Register::L]],
                 },
@@ -2244,7 +2214,7 @@ pub mod spec {
             bus: log,
         } => {
             k: [],
-            bus: [..log, Cycle::Internal],
+            bus: [..log, Event::Idle],
             regs: k::map![
                 high -> (((r[high] * 0x100 + r[low]) + 1) % 0x1_0000) / 0x100,
                 low -> (((r[high] * 0x100 + r[low]) + 1) % 0x1_0000) % 0x100,
@@ -2263,7 +2233,7 @@ pub mod spec {
             bus: log,
         } => {
             k: [],
-            bus: [..log, Cycle::Internal],
+            bus: [..log, Event::Idle],
             sp: ((sp + 1) % 0x1_0000),
         };
 
@@ -2281,7 +2251,7 @@ pub mod spec {
             bus: log,
         } => {
             k: [],
-            bus: [..log, Cycle::Internal],
+            bus: [..log, Event::Idle],
             regs: k::map![
                 high -> (((r[high] * 0x100 + r[low]) + 0xFFFF) % 0x1_0000) / 0x100,
                 low -> (((r[high] * 0x100 + r[low]) + 0xFFFF) % 0x1_0000) % 0x100,
@@ -2300,7 +2270,7 @@ pub mod spec {
             bus: log,
         } => {
             k: [],
-            bus: [..log, Cycle::Internal],
+            bus: [..log, Event::Idle],
             sp: ((sp + 0xFFFF) % 0x1_0000),
         };
 
@@ -2379,7 +2349,7 @@ pub mod spec {
             ) * 0x20 + (
                 ((r[Register::H] * 0x100 + r[Register::L]) + (r[high] * 0x100 + r[low])) / 0x1_0000
             ) * 0x10,
-            bus: [..log, Cycle::Internal],
+            bus: [..log, Event::Idle],
         };
 
         /// ADD HL,r16: wrap, carry out of bits 11 and 15, preserve Z, clear N; includes source=HL.
@@ -2410,7 +2380,7 @@ pub mod spec {
             f: (flags / 0x80) * 0x80 + (
                 ((r[Register::H] * 0x100 + r[Register::L]) % 0x1000 + sp % 0x1000) / 0x1000
             ) * 0x20 + (((r[Register::H] * 0x100 + r[Register::L]) + sp) / 0x1_0000) * 0x10,
-            bus: [..log, Cycle::Internal],
+            bus: [..log, Event::Idle],
         };
     }
 }

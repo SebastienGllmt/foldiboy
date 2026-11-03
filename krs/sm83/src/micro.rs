@@ -9,7 +9,7 @@ use k::builtin::Int;
 
 use crate::alu::{AluOp, UnaryOp};
 use crate::decode::{AddrMode, Address, Cond, Condition, Operand, Operand8, Pair16, RegPair};
-use crate::machine::{Cycle, Register};
+use crate::machine::{Event, Register};
 use crate::{
     AluFlags, AluResult, BitFlags, Decode, DecodeCb, High, Hl, Holds, Low, Machine, Pair, Signed,
     SpOffsetFlags, UnaryFlags, UnaryResult, Word,
@@ -105,7 +105,7 @@ k::rules! {
     } => {
         k: [Decode(opcode), ..],
         pc: Word(pc + 1),
-        bus: [..log, Cycle::Read { addr: pc, value: opcode }],
+        bus: [..log, Event::Read { addr: pc, value: opcode }],
     };
 
     /// After the `HALT` bug, the fetch leaves `PC` on the opcode it read.
@@ -119,7 +119,7 @@ k::rules! {
     } => {
         k: [Decode(opcode), ..],
         halt_bug: false,
-        bus: [..log, Cycle::Read { addr: pc, value: opcode }],
+        bus: [..log, Event::Read { addr: pc, value: opcode }],
     };
 
     fetch_cb: {
@@ -130,7 +130,7 @@ k::rules! {
     } => {
         k: [DecodeCb(opcode), ..],
         pc: Word(pc + 1),
-        bus: [..log, Cycle::Read { addr: pc, value: opcode }],
+        bus: [..log, Event::Read { addr: pc, value: opcode }],
     };
 
     load_z_register: {
@@ -309,7 +309,7 @@ k::rules! {
     } => {
         k: [..],
         z: value,
-        bus: [..log, Cycle::Read { addr, value }],
+        bus: [..log, Event::Read { addr, value }],
     };
 
     read_w: {
@@ -320,7 +320,7 @@ k::rules! {
     } => {
         k: [..],
         w: value,
-        bus: [..log, Cycle::Read { addr, value }],
+        bus: [..log, Event::Read { addr, value }],
     };
 
     #[k::requires(memory.contains_key(addr))]
@@ -331,7 +331,7 @@ k::rules! {
     } => {
         k: [..],
         memory: k::map![addr -> value, ..memory],
-        bus: [..log, Cycle::Write { addr, old: memory[addr], new: value }],
+        bus: [..log, Event::Write { addr, value }],
     };
 
     idle: {
@@ -339,7 +339,7 @@ k::rules! {
         bus: log,
     } => {
         k: [..],
-        bus: [..log, Cycle::Internal],
+        bus: [..log, Event::Idle],
     };
 
     alu_a: {

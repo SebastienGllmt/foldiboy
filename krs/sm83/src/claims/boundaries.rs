@@ -8,7 +8,7 @@ use crate::Machine;
 use crate::alu::{Alu, Unary};
 use crate::decode::{Address, Condition, Instruction, Operand, Pair16};
 use crate::interrupt::{IE, IF, Step};
-use crate::machine::{Cycle, Register};
+use crate::machine::{Event, Register};
 use crate::micro::Micro;
 use k::builtin::{Int, kequal};
 
@@ -145,7 +145,7 @@ pub mod spec {
             bus: log,
         } => {
             k: [Step::Boundary],
-            bus: [..log, Cycle::Internal],
+            bus: [..log, Event::Idle],
         };
 
         /// Pan Docs HALT: pending request wakes IME=0; fetch the next NOP without acknowledging IF.
@@ -170,7 +170,7 @@ pub mod spec {
             k: [Step::Boundary],
             halted: false,
             pc: ((pc + 1) % 0x1_0000),
-            bus: [..log, Cycle::Read { addr: pc, value: 0x00 }],
+            bus: [..log, Event::Read { addr: pc, value: 0x00 }],
         };
 
         /// IME and pending request select dispatch before executing another opcode.
@@ -252,18 +252,16 @@ pub mod spec {
             ],
             bus: [
                 ..log,
-                Cycle::Read { addr: pc, value: m[pc] },
-                Cycle::Internal,
-                Cycle::Internal,
-                Cycle::Write {
+                Event::Read { addr: pc, value: m[pc] },
+                Event::Idle,
+                Event::Idle,
+                Event::Write {
                     addr: ((sp + 0xFFFF) % 0x1_0000),
-                    old: m[(sp + 0xFFFF) % 0x1_0000],
-                    new: pc / 0x100,
+                    value: pc / 0x100,
                 },
-                Cycle::Write {
+                Event::Write {
                     addr: ((sp + 0xFFFE) % 0x1_0000),
-                    old: m[(sp + 0xFFFE) % 0x1_0000],
-                    new: pc % 0x100,
+                    value: pc % 0x100,
                 },
             ],
         };
@@ -311,18 +309,16 @@ pub mod spec {
             ],
             bus: [
                 ..log,
-                Cycle::Read { addr: pc, value: m[pc] },
-                Cycle::Internal,
-                Cycle::Internal,
-                Cycle::Write {
+                Event::Read { addr: pc, value: m[pc] },
+                Event::Idle,
+                Event::Idle,
+                Event::Write {
                     addr: ((sp + 0xFFFF) % 0x1_0000),
-                    old: m[(sp + 0xFFFF) % 0x1_0000],
-                    new: pc / 0x100,
+                    value: pc / 0x100,
                 },
-                Cycle::Write {
+                Event::Write {
                     addr: ((sp + 0xFFFE) % 0x1_0000),
-                    old: m[(sp + 0xFFFE) % 0x1_0000],
-                    new: pc % 0x100,
+                    value: pc % 0x100,
                 },
             ],
             halted: false,
@@ -355,11 +351,11 @@ pub mod spec {
             memory: k::map![IE -> 0x02, 0xFFFE -> 0x00, IF -> 0b0000_0100, ..m],
             bus: [
                 ..log,
-                Cycle::Read { addr: 0x0200, value: m[0x0200] },
-                Cycle::Internal,
-                Cycle::Internal,
-                Cycle::Write { addr: IE, old: 0b0000_0100, new: 0x02 },
-                Cycle::Write { addr: 0xFFFE, old: m[0xFFFE], new: 0x00 },
+                Event::Read { addr: 0x0200, value: m[0x0200] },
+                Event::Idle,
+                Event::Idle,
+                Event::Write { addr: IE, value: 0x02 },
+                Event::Write { addr: 0xFFFE, value: 0x00 },
             ],
         };
 
@@ -390,11 +386,11 @@ pub mod spec {
             memory: k::map![0x0000 -> 0x02, IE -> 0x35, IF -> 0x00, ..m],
             bus: [
                 ..log,
-                Cycle::Read { addr: 0x0235, value: m[0x0235] },
-                Cycle::Internal,
-                Cycle::Internal,
-                Cycle::Write { addr: 0x0000, old: m[0x0000], new: 0x02 },
-                Cycle::Write { addr: IE, old: 0b0000_1000, new: 0x35 },
+                Event::Read { addr: 0x0235, value: m[0x0235] },
+                Event::Idle,
+                Event::Idle,
+                Event::Write { addr: 0x0000, value: 0x02 },
+                Event::Write { addr: IE, value: 0x35 },
             ],
         };
 
@@ -421,8 +417,8 @@ pub mod spec {
             ime: true,
             bus: [
                 ..log,
-                Cycle::Read { addr: 0x0100, value: 0xFB },
-                Cycle::Read { addr: 0x0101, value: 0x00 },
+                Event::Read { addr: 0x0100, value: 0xFB },
+                Event::Read { addr: 0x0101, value: 0x00 },
             ],
         };
 
@@ -449,8 +445,8 @@ pub mod spec {
             ime: false,
             bus: [
                 ..log,
-                Cycle::Read { addr: 0x0100, value: 0xFB },
-                Cycle::Read { addr: 0x0101, value: 0xF3 },
+                Event::Read { addr: 0x0100, value: 0xFB },
+                Event::Read { addr: 0x0101, value: 0xF3 },
             ],
         };
 
@@ -477,8 +473,8 @@ pub mod spec {
             ime: true,
             bus: [
                 ..log,
-                Cycle::Read { addr: 0x0100, value: 0xFB },
-                Cycle::Read { addr: 0x0101, value: 0x76 },
+                Event::Read { addr: 0x0100, value: 0xFB },
+                Event::Read { addr: 0x0101, value: 0x76 },
             ],
         };
     }

@@ -15,9 +15,10 @@ An unused opcode locks the CPU: its step ends at `#locked`, after which nothing 
 
 The initializer takes the whole architectural state at a boundary: `REGS`, `F`, `PC`, `SP`, `IME`, `EI_PENDING`, `HALTED`, `HALT_BUG` and `MEMORY`.
 `W`, `Z` and the bus log start at zero and empty; they are not architectural.
-Each machine cycle of the instruction is one bus micro-operation, which appends one `Cycle` to the `bus` cell:
-`read(addr, value)`, `write(addr, old, new)`, or `internal`.
-A write records the byte it replaces, so a memory argument can check each write against the latest earlier access to the address.
+Each machine cycle of the instruction is one bus micro-operation, which appends one event to the `bus` cell:
+`read(addr, value)`, `write(addr, value)`, or `idle` (a cycle with no bus access).
+The events are the observation contract's vocabulary, the `CpuEvent` sort of `../sm83-events`, which every implementation compared with this one reports in.
+A write does not record the byte it replaces: that is memory at the address before the write, and a consumer that needs it derives it.
 
 A value read in one cycle and used in a later one passes through the internal registers `W` and `Z`, as on the hardware.
 A value known when the instruction starts, such as a register pair being pushed, is computed by the instruction's rule and carried in the micro-operation.
@@ -81,12 +82,12 @@ Arithmetic and ALU definitions live in `../sm83-core` and are re-exported by thi
 - Terms use Rust operators, which KRS resolves to `Int` or `Bool` operations from the operands' sorts: the half-carry of an addition is `(a & 0x0F) + (b & 0x0F) > 0x0F`.
   K integers are unbounded, so nothing wraps implicitly; `Byte` and `Word` truncate.
   Opcodes, addresses and masks are written in hex, and the interrupt registers are the constants `IE` and `IF`.
-- Collection cells and helper parameters declare element sorts: `Map<Reg8, Int>` for registers, `Map<Int, Int>` for memory, and `List<BusCycle>` for the bus log.
+- Collection cells and helper parameters declare element sorts: `Map<Reg8, Int>` for registers, `Map<Int, Int>` for memory, and `List<CpuEvent>` for the bus log.
   KRS checks the element sorts through reads, writes and helper calls; these types do not impose byte or address bounds.
   Read entries with `registers[Register::A]` or `memory[addr]`, and check membership with `memory.contains_key(addr)`.
   Write entries with `k::map![high -> hi, low -> lo, ..registers]`; entries apply in order over the original map, so the later entry wins if keys alias.
   These forms denote builtin map operations; reads of absent keys remain undefined.
-- Bus cycles append with builtin list notation (`[..log, Cycle::Read { addr, value }]`).
+- Bus cycles append with builtin list notation (`[..log, Event::Read { addr, value }]`).
   The initializer keeps `list::empty()` because KRS does not yet accept `[]` there.
 - Binder sorts in rules are inferred from the cells and constructor fields they match, so rules declare none.
 - Transitions are readable `k::rules!` clauses whose computation-cell pattern is `[head, ..]`.
@@ -102,7 +103,7 @@ Arithmetic and ALU definitions live in `../sm83-core` and are re-exported by thi
 The KRS crates and the scripts use k-rust from a pinned worktree, `/artifacts/worktrees/k-rust-foldiboy-pin`, a detached checkout of the commit recorded in `../K_RUST_PIN`, with its `krs` CLI built there (`cargo build -p krs-cli --bin krs --locked`).
 Moving the pin is a deliberate change: check out the new commit there, rebuild, update `K_RUST_PIN`, and rerun the verification. The k-rust development checkout moves on its own; a `krs` binary and a `krs` crate from different commits disagree on the collector protocol.
 `KRS_ROOT` and `Z3_LIB` override the scripts' defaults.
-The scripts compose the root definition with `--dependency foldiboy-sm83-core:core`; direct KRS commands require the same selection.
+The scripts compose the root definition with `--dependency foldiboy-sm83-core:core --dependency foldiboy-sm83-events:events`; direct KRS commands require the same selection.
 The scripts find the test suites as `scripts/test.sh` does, under `FOLDIBOY_TEST_ROOT` (by default `roms/tests` beside the repository, reached through its logical path): `sm83/v1` (SingleStepTests) and `mooneye-test-suite`.
 Build output goes to `target/` and `results/`, which are not tracked.
 
@@ -138,20 +139,20 @@ A proof applies only to the modeled behavior and the claim's preconditions; it d
 ### Commands
 
 Run from `krs/sm83/`, with `KRS_BIN` pointing to the KRS CLI and its required shared libraries available.
-All commands composing the CPU definition need `--dependency foldiboy-sm83-core:core`.
+All commands composing the CPU definition need `--dependency foldiboy-sm83-core:core --dependency foldiboy-sm83-events:events`.
 
 Check the definition:
 
 ```bash
 "$KRS_BIN" check --package foldiboy-sm83 --definition main \
-  --dependency foldiboy-sm83-core:core
+  --dependency foldiboy-sm83-core:core --dependency foldiboy-sm83-events:events
 ```
 
 Run the native contract suite (sources, justifications and coverage are in the [claim inventory](src/claims/README.md)):
 
 ```bash
 "$KRS_BIN" prove --package foldiboy-sm83 --definition main \
-  --dependency foldiboy-sm83-core:core \
+  --dependency foldiboy-sm83-core:core --dependency foldiboy-sm83-events:events \
   --spec-module SM83-CONTRACTS-SPEC --depth 32
 ```
 
@@ -179,11 +180,11 @@ Changes should be limited to maintaining the suite integration as the build syst
 Keep project-authored verification separate, such as the symbolic contracts in `src/claims.rs`.
 
 `run-singlestep-tests.sh` checks the definition, emits its IR, builds the harness in `vectors/`, and runs every vector of the [SingleStepTests sm83](https://github.com/SingleStepTests/sm83) corpus.
-The harnesses configure the definition with `krs-exec` values and read results by cell and constructor names (`Register::A`, `Cycle::Read`), never by emitted K symbols.
+The harnesses configure the definition with `krs-exec` values and read results by cell and constructor names (`Register::A`, `Event::Read`), never by emitted K symbols.
 Each vector starts at a boundary and ends at the next one; the harness finds that state with a bounded `krs-exec` search, because a run cannot yet stop at a computation head.
 `IE` and `IF` read as zero when a vector does not list them (no vector lists both), so no interrupt is requested: the corpus does not model interrupts.
 For each vector the harness compares the registers, flags, `PC`, `SP`, `IME`, the listed memory bytes, and the bus log.
-An internal cycle is compared by kind only, because the corpus records the address and data lines left on the bus, which this model does not track.
+An idle cycle is compared by kind only, because the corpus records the address and data lines left on the bus, which this model does not track.
 The corpus is generated by an emulator; it is conformance evidence, not hardware or proof evidence.
 
 `run-mooneye-tests.sh` builds the mooneye acceptance ROMs that need only the CPU, RAM, `IE` and `IF` (with `wla-dx` from an ephemeral `nix-shell`) and runs each with `vectors/src/bin/sm83-rom.rs`.

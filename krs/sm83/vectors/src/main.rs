@@ -5,7 +5,7 @@
 //! memory at an instruction boundary, runs it to the next boundary, and
 //! compares registers, flags,
 //! `PC`, `SP`, `IME`, the pending `EI`, the listed memory, and the bus log.
-//! An internal cycle is compared by kind only: the corpus records the
+//! An idle cycle is compared by kind only: the corpus records the
 //! address and data lines left on the bus, which the model does not track.
 
 use std::collections::BTreeMap;
@@ -144,7 +144,7 @@ fn expected(vector: &Value) -> Observed {
         .map(|cycle| match cycle[2].as_str().expect("cycle kind") {
             "r-m" => format!("read({}, {})", int(&cycle[0]), int(&cycle[1])),
             "-wm" => format!("write({}, {})", int(&cycle[0]), int(&cycle[1])),
-            "---" => "internal".to_owned(),
+            "---" => "idle".to_owned(),
             other => format!("unknown({other})"),
         })
         .collect();
@@ -168,8 +168,8 @@ fn observed(names: &Names, view: &StateView) -> Result<Observed, String> {
         .map(|access| match access {
             Access::Read { addr, value } => format!("read({addr}, {value})"),
             // The corpus records the written byte, not the byte it replaces.
-            Access::Write { addr, new, .. } => format!("write({addr}, {new})"),
-            Access::Internal => "internal".to_owned(),
+            Access::Write { addr, value } => format!("write({addr}, {value})"),
+            Access::Idle => "idle".to_owned(),
         })
         .collect();
     Ok(Observed {

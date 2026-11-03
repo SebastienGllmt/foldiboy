@@ -17,7 +17,7 @@ use k::builtin::{Bool, Int, Map};
 
 use crate::Machine;
 use crate::arith::{High, Low, Word};
-use crate::machine::Cycle;
+use crate::machine::Event;
 use crate::micro::{Micro, MicroOp};
 
 #[k::constructors(sort = MicroOp, result = k::KResult)]
@@ -184,7 +184,7 @@ k::rules! {
         bus: log,
     } => {
         k: [..],
-        bus: [..log, Cycle::Read { addr: pc, value: opcode }],
+        bus: [..log, Event::Read { addr: pc, value: opcode }],
     };
 
     /// `IE` is sampled after the high-byte push, so a push of the high byte

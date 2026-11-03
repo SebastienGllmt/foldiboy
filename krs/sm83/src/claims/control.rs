@@ -7,7 +7,7 @@
 use k::builtin::{int, kequal};
 use crate::decode::{Address, Condition, Instruction, Operand, Pair16};
 use crate::alu::{Alu, Unary};
-use crate::machine::{Cycle, Register};
+use crate::machine::{Event, Register};
 use crate::Machine;
 
 #[k::spec_module(name = "SM83-CONTROL-SPEC", imports = [crate])]
@@ -30,7 +30,7 @@ pub mod spec {
             k: [],
             z: m[pc],
             pc: int::rem_euclid(pc + 1 + kequal::ite(m[pc] < 0x80, m[pc], m[pc] - 0x100), 0x1_0000),
-            bus: [..log, Cycle::Read { addr: pc, value: m[pc] }, Cycle::Internal],
+            bus: [..log, Event::Read { addr: pc, value: m[pc] }, Event::Idle],
         };
 
         /// RGBDS conditional control flow: taken condition, PC result, stack effects and exact bus order.
@@ -47,7 +47,7 @@ pub mod spec {
             k: [],
             z: m[pc],
             pc: ((pc + 1) % 0x1_0000),
-            bus: [..log, Cycle::Read { addr: pc, value: m[pc] }],
+            bus: [..log, Event::Read { addr: pc, value: m[pc] }],
         };
 
         /// RGBDS conditional control flow: taken condition, PC result, stack effects and exact bus order.
@@ -66,7 +66,7 @@ pub mod spec {
             z: m[pc],
             w: m[(pc + 1) % 0x1_0000],
             pc: (m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]),
-            bus: [..log, Cycle::Read { addr: pc, value: m[pc] }, Cycle::Read { addr: ((pc + 1) % 0x1_0000), value: m[(pc + 1) % 0x1_0000] }, Cycle::Internal],
+            bus: [..log, Event::Read { addr: pc, value: m[pc] }, Event::Read { addr: ((pc + 1) % 0x1_0000), value: m[(pc + 1) % 0x1_0000] }, Event::Idle],
         };
 
         /// RGBDS conditional control flow: taken condition, PC result, stack effects and exact bus order.
@@ -85,7 +85,7 @@ pub mod spec {
             z: m[pc],
             w: m[(pc + 1) % 0x1_0000],
             pc: ((pc + 2) % 0x1_0000),
-            bus: [..log, Cycle::Read { addr: pc, value: m[pc] }, Cycle::Read { addr: ((pc + 1) % 0x1_0000), value: m[(pc + 1) % 0x1_0000] }],
+            bus: [..log, Event::Read { addr: pc, value: m[pc] }, Event::Read { addr: ((pc + 1) % 0x1_0000), value: m[(pc + 1) % 0x1_0000] }],
         };
 
         /// RGBDS conditional control flow: taken condition, PC result, stack effects and exact bus order.
@@ -111,7 +111,7 @@ pub mod spec {
                 ((sp + 0xFFFE) % 0x1_0000) -> ((pc + 2) % 0x1_0000) % 0x100,
                 ..m,
             ],
-            bus: [..log, Cycle::Read { addr: pc, value: m[pc] }, Cycle::Read { addr: ((pc + 1) % 0x1_0000), value: m[(pc + 1) % 0x1_0000] }, Cycle::Internal, Cycle::Write { addr: ((sp + 0xFFFF) % 0x1_0000), old: m[(sp + 0xFFFF) % 0x1_0000], new: ((pc + 2) % 0x1_0000) / 0x100 }, Cycle::Write { addr: ((sp + 0xFFFE) % 0x1_0000), old: m[(sp + 0xFFFE) % 0x1_0000], new: ((pc + 2) % 0x1_0000) % 0x100 }],
+            bus: [..log, Event::Read { addr: pc, value: m[pc] }, Event::Read { addr: ((pc + 1) % 0x1_0000), value: m[(pc + 1) % 0x1_0000] }, Event::Idle, Event::Write { addr: ((sp + 0xFFFF) % 0x1_0000), value: ((pc + 2) % 0x1_0000) / 0x100 }, Event::Write { addr: ((sp + 0xFFFE) % 0x1_0000), value: ((pc + 2) % 0x1_0000) % 0x100 }],
         };
 
         /// RGBDS conditional control flow: taken condition, PC result, stack effects and exact bus order.
@@ -130,7 +130,7 @@ pub mod spec {
             z: m[pc],
             w: m[(pc + 1) % 0x1_0000],
             pc: ((pc + 2) % 0x1_0000),
-            bus: [..log, Cycle::Read { addr: pc, value: m[pc] }, Cycle::Read { addr: ((pc + 1) % 0x1_0000), value: m[(pc + 1) % 0x1_0000] }],
+            bus: [..log, Event::Read { addr: pc, value: m[pc] }, Event::Read { addr: ((pc + 1) % 0x1_0000), value: m[(pc + 1) % 0x1_0000] }],
         };
 
         /// RET/RETI: pop low then high, final internal cycle; RETI enables IME immediately.
@@ -151,7 +151,7 @@ pub mod spec {
             pc: (m[(sp + 1) % 0x1_0000] * 0x100 + m[sp]),
             w: m[(sp + 1) % 0x1_0000],
             z: m[sp],
-            bus: [..log, Cycle::Read { addr: sp, value: m[sp] }, Cycle::Read { addr: ((sp + 1) % 0x1_0000), value: m[(sp + 1) % 0x1_0000] }, Cycle::Internal],
+            bus: [..log, Event::Read { addr: sp, value: m[sp] }, Event::Read { addr: ((sp + 1) % 0x1_0000), value: m[(sp + 1) % 0x1_0000] }, Event::Idle],
         };
 
         /// RET/RETI: pop low then high, final internal cycle; RETI enables IME immediately.
@@ -172,7 +172,7 @@ pub mod spec {
             pc: (m[(sp + 1) % 0x1_0000] * 0x100 + m[sp]),
             w: m[(sp + 1) % 0x1_0000],
             z: m[sp],
-            bus: [..log, Cycle::Internal, Cycle::Read { addr: sp, value: m[sp] }, Cycle::Read { addr: ((sp + 1) % 0x1_0000), value: m[(sp + 1) % 0x1_0000] }, Cycle::Internal],
+            bus: [..log, Event::Idle, Event::Read { addr: sp, value: m[sp] }, Event::Read { addr: ((sp + 1) % 0x1_0000), value: m[(sp + 1) % 0x1_0000] }, Event::Idle],
         };
 
         /// RET/RETI: pop low then high, final internal cycle; RETI enables IME immediately.
@@ -194,7 +194,7 @@ pub mod spec {
             pc: (m[(sp + 1) % 0x1_0000] * 0x100 + m[sp]),
             w: m[(sp + 1) % 0x1_0000],
             z: m[sp],
-            bus: [..log, Cycle::Read { addr: sp, value: m[sp] }, Cycle::Read { addr: ((sp + 1) % 0x1_0000), value: m[(sp + 1) % 0x1_0000] }, Cycle::Internal],
+            bus: [..log, Event::Read { addr: sp, value: m[sp] }, Event::Read { addr: ((sp + 1) % 0x1_0000), value: m[(sp + 1) % 0x1_0000] }, Event::Idle],
             ime: true,
         };
 
@@ -207,7 +207,7 @@ pub mod spec {
             bus: log,
         } => {
             k: [],
-            bus: [..log, Cycle::Internal],
+            bus: [..log, Event::Idle],
         };
 
         /// RST: all eight vectors, return PC high then low, wrapping SP and preserved flags.
@@ -228,7 +228,7 @@ pub mod spec {
                 ((sp + 0xFFFE) % 0x1_0000) -> pc % 0x100,
                 ..m,
             ],
-            bus: [..log, Cycle::Internal, Cycle::Write { addr: ((sp + 0xFFFF) % 0x1_0000), old: m[(sp + 0xFFFF) % 0x1_0000], new: pc / 0x100 }, Cycle::Write { addr: ((sp + 0xFFFE) % 0x1_0000), old: m[(sp + 0xFFFE) % 0x1_0000], new: pc % 0x100 }],
+            bus: [..log, Event::Idle, Event::Write { addr: ((sp + 0xFFFF) % 0x1_0000), value: pc / 0x100 }, Event::Write { addr: ((sp + 0xFFFE) % 0x1_0000), value: pc % 0x100 }],
         };
     }
 }

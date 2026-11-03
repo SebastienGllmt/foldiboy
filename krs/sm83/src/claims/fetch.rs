@@ -8,7 +8,7 @@ use crate::Machine;
 use crate::alu::{Alu, Unary};
 use crate::decode::{Address, Condition, Instruction, Operand, Pair16};
 use crate::interrupt::{IE, IF, Step};
-use crate::machine::{Cycle, Register};
+use crate::machine::{Event, Register};
 use crate::micro::Micro;
 use k::builtin::{int, kequal};
 
@@ -30,7 +30,7 @@ pub mod spec {
         } => {
             k: [],
             pc: ((pc + 1) % 0x1_0000),
-            bus: [..log, Cycle::Read { addr: pc, value: 0x00 }],
+            bus: [..log, Event::Read { addr: pc, value: 0x00 }],
         };
 
         /// LD r8,d8: independent opcode encoding, operand read, final PC and preserved flags.
@@ -55,8 +55,8 @@ pub mod spec {
             z: m[(pc + 1) % 0x1_0000],
             bus: [
                 ..log,
-                Cycle::Read { addr: pc, value: 0x06 },
-                Cycle::Read { addr: ((pc + 1) % 0x1_0000), value: m[(pc + 1) % 0x1_0000] },
+                Event::Read { addr: pc, value: 0x06 },
+                Event::Read { addr: ((pc + 1) % 0x1_0000), value: m[(pc + 1) % 0x1_0000] },
             ],
         };
 
@@ -82,8 +82,8 @@ pub mod spec {
             z: m[(pc + 1) % 0x1_0000],
             bus: [
                 ..log,
-                Cycle::Read { addr: pc, value: 0x0E },
-                Cycle::Read { addr: ((pc + 1) % 0x1_0000), value: m[(pc + 1) % 0x1_0000] },
+                Event::Read { addr: pc, value: 0x0E },
+                Event::Read { addr: ((pc + 1) % 0x1_0000), value: m[(pc + 1) % 0x1_0000] },
             ],
         };
 
@@ -109,8 +109,8 @@ pub mod spec {
             z: m[(pc + 1) % 0x1_0000],
             bus: [
                 ..log,
-                Cycle::Read { addr: pc, value: 0x16 },
-                Cycle::Read { addr: ((pc + 1) % 0x1_0000), value: m[(pc + 1) % 0x1_0000] },
+                Event::Read { addr: pc, value: 0x16 },
+                Event::Read { addr: ((pc + 1) % 0x1_0000), value: m[(pc + 1) % 0x1_0000] },
             ],
         };
 
@@ -136,8 +136,8 @@ pub mod spec {
             z: m[(pc + 1) % 0x1_0000],
             bus: [
                 ..log,
-                Cycle::Read { addr: pc, value: 0x1E },
-                Cycle::Read { addr: ((pc + 1) % 0x1_0000), value: m[(pc + 1) % 0x1_0000] },
+                Event::Read { addr: pc, value: 0x1E },
+                Event::Read { addr: ((pc + 1) % 0x1_0000), value: m[(pc + 1) % 0x1_0000] },
             ],
         };
 
@@ -163,8 +163,8 @@ pub mod spec {
             z: m[(pc + 1) % 0x1_0000],
             bus: [
                 ..log,
-                Cycle::Read { addr: pc, value: 0x26 },
-                Cycle::Read { addr: ((pc + 1) % 0x1_0000), value: m[(pc + 1) % 0x1_0000] },
+                Event::Read { addr: pc, value: 0x26 },
+                Event::Read { addr: ((pc + 1) % 0x1_0000), value: m[(pc + 1) % 0x1_0000] },
             ],
         };
 
@@ -190,8 +190,8 @@ pub mod spec {
             z: m[(pc + 1) % 0x1_0000],
             bus: [
                 ..log,
-                Cycle::Read { addr: pc, value: 0x2E },
-                Cycle::Read { addr: ((pc + 1) % 0x1_0000), value: m[(pc + 1) % 0x1_0000] },
+                Event::Read { addr: pc, value: 0x2E },
+                Event::Read { addr: ((pc + 1) % 0x1_0000), value: m[(pc + 1) % 0x1_0000] },
             ],
         };
 
@@ -217,8 +217,8 @@ pub mod spec {
             z: m[(pc + 1) % 0x1_0000],
             bus: [
                 ..log,
-                Cycle::Read { addr: pc, value: 0x3E },
-                Cycle::Read { addr: ((pc + 1) % 0x1_0000), value: m[(pc + 1) % 0x1_0000] },
+                Event::Read { addr: pc, value: 0x3E },
+                Event::Read { addr: ((pc + 1) % 0x1_0000), value: m[(pc + 1) % 0x1_0000] },
             ],
         };
 
@@ -246,9 +246,9 @@ pub mod spec {
             z: m[(pc + 1) % 0x1_0000],
             bus: [
                 ..log,
-                Cycle::Read { addr: pc, value: 0x01 },
-                Cycle::Read { addr: ((pc + 1) % 0x1_0000), value: m[(pc + 1) % 0x1_0000] },
-                Cycle::Read { addr: ((pc + 2) % 0x1_0000), value: m[(pc + 2) % 0x1_0000] },
+                Event::Read { addr: pc, value: 0x01 },
+                Event::Read { addr: ((pc + 1) % 0x1_0000), value: m[(pc + 1) % 0x1_0000] },
+                Event::Read { addr: ((pc + 2) % 0x1_0000), value: m[(pc + 2) % 0x1_0000] },
             ],
             regs: k::map![
                 Register::B -> m[(pc + 2) % 0x1_0000],
@@ -281,9 +281,9 @@ pub mod spec {
             z: m[(pc + 1) % 0x1_0000],
             bus: [
                 ..log,
-                Cycle::Read { addr: pc, value: 0x11 },
-                Cycle::Read { addr: ((pc + 1) % 0x1_0000), value: m[(pc + 1) % 0x1_0000] },
-                Cycle::Read { addr: ((pc + 2) % 0x1_0000), value: m[(pc + 2) % 0x1_0000] },
+                Event::Read { addr: pc, value: 0x11 },
+                Event::Read { addr: ((pc + 1) % 0x1_0000), value: m[(pc + 1) % 0x1_0000] },
+                Event::Read { addr: ((pc + 2) % 0x1_0000), value: m[(pc + 2) % 0x1_0000] },
             ],
             regs: k::map![
                 Register::D -> m[(pc + 2) % 0x1_0000],
@@ -316,9 +316,9 @@ pub mod spec {
             z: m[(pc + 1) % 0x1_0000],
             bus: [
                 ..log,
-                Cycle::Read { addr: pc, value: 0x21 },
-                Cycle::Read { addr: ((pc + 1) % 0x1_0000), value: m[(pc + 1) % 0x1_0000] },
-                Cycle::Read { addr: ((pc + 2) % 0x1_0000), value: m[(pc + 2) % 0x1_0000] },
+                Event::Read { addr: pc, value: 0x21 },
+                Event::Read { addr: ((pc + 1) % 0x1_0000), value: m[(pc + 1) % 0x1_0000] },
+                Event::Read { addr: ((pc + 2) % 0x1_0000), value: m[(pc + 2) % 0x1_0000] },
             ],
             regs: k::map![
                 Register::H -> m[(pc + 2) % 0x1_0000],
@@ -351,9 +351,9 @@ pub mod spec {
             z: m[(pc + 1) % 0x1_0000],
             bus: [
                 ..log,
-                Cycle::Read { addr: pc, value: 0x31 },
-                Cycle::Read { addr: ((pc + 1) % 0x1_0000), value: m[(pc + 1) % 0x1_0000] },
-                Cycle::Read { addr: ((pc + 2) % 0x1_0000), value: m[(pc + 2) % 0x1_0000] },
+                Event::Read { addr: pc, value: 0x31 },
+                Event::Read { addr: ((pc + 1) % 0x1_0000), value: m[(pc + 1) % 0x1_0000] },
+                Event::Read { addr: ((pc + 2) % 0x1_0000), value: m[(pc + 2) % 0x1_0000] },
             ],
             sp: (m[(pc + 2) % 0x1_0000] * 0x100 + m[(pc + 1) % 0x1_0000]),
         };
@@ -370,7 +370,7 @@ pub mod spec {
         } => {
             k: [],
             halt_bug: false,
-            bus: [..log, Cycle::Read { addr: pc, value: 0x00 }],
+            bus: [..log, Event::Read { addr: pc, value: 0x00 }],
         };
 
         /// HALT bug followed by LD B,d8: opcode is reread as the immediate byte.
@@ -392,8 +392,8 @@ pub mod spec {
             z: 6,
             bus: [
                 ..log,
-                Cycle::Read { addr: pc, value: 0x06 },
-                Cycle::Read { addr: pc, value: 0x06 },
+                Event::Read { addr: pc, value: 0x06 },
+                Event::Read { addr: pc, value: 0x06 },
             ],
         };
 
@@ -428,8 +428,8 @@ pub mod spec {
             z: ((r[Register::A] * 2) % 0x100 + r[Register::A] / 0x80),
             bus: [
                 ..log,
-                Cycle::Read { addr: pc, value: 0xCB },
-                Cycle::Read { addr: ((pc + 1) % 0x1_0000), value: 0x07 },
+                Event::Read { addr: pc, value: 0xCB },
+                Event::Read { addr: ((pc + 1) % 0x1_0000), value: 0x07 },
             ],
         };
 
@@ -467,9 +467,9 @@ pub mod spec {
             z: m[(pc + 1) % 0x1_0000],
             bus: [
                 ..log,
-                Cycle::Read { addr: pc, value: 0x21 },
-                Cycle::Read { addr: ((pc + 1) % 0x1_0000), value: m[(pc + 1) % 0x1_0000] },
-                Cycle::Read { addr: ((pc + 2) % 0x1_0000), value: m[(pc + 2) % 0x1_0000] },
+                Event::Read { addr: pc, value: 0x21 },
+                Event::Read { addr: ((pc + 1) % 0x1_0000), value: m[(pc + 1) % 0x1_0000] },
+                Event::Read { addr: ((pc + 2) % 0x1_0000), value: m[(pc + 2) % 0x1_0000] },
             ],
         };
     }

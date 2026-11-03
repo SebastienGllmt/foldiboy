@@ -8,9 +8,10 @@ use crate::arith::Pair;
 use crate::decode::{Cond, Condition, Pair16, RegPair};
 use crate::interrupt::Step;
 
+pub use sm83_events::{CpuEvent, Event};
+
 k::sorts! {
     Reg8;
-    BusCycle;
 }
 
 /// The 8-bit registers addressed by instruction encodings.
@@ -32,20 +33,6 @@ pub enum Register {
     H,
     #[k::syntax("l")]
     L,
-}
-
-/// One machine cycle as seen on the bus.
-///
-/// A write records the byte it replaces, so a memory argument can check
-/// each write against the latest earlier access to its address.
-#[k::constructors(sort = BusCycle, result = k::KResult)]
-pub enum Cycle {
-    #[k::syntax("read({addr}, {value})")]
-    Read { addr: Int, value: Int },
-    #[k::syntax("write({addr}, {old}, {new})")]
-    Write { addr: Int, old: Int, new: Int },
-    #[k::syntax("internal")]
-    Internal,
 }
 
 #[k::configuration]
@@ -81,9 +68,10 @@ pub struct Machine {
     /// The address space, as a flat map from address to byte.
     #[k::cell]
     pub memory: Map<Int, Int>,
-    /// Bus activity since the start, one entry per machine cycle.
+    /// The event log: what the CPU showed outside itself since the start, one
+    /// event per machine cycle (the observation contract's vocabulary, `sm83-events`).
     #[k::cell]
-    pub bus: List<BusCycle>,
+    pub bus: List<CpuEvent>,
 }
 
 /// The initial state: an architectural state at an instruction boundary.

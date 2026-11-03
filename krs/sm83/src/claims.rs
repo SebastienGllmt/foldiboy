@@ -11,7 +11,7 @@ pub mod memory;
 pub mod add_hl_de {
     use crate::Machine;
     use crate::decode::{Instruction, Pair16};
-    use crate::machine::{Cycle, Register};
+    use crate::machine::{Event, Register};
 
     k::claims! {
         for Machine;
@@ -68,7 +68,7 @@ pub mod add_hl_de {
                     ]
                 ) / 0x1_0000
             ) * 0x10,
-            bus: [..log, Cycle::Internal],
+            bus: [..log, Event::Idle],
         };
     }
 }
