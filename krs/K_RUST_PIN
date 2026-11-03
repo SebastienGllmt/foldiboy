@@ -1,0 +1,3 @@
+commit = "e50ac51d1"
+path = "/artifacts/worktrees/k-rust-foldiboy-pin"
+note = "k-rust main 2026-11-04 (CF-20a2 unobservable cells, CF-22 stop rules, CF-11a typed inputs, OT-17 prover branch policy)"

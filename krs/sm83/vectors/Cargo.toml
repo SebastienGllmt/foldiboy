@@ -7,9 +7,9 @@ rust-version = "1.99"
 publish = false
 
 [dependencies]
-krs-exec = { path = "/home/sebastiengllmt/git/workspaces/starstream-fv/inspirations/midnightntwrk/k-rust/krs/crates/krs-exec" }
-krs-ir = { path = "/home/sebastiengllmt/git/workspaces/starstream-fv/inspirations/midnightntwrk/k-rust/krs/crates/krs-ir" }
-krs-ir-levels = { path = "/home/sebastiengllmt/git/workspaces/starstream-fv/inspirations/midnightntwrk/k-rust/krs/crates/krs-ir-levels" }
+krs-exec = { path = "/artifacts/worktrees/k-rust-foldiboy-pin/krs/crates/krs-exec" }
+krs-ir = { path = "/artifacts/worktrees/k-rust-foldiboy-pin/krs/crates/krs-ir" }
+krs-ir-levels = { path = "/artifacts/worktrees/k-rust-foldiboy-pin/krs/crates/krs-ir-levels" }
 serde_json = "1.0"
 
 [workspace]

@@ -8,7 +8,7 @@ cd "$(dirname "$0")"
 # Keep the logical path: the workspace may contain symlinks to canonical clones.
 project_dir=$(cd ../.. && pwd -L)
 FOLDIBOY_TEST_ROOT=${FOLDIBOY_TEST_ROOT:-$(dirname -- "$project_dir")/roms/tests}
-KRS_ROOT=${KRS_ROOT:-/home/sebastiengllmt/git/workspaces/starstream-fv/inspirations/midnightntwrk/k-rust}
+KRS_ROOT=${KRS_ROOT:-/artifacts/worktrees/k-rust-foldiboy-pin}
 KRS_BIN=${KRS_BIN:-$KRS_ROOT/target/debug/krs}
 CORPUS=${CORPUS:-$FOLDIBOY_TEST_ROOT/sm83/v1}
 Z3_LIB=${Z3_LIB:-/nix/store/bncr69nhmgvphbynb1a3g4a2jb9b8vj0-z3-4.12.5-lib/lib}

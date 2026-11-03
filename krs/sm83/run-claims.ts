@@ -14,7 +14,7 @@ import { resolve } from "node:path";
 
 const here = import.meta.dir;
 const env = process.env;
-const KRS_ROOT = env.KRS_ROOT ?? "/home/sebastiengllmt/git/workspaces/starstream-fv/inspirations/midnightntwrk/k-rust";
+const KRS_ROOT = env.KRS_ROOT ?? "/artifacts/worktrees/k-rust-foldiboy-pin";
 const KRS_BIN = env.KRS_BIN ?? `${KRS_ROOT}/target/debug/krs`;
 const Z3_LIB = env.Z3_LIB ?? "/nix/store/bncr69nhmgvphbynb1a3g4a2jb9b8vj0-z3-4.12.5-lib/lib";
 const SPEC_MODULE = env.SPEC_MODULE ?? "SM83-CONTRACTS-SPEC";

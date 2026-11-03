@@ -99,6 +99,8 @@ Arithmetic and ALU definitions live in `../sm83-core` and are re-exported by thi
 
 ## Building
 
+The KRS crates and the scripts use k-rust from a pinned worktree, `/artifacts/worktrees/k-rust-foldiboy-pin`, a detached checkout of the commit recorded in `../K_RUST_PIN`, with its `krs` CLI built there (`cargo build -p krs-cli --bin krs --locked`).
+Moving the pin is a deliberate change: check out the new commit there, rebuild, update `K_RUST_PIN`, and rerun the verification. The k-rust development checkout moves on its own; a `krs` binary and a `krs` crate from different commits disagree on the collector protocol.
 `KRS_ROOT` and `Z3_LIB` override the scripts' defaults.
 The scripts compose the root definition with `--dependency foldiboy-sm83-core:core`; direct KRS commands require the same selection.
 The scripts find the test suites as `scripts/test.sh` does, under `FOLDIBOY_TEST_ROOT` (by default `roms/tests` beside the repository, reached through its logical path): `sm83/v1` (SingleStepTests) and `mooneye-test-suite`.

@@ -6,7 +6,7 @@ rust-version = "1.99"
 publish = false
 
 [dependencies]
-k = { package = "krs", path = "/home/sebastiengllmt/git/workspaces/starstream-fv/inspirations/midnightntwrk/k-rust/krs/crates/krs" }
+k = { package = "krs", path = "/artifacts/worktrees/k-rust-foldiboy-pin/krs/crates/krs" }
 
 [package.metadata.krs]
 k-namespace = "SM83-CORE"

@@ -8,7 +8,7 @@ publish = false
 
 [dependencies]
 sm83-core = { package = "foldiboy-sm83-core", path = "../sm83-core" }
-k = { package = "krs", path = "/home/sebastiengllmt/git/workspaces/starstream-fv/inspirations/midnightntwrk/k-rust/krs/crates/krs" }
+k = { package = "krs", path = "/artifacts/worktrees/k-rust-foldiboy-pin/krs/crates/krs" }
 
 [package.metadata.krs]
 k-namespace = "SM83"
