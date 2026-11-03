@@ -1207,7 +1207,9 @@ pub mod spec {
                     addr: (r[Register::H] * 0x100 + r[Register::L]),
                     value: m[r[Register::H] * 0x100 + r[Register::L]],
                 },
-                Event::Write { addr: (r[Register::H] * 0x100 + r[Register::L]), value: (
+                Event::Write {
+                    addr: (r[Register::H] * 0x100 + r[Register::L]),
+                    value: (
                         (m[r[Register::H] * 0x100 + r[Register::L]] * 2) % 0x100 + m[
                             r[Register::H] * 0x100 + r[Register::L]
                         ] / 0x80
@@ -1283,7 +1285,9 @@ pub mod spec {
                     addr: (r[Register::H] * 0x100 + r[Register::L]),
                     value: m[r[Register::H] * 0x100 + r[Register::L]],
                 },
-                Event::Write { addr: (r[Register::H] * 0x100 + r[Register::L]), value: (
+                Event::Write {
+                    addr: (r[Register::H] * 0x100 + r[Register::L]),
+                    value: (
                         m[r[Register::H] * 0x100 + r[Register::L]] / 2 + (
                             m[r[Register::H] * 0x100 + r[Register::L]] % 2
                         ) * 0x80
@@ -1354,7 +1358,9 @@ pub mod spec {
                     addr: (r[Register::H] * 0x100 + r[Register::L]),
                     value: m[r[Register::H] * 0x100 + r[Register::L]],
                 },
-                Event::Write { addr: (r[Register::H] * 0x100 + r[Register::L]), value: (
+                Event::Write {
+                    addr: (r[Register::H] * 0x100 + r[Register::L]),
+                    value: (
                         (m[r[Register::H] * 0x100 + r[Register::L]] * 2) % 0x100 + kequal::ite(carry, 1, 0)
                     ),
                 },
@@ -1421,7 +1427,9 @@ pub mod spec {
                     addr: (r[Register::H] * 0x100 + r[Register::L]),
                     value: m[r[Register::H] * 0x100 + r[Register::L]],
                 },
-                Event::Write { addr: (r[Register::H] * 0x100 + r[Register::L]), value: (
+                Event::Write {
+                    addr: (r[Register::H] * 0x100 + r[Register::L]),
+                    value: (
                         m[r[Register::H] * 0x100 + r[Register::L]] / 2 + kequal::ite(carry, 1, 0) * 0x80
                     ),
                 },
@@ -1555,7 +1563,9 @@ pub mod spec {
                     addr: (r[Register::H] * 0x100 + r[Register::L]),
                     value: m[r[Register::H] * 0x100 + r[Register::L]],
                 },
-                Event::Write { addr: (r[Register::H] * 0x100 + r[Register::L]), value: (
+                Event::Write {
+                    addr: (r[Register::H] * 0x100 + r[Register::L]),
+                    value: (
                         m[r[Register::H] * 0x100 + r[Register::L]] / 2 + (
                             m[r[Register::H] * 0x100 + r[Register::L]] / 0x80
                         ) * 0x80
@@ -1625,7 +1635,9 @@ pub mod spec {
                     addr: (r[Register::H] * 0x100 + r[Register::L]),
                     value: m[r[Register::H] * 0x100 + r[Register::L]],
                 },
-                Event::Write { addr: (r[Register::H] * 0x100 + r[Register::L]), value: (
+                Event::Write {
+                    addr: (r[Register::H] * 0x100 + r[Register::L]),
+                    value: (
                         (m[r[Register::H] * 0x100 + r[Register::L]] % 0x10) * 0x10 + m[
                             r[Register::H] * 0x100 + r[Register::L]
                         ] / 0x10
@@ -1937,7 +1949,9 @@ pub mod spec {
                     addr: (r[Register::H] * 0x100 + r[Register::L]),
                     value: m[r[Register::H] * 0x100 + r[Register::L]],
                 },
-                Event::Write { addr: (r[Register::H] * 0x100 + r[Register::L]), value: (
+                Event::Write {
+                    addr: (r[Register::H] * 0x100 + r[Register::L]),
+                    value: (
                         m[r[Register::H] * 0x100 + r[Register::L]] - (
                             (m[r[Register::H] * 0x100 + r[Register::L]] / (1 << bit)) % 2
                         ) * (1 << bit)
@@ -2016,7 +2030,9 @@ pub mod spec {
                     addr: (r[Register::H] * 0x100 + r[Register::L]),
                     value: m[r[Register::H] * 0x100 + r[Register::L]],
                 },
-                Event::Write { addr: (r[Register::H] * 0x100 + r[Register::L]), value: (
+                Event::Write {
+                    addr: (r[Register::H] * 0x100 + r[Register::L]),
+                    value: (
                         m[r[Register::H] * 0x100 + r[Register::L]] - (
                             (m[r[Register::H] * 0x100 + r[Register::L]] / (1 << bit)) % 2
                         ) * (1 << bit) + (1 << bit)
