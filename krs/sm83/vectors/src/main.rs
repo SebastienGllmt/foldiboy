@@ -191,7 +191,7 @@ fn run_vector(semantics: &mut Semantics, names: &Names, vector: &Value) -> Resul
     let state = semantics
         .configure(&inputs(names, &vector["initial"]))
         .map_err(|error| format!("configure: {error}"))?;
-    let after = next_boundary(semantics, names, &state, 64)?.ok_or("no boundary within 64 steps")?;
+    let after = next_boundary(semantics, &state, 64)?.ok_or("no boundary rule within 64 steps")?;
     let View::State(view) = semantics.view(&after).map_err(|error| error.to_string())? else {
         return Err("the result is #Bottom".to_owned());
     };

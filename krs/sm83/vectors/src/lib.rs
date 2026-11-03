@@ -7,7 +7,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 use krs_exec::{
-    CompiledStage, Decl, SearchMode, SearchOptions, Semantics, State, StateView, Term, Value, ValueIndex, View,
+    CompiledStage, Decl, Halt, RunOptions, Semantics, State, StateView, StopRules, Term, Value, ValueIndex,
 };
 use krs_ir::measure::Timings;
 use krs_ir_levels::DefinitionIr;
@@ -129,34 +129,28 @@ pub fn int_map(view: &StateView, path: &str) -> Result<BTreeMap<i64, i64>, Strin
         .collect()
 }
 
+/// The rules that rewrite `#boundary`: one of them starts every instruction step.
+pub const BOUNDARY_RULES: [&str; 4] = ["boundary-dispatch", "boundary-fetch", "boundary-wake", "boundary-halted"];
+
 /// The state one boundary step after `state`, a state at an instruction boundary.
 ///
-/// The machine runs forever, so a step ends at the first state, after at
-/// least one rewrite step, whose computation is headed by `#boundary`. The
-/// search follows every path for at most `depth` rewrite steps; `None` when
-/// no boundary is reached within it.
+/// The machine runs forever, so a step ends before the next boundary rule: a run
+/// from `state` stops before the first one (krs-exec stop rules), and a run resumed
+/// from there takes that rule's step and stops before the next. `None` when no
+/// boundary rule is reached within `depth` rewrite steps.
 pub fn next_boundary(
     semantics: &mut Semantics,
-    names: &Names,
     state: &State,
     depth: u64,
 ) -> Result<Option<Term>, String> {
-    let report = semantics
-        .search(
-            state,
-            SearchOptions { mode: SearchMode::OneOrMoreSteps, depth: Some(depth), ..SearchOptions::default() },
-        )
-        .map_err(|error| format!("search: {error}"))?;
-    let boundary = names.ctor("Step::Boundary", vec![]);
-    let mut best: Option<(u64, Term)> = None;
-    for solution in report.solutions {
-        let at_boundary = match semantics.view(&solution.state).map_err(|error| error.to_string())? {
-            View::State(view) => cell(&view, "k")?.as_seq().and_then(<[Value]>::first) == Some(&boundary),
-            View::Bottom => false,
-        };
-        if at_boundary && best.as_ref().is_none_or(|(depth, _)| solution.depth < *depth) {
-            best = Some((solution.depth, solution.state));
-        }
+    let options = RunOptions {
+        depth: Some(depth),
+        stop: StopRules { before: BOUNDARY_RULES.iter().map(|rule| (*rule).to_owned()).collect(), after: vec![] },
+        ..RunOptions::default()
+    };
+    let mut report = semantics.run(state, options.clone()).map_err(|error| format!("run: {error}"))?;
+    if report.halt == Halt::Stopped && report.steps == 0 {
+        report = semantics.run(&report.resume(), options).map_err(|error| format!("run: {error}"))?;
     }
-    Ok(best.map(|(_, state)| state))
+    Ok((report.halt == Halt::Stopped && report.steps > 0).then_some(report.state))
 }
