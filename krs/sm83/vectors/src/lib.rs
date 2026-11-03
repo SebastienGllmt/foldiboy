@@ -54,6 +54,12 @@ impl Names {
         }
     }
 
+    /// The application of the specification's function `name` to `fields`,
+    /// evaluated when the first state is simplified.
+    pub fn call(&self, name: &str, fields: Vec<(&str, Value)>) -> Value {
+        self.index.call(name, fields).unwrap_or_else(|error| panic!("{name}: {error}"))
+    }
+
     /// The constructor `name` applied to `fields`.
     pub fn ctor(&self, name: &str, fields: Vec<(&str, Value)>) -> Value {
         self.index.ctor(name, fields).unwrap_or_else(|error| panic!("{name}: {error}"))

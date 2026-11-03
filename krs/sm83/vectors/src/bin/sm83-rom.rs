@@ -20,12 +20,6 @@ use krs_ir::measure::Timings;
 use serde_json::json;
 use sm83_vectors::{Access, Names, bool as cell_bool, cell, int as cell_int, int_map, load};
 
-/// I/O bytes whose initial value matters to the tests.
-///
-/// `LY` reads `$FF` so the mooneye harness treats the PPU as absent and
-/// skips its display code; `IF` is the post-boot value.
-const IO_INIT: [(usize, u8); 2] = [(0xFF44, 0xFF), (0xFF0F, 0xE1)];
-
 const PASS: [i64; 6] = [3, 5, 8, 13, 21, 34];
 const FAIL: [i64; 6] = [0x42; 6];
 
@@ -34,33 +28,22 @@ fn usage() -> ! {
     std::process::exit(2)
 }
 
+/// A cartridge's initial state on a DMG in the CPU stage: the boot state the
+/// specification states (`boot.rs`), the cartridge's ROM region, and RAM that
+/// holds no byte until the program writes one.
 fn inputs(names: &Names, rom: &[u8]) -> ConfigInputs {
-    // The cartridge's first 32 KiB are the read-only ROM region (no mapper);
-    // every address above it starts as zero, with the I/O bytes the tests need.
-    let rom_region = rom[..rom.len().min(0x8000)].to_vec();
-    let mut memory = vec![0u8; 0x10000];
-    for (address, value) in IO_INIT {
-        memory[address] = value;
-    }
-    let memory = Value::map(
-        memory
-            .iter()
-            .enumerate()
-            .skip(rom_region.len())
-            .map(|(address, value)| (Value::from(address as i64), Value::from(i64::from(*value)))),
-    );
-    let variables: [(&str, ConfigValue); 12] = [
-        ("REGS", names.register_file([1, 0, 19, 0, 216, 1, 77]).into()),
-        // F = $B0: Z, H and C set.
-        ("F", names.flags(0xB0).into()),
-        ("PC", Value::from(256).into()),
-        ("SP", Value::from(65534).into()),
+    let call = |name: &str| names.call(name, vec![]);
+    let variables: Vec<(&str, ConfigValue)> = vec![
+        ("REGS", call("DmgRegisters").into()),
+        ("F", call("DmgFlags").into()),
+        ("PC", call("BootPc").into()),
+        ("SP", call("BootSp").into()),
         ("IME", Value::from(false).into()),
         ("EI_PENDING", Value::from(false).into()),
         ("HALTED", Value::from(false).into()),
         ("HALT_BUG", Value::from(false).into()),
-        ("ROM", Value::Bytes(rom_region).into()),
-        ("MEMORY", memory.into()),
+        ("ROM", names.call("RomRegion", vec![("cartridge", Value::Bytes(rom.to_vec()))]).into()),
+        ("MEMORY", call("CpuStageIo").into()),
         ("W", Value::from(0).into()),
         ("Z", Value::from(0).into()),
     ];

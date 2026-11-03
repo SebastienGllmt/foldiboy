@@ -13,6 +13,9 @@ A step is a sequence of micro-operations.
 An unused opcode locks the CPU: its step ends at `#locked`, after which nothing happens.
 `STOP` decodes to `stop`, which no rule executes: the model does not support it.
 
+A cartridge starts from the state a hardware model's boot ROM hands over, which `src/boot.rs` states once (`DmgRegisters`, `DmgFlags`, `BootPc`, `BootSp`, `DmgIo`, and `CpuStageIo` with the CPU stage's two display stand-ins), the cartridge's first 32 KiB as the ROM (`RomRegion`), and RAM that holds no byte until the program writes one.
+A case file gives each input as one of those functions applied with `{"$call": ..}` (`cases/mooneye-ei-sequence.toml`); the mooneye runner builds the same inputs.
+
 The initializer takes the whole architectural state at a boundary: `REGS`, `F`, `PC`, `SP`, `IME`, `EI_PENDING`, `HALTED`, `HALT_BUG` and `MEMORY`; and the unobservable registers `W` and `Z` (the harnesses pass 0), so a run can test that their initial value changes nothing observed.
 The bus log starts empty.
 Each machine cycle of the instruction is one bus micro-operation, which appends one event to the `bus` cell:
