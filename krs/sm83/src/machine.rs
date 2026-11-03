@@ -79,6 +79,11 @@ pub struct Machine {
     /// every address.
     #[k::cell]
     pub rom: Bytes,
+    /// The end of the ROM region: the ROM's length, set by the initializer. The
+    /// region test reads this Int, so a proof decides it by integer arithmetic
+    /// and never puts a `Bytes` term in front of the solver.
+    #[k::cell(name = "romEnd")]
+    pub rom_end: Int,
     /// Every other address, as a map from address to byte. A read of an address
     /// the map does not hold is stuck: the model gives unwritten RAM no value.
     #[k::cell]
@@ -123,6 +128,7 @@ impl Machine {
             halt_bug,
             w,
             z,
+            rom_end: bytes::length(rom),
             rom,
             memory,
             bus: k::builtin::list::empty(),
@@ -130,10 +136,10 @@ impl Machine {
     }
 }
 
-/// Whether `addr` is in the ROM region, 0 up to the ROM's length.
+/// Whether `addr` is in the ROM region, 0 up to `rom_end`.
 #[k::function(total, internal)]
-pub fn InRom(rom: Term<Bytes>, addr: Term<Int>) -> Term<Bool> {
-    0 <= addr && addr < bytes::length(rom)
+pub fn InRom(rom_end: Term<Int>, addr: Term<Int>) -> Term<Bool> {
+    0 <= addr && addr < rom_end
 }
 
 /// The value of the register pair `HL`.

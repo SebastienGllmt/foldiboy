@@ -95,12 +95,12 @@ pub enum Micro {
 k::rules! {
     for Machine;
 
-    #[k::requires(!bug && !InRom(rom, pc))]
+    #[k::requires(!bug && !InRom(rom_end, pc))]
     fetch: {
         k: [Micro::Fetch, ..],
         pc,
         halt_bug: bug,
-        rom,
+        rom_end,
         memory: { pc -> opcode, .. },
         bus: log,
     } => {
@@ -110,12 +110,13 @@ k::rules! {
     };
 
     /// As `fetch`, reading the ROM.
-    #[k::requires(!bug && InRom(rom, pc))]
+    #[k::requires(!bug && InRom(rom_end, pc))]
     fetch_rom: {
         k: [Micro::Fetch, ..],
         pc,
         halt_bug: bug,
         rom,
+        rom_end,
         bus: log,
     } => {
         k: [Decode(bytes::get(rom, pc)), ..],
@@ -124,12 +125,12 @@ k::rules! {
     };
 
     /// After the `HALT` bug, the fetch leaves `PC` on the opcode it read.
-    #[k::requires(bug && !InRom(rom, pc))]
+    #[k::requires(bug && !InRom(rom_end, pc))]
     fetch_halt_bug: {
         k: [Micro::Fetch, ..],
         pc,
         halt_bug: bug,
-        rom,
+        rom_end,
         memory: { pc -> opcode, .. },
         bus: log,
     } => {
@@ -139,12 +140,13 @@ k::rules! {
     };
 
     /// As `fetch_halt_bug`, reading the ROM.
-    #[k::requires(bug && InRom(rom, pc))]
+    #[k::requires(bug && InRom(rom_end, pc))]
     fetch_halt_bug_rom: {
         k: [Micro::Fetch, ..],
         pc,
         halt_bug: bug,
         rom,
+        rom_end,
         bus: log,
     } => {
         k: [Decode(bytes::get(rom, pc)), ..],
@@ -152,11 +154,11 @@ k::rules! {
         bus: [..log, Event::Read { addr: pc, value: bytes::get(rom, pc) }],
     };
 
-    #[k::requires(!InRom(rom, pc))]
+    #[k::requires(!InRom(rom_end, pc))]
     fetch_cb: {
         k: [Micro::FetchCb, ..],
         pc,
-        rom,
+        rom_end,
         memory: { pc -> opcode, .. },
         bus: log,
     } => {
@@ -166,11 +168,12 @@ k::rules! {
     };
 
     /// As `fetch_cb`, reading the ROM.
-    #[k::requires(InRom(rom, pc))]
+    #[k::requires(InRom(rom_end, pc))]
     fetch_cb_rom: {
         k: [Micro::FetchCb, ..],
         pc,
         rom,
+        rom_end,
         bus: log,
     } => {
         k: [DecodeCb(bytes::get(rom, pc)), ..],
@@ -346,10 +349,10 @@ k::rules! {
         ],
     };
 
-    #[k::requires(!InRom(rom, addr))]
+    #[k::requires(!InRom(rom_end, addr))]
     read_z: {
         k: [Micro::ReadZ { addr }, ..],
-        rom,
+        rom_end,
         memory: { addr -> value, .. },
         z: _,
         bus: log,
@@ -360,10 +363,11 @@ k::rules! {
     };
 
     /// As `read_z`, reading the ROM.
-    #[k::requires(InRom(rom, addr))]
+    #[k::requires(InRom(rom_end, addr))]
     read_z_rom: {
         k: [Micro::ReadZ { addr }, ..],
         rom,
+        rom_end,
         z: _,
         bus: log,
     } => {
@@ -372,10 +376,10 @@ k::rules! {
         bus: [..log, Event::Read { addr, value: bytes::get(rom, addr) }],
     };
 
-    #[k::requires(!InRom(rom, addr))]
+    #[k::requires(!InRom(rom_end, addr))]
     read_w: {
         k: [Micro::ReadW { addr }, ..],
-        rom,
+        rom_end,
         memory: { addr -> value, .. },
         w: _,
         bus: log,
@@ -386,10 +390,11 @@ k::rules! {
     };
 
     /// As `read_w`, reading the ROM.
-    #[k::requires(InRom(rom, addr))]
+    #[k::requires(InRom(rom_end, addr))]
     read_w_rom: {
         k: [Micro::ReadW { addr }, ..],
         rom,
+        rom_end,
         w: _,
         bus: log,
     } => {
@@ -399,10 +404,10 @@ k::rules! {
     };
 
     /// A write outside the ROM stores the byte, at an address the map holds or not.
-    #[k::requires(!InRom(rom, addr))]
+    #[k::requires(!InRom(rom_end, addr))]
     write_byte: {
         k: [Micro::WriteByte { addr, value }, ..],
-        rom,
+        rom_end,
         memory,
         bus: log,
     } => {
@@ -413,10 +418,10 @@ k::rules! {
 
     /// A write to the ROM changes nothing a cartridge without a mapper holds; the
     /// cycle still drives the bus.
-    #[k::requires(InRom(rom, addr))]
+    #[k::requires(InRom(rom_end, addr))]
     write_byte_rom: {
         k: [Micro::WriteByte { addr, value }, ..],
-        rom,
+        rom_end,
         bus: log,
     } => {
         k: [..],

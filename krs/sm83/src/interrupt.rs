@@ -177,11 +177,11 @@ k::rules! {
         sp: Word(sp - 2),
     };
 
-    #[k::requires(!InRom(rom, pc))]
+    #[k::requires(!InRom(rom_end, pc))]
     discard_fetch: {
         k: [Step::DiscardFetch, ..],
         pc,
-        rom,
+        rom_end,
         memory: { pc -> opcode, .. },
         bus: log,
     } => {
@@ -190,11 +190,12 @@ k::rules! {
     };
 
     /// As `discard_fetch`, reading the ROM.
-    #[k::requires(InRom(rom, pc))]
+    #[k::requires(InRom(rom_end, pc))]
     discard_fetch_rom: {
         k: [Step::DiscardFetch, ..],
         pc,
         rom,
+        rom_end,
         bus: log,
     } => {
         k: [..],

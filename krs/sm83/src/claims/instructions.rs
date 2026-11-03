@@ -11,7 +11,7 @@ use crate::alu::{Alu, Flags, Unary};
 use crate::decode::{Address, Condition, Instruction, Operand, Pair16};
 use crate::interrupt::Step;
 use crate::machine::{Event, Register};
-use k::builtin::{Bool, Int, bytes, int, kequal};
+use k::builtin::{Bool, Int, int, kequal};
 
 /// RGBDS DAA: adjust the high digit after a carry or an addition above BCD 99.
 #[k::function(total, internal)]
@@ -96,9 +96,9 @@ pub mod spec {
 
         /// LD r8,source: load one byte, preserve flags and all other registers.
         #[k::claim(all_paths)]
-        #[k::requires(bytes::length(rom) == 0 && ((0 <= pc && pc < 0x1_0000) && (0 <= m[pc] && m[pc] < 0x100)))]
+        #[k::requires(rom_end == 0 && ((0 <= pc && pc < 0x1_0000) && (0 <= m[pc] && m[pc] < 0x100)))]
         contract_ld8_immediate: {
-            rom,
+            rom_end,
             k: [Instruction::Ld8 { dst: Operand::Reg { r: dst }, src: Operand::Immediate }],
             regs: r,
             z: _,
@@ -116,7 +116,7 @@ pub mod spec {
         /// LD r8,source: load one byte, preserve flags and all other registers.
         #[k::claim(all_paths)]
         #[k::requires(
-            bytes::length(rom) == 0
+            rom_end == 0
                 && (
                     (0 <= r[Register::H] && r[Register::H] < 0x100)
                         && (0 <= r[Register::L] && r[Register::L] < 0x100)
@@ -126,7 +126,7 @@ pub mod spec {
                 ),
         )]
         contract_ld8_indirect: {
-            rom,
+            rom_end,
             k: [Instruction::Ld8 { dst: Operand::Reg { r: dst }, src: Operand::HlIndirect }],
             regs: r,
             z: _,
@@ -148,7 +148,7 @@ pub mod spec {
         /// LD [HL],source: one byte write; immediate is read before the write, including aliasing.
         #[k::claim(all_paths)]
         #[k::requires(
-            bytes::length(rom) == 0
+            rom_end == 0
                 && (
                     (0 <= r[Register::H] && r[Register::H] < 0x100)
                         && (0 <= r[Register::L] && r[Register::L] < 0x100)
@@ -160,7 +160,7 @@ pub mod spec {
                 ),
         )]
         contract_ld8_store_register: {
-            rom,
+            rom_end,
             k: [Instruction::Ld8 { dst: Operand::HlIndirect, src: Operand::Reg { r: src } }],
             regs: r,
             memory: m,
@@ -182,7 +182,7 @@ pub mod spec {
         /// LD [HL],source: one byte write; immediate is read before the write, including aliasing.
         #[k::claim(all_paths)]
         #[k::requires(
-            bytes::length(rom) == 0
+            rom_end == 0
                 && (
                     (0 <= r[Register::H] && r[Register::H] < 0x100)
                         && (0 <= r[Register::L] && r[Register::L] < 0x100)
@@ -195,7 +195,7 @@ pub mod spec {
                 ),
         )]
         contract_ld8_store_immediate: {
-            rom,
+            rom_end,
             k: [Instruction::Ld8 { dst: Operand::HlIndirect, src: Operand::Immediate }],
             regs: r,
             memory: m,
@@ -220,7 +220,7 @@ pub mod spec {
         /// LD r16,d16: little-endian immediate reads, including PC wrapping.
         #[k::claim(all_paths)]
         #[k::requires(
-            bytes::length(rom) == 0
+            rom_end == 0
                 && (
                     (0 <= pc && pc < 0x1_0000)
                         && (0 <= m[pc] && m[pc] < 0x100)
@@ -228,7 +228,7 @@ pub mod spec {
                 ),
         )]
         contract_ld16_registers: {
-            rom,
+            rom_end,
             k: [Instruction::Ld16 { pair: Pair16::Registers { high, low } }],
             pc: pc,
             memory: m,
@@ -252,7 +252,7 @@ pub mod spec {
         /// LD r16,d16: little-endian immediate reads, including PC wrapping.
         #[k::claim(all_paths)]
         #[k::requires(
-            bytes::length(rom) == 0
+            rom_end == 0
                 && (
                     (0 <= pc && pc < 0x1_0000)
                         && (0 <= m[pc] && m[pc] < 0x100)
@@ -260,7 +260,7 @@ pub mod spec {
                 ),
         )]
         contract_ld16_sp: {
-            rom,
+            rom_end,
             k: [Instruction::Ld16 { pair: Pair16::StackPointer }],
             pc: pc,
             memory: m,
@@ -326,7 +326,7 @@ pub mod spec {
         /// ADD A,source: independent byte arithmetic/logic and all four flags.
         #[k::claim(all_paths)]
         #[k::requires(
-            bytes::length(rom) == 0
+            rom_end == 0
                 && (
                     (0 <= r[Register::A] && r[Register::A] < 0x100)
                         && (0 <= m[pc] && m[pc] < 0x100)
@@ -334,7 +334,7 @@ pub mod spec {
                 ),
         )]
         contract_alu_add_immediate: {
-            rom,
+            rom_end,
             k: [Instruction::Alu8 { op: Alu::Add, src: Operand::Immediate }],
             regs: r,
             f: _,
@@ -359,7 +359,7 @@ pub mod spec {
         /// ADD A,source: independent byte arithmetic/logic and all four flags.
         #[k::claim(all_paths)]
         #[k::requires(
-            bytes::length(rom) == 0
+            rom_end == 0
                 && (
                     (0 <= r[Register::A] && r[Register::A] < 0x100)
                         && (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
@@ -370,7 +370,7 @@ pub mod spec {
                 ),
         )]
         contract_alu_add_indirect: {
-            rom,
+            rom_end,
             k: [Instruction::Alu8 { op: Alu::Add, src: Operand::HlIndirect }],
             regs: r,
             f: _,
@@ -432,7 +432,7 @@ pub mod spec {
         /// ADC A,source: independent byte arithmetic/logic and all four flags.
         #[k::claim(all_paths)]
         #[k::requires(
-            bytes::length(rom) == 0
+            rom_end == 0
                 && (
                     (0 <= r[Register::A] && r[Register::A] < 0x100)
                         && (0 <= m[pc] && m[pc] < 0x100)
@@ -440,7 +440,7 @@ pub mod spec {
                 ),
         )]
         contract_alu_adc_immediate: {
-            rom,
+            rom_end,
             k: [Instruction::Alu8 { op: Alu::Adc, src: Operand::Immediate }],
             regs: r,
             f: Flags { c: carry, .. },
@@ -468,7 +468,7 @@ pub mod spec {
         /// ADC A,source: independent byte arithmetic/logic and all four flags.
         #[k::claim(all_paths)]
         #[k::requires(
-            bytes::length(rom) == 0
+            rom_end == 0
                 && (
                     (0 <= r[Register::A] && r[Register::A] < 0x100)
                         && (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
@@ -479,7 +479,7 @@ pub mod spec {
                 ),
         )]
         contract_alu_adc_indirect: {
-            rom,
+            rom_end,
             k: [Instruction::Alu8 { op: Alu::Adc, src: Operand::HlIndirect }],
             regs: r,
             f: Flags { c: carry, .. },
@@ -539,7 +539,7 @@ pub mod spec {
         /// SUB A,source: independent byte arithmetic/logic and all four flags.
         #[k::claim(all_paths)]
         #[k::requires(
-            bytes::length(rom) == 0
+            rom_end == 0
                 && (
                     (0 <= r[Register::A] && r[Register::A] < 0x100)
                         && (0 <= m[pc] && m[pc] < 0x100)
@@ -547,7 +547,7 @@ pub mod spec {
                 ),
         )]
         contract_alu_sub_immediate: {
-            rom,
+            rom_end,
             k: [Instruction::Alu8 { op: Alu::Sub, src: Operand::Immediate }],
             regs: r,
             f: _,
@@ -572,7 +572,7 @@ pub mod spec {
         /// SUB A,source: independent byte arithmetic/logic and all four flags.
         #[k::claim(all_paths)]
         #[k::requires(
-            bytes::length(rom) == 0
+            rom_end == 0
                 && (
                     (0 <= r[Register::A] && r[Register::A] < 0x100)
                         && (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
@@ -583,7 +583,7 @@ pub mod spec {
                 ),
         )]
         contract_alu_sub_indirect: {
-            rom,
+            rom_end,
             k: [Instruction::Alu8 { op: Alu::Sub, src: Operand::HlIndirect }],
             regs: r,
             f: _,
@@ -647,7 +647,7 @@ pub mod spec {
         /// SBC A,source: independent byte arithmetic/logic and all four flags.
         #[k::claim(all_paths)]
         #[k::requires(
-            bytes::length(rom) == 0
+            rom_end == 0
                 && (
                     (0 <= r[Register::A] && r[Register::A] < 0x100)
                         && (0 <= m[pc] && m[pc] < 0x100)
@@ -655,7 +655,7 @@ pub mod spec {
                 ),
         )]
         contract_alu_sbc_immediate: {
-            rom,
+            rom_end,
             k: [Instruction::Alu8 { op: Alu::Sbc, src: Operand::Immediate }],
             regs: r,
             f: Flags { c: carry, .. },
@@ -683,7 +683,7 @@ pub mod spec {
         /// SBC A,source: independent byte arithmetic/logic and all four flags.
         #[k::claim(all_paths)]
         #[k::requires(
-            bytes::length(rom) == 0
+            rom_end == 0
                 && (
                     (0 <= r[Register::A] && r[Register::A] < 0x100)
                         && (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
@@ -694,7 +694,7 @@ pub mod spec {
                 ),
         )]
         contract_alu_sbc_indirect: {
-            rom,
+            rom_end,
             k: [Instruction::Alu8 { op: Alu::Sbc, src: Operand::HlIndirect }],
             regs: r,
             f: Flags { c: carry, .. },
@@ -751,7 +751,7 @@ pub mod spec {
         /// AND A,source: independent byte arithmetic/logic and all four flags.
         #[k::claim(all_paths)]
         #[k::requires(
-            bytes::length(rom) == 0
+            rom_end == 0
                 && (
                     (0 <= r[Register::A] && r[Register::A] < 0x100)
                         && (0 <= m[pc] && m[pc] < 0x100)
@@ -759,7 +759,7 @@ pub mod spec {
                 ),
         )]
         contract_alu_and_immediate: {
-            rom,
+            rom_end,
             k: [Instruction::Alu8 { op: Alu::And, src: Operand::Immediate }],
             regs: r,
             f: _,
@@ -779,7 +779,7 @@ pub mod spec {
         /// AND A,source: independent byte arithmetic/logic and all four flags.
         #[k::claim(all_paths)]
         #[k::requires(
-            bytes::length(rom) == 0
+            rom_end == 0
                 && (
                     (0 <= r[Register::A] && r[Register::A] < 0x100)
                         && (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
@@ -790,7 +790,7 @@ pub mod spec {
                 ),
         )]
         contract_alu_and_indirect: {
-            rom,
+            rom_end,
             k: [Instruction::Alu8 { op: Alu::And, src: Operand::HlIndirect }],
             regs: r,
             f: _,
@@ -842,7 +842,7 @@ pub mod spec {
         /// XOR A,source: independent byte arithmetic/logic and all four flags.
         #[k::claim(all_paths)]
         #[k::requires(
-            bytes::length(rom) == 0
+            rom_end == 0
                 && (
                     (0 <= r[Register::A] && r[Register::A] < 0x100)
                         && (0 <= m[pc] && m[pc] < 0x100)
@@ -850,7 +850,7 @@ pub mod spec {
                 ),
         )]
         contract_alu_xor_immediate: {
-            rom,
+            rom_end,
             k: [Instruction::Alu8 { op: Alu::Xor, src: Operand::Immediate }],
             regs: r,
             f: _,
@@ -870,7 +870,7 @@ pub mod spec {
         /// XOR A,source: independent byte arithmetic/logic and all four flags.
         #[k::claim(all_paths)]
         #[k::requires(
-            bytes::length(rom) == 0
+            rom_end == 0
                 && (
                     (0 <= r[Register::A] && r[Register::A] < 0x100)
                         && (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
@@ -881,7 +881,7 @@ pub mod spec {
                 ),
         )]
         contract_alu_xor_indirect: {
-            rom,
+            rom_end,
             k: [Instruction::Alu8 { op: Alu::Xor, src: Operand::HlIndirect }],
             regs: r,
             f: _,
@@ -933,7 +933,7 @@ pub mod spec {
         /// OR A,source: independent byte arithmetic/logic and all four flags.
         #[k::claim(all_paths)]
         #[k::requires(
-            bytes::length(rom) == 0
+            rom_end == 0
                 && (
                     (0 <= r[Register::A] && r[Register::A] < 0x100)
                         && (0 <= m[pc] && m[pc] < 0x100)
@@ -941,7 +941,7 @@ pub mod spec {
                 ),
         )]
         contract_alu_or_immediate: {
-            rom,
+            rom_end,
             k: [Instruction::Alu8 { op: Alu::Or, src: Operand::Immediate }],
             regs: r,
             f: _,
@@ -961,7 +961,7 @@ pub mod spec {
         /// OR A,source: independent byte arithmetic/logic and all four flags.
         #[k::claim(all_paths)]
         #[k::requires(
-            bytes::length(rom) == 0
+            rom_end == 0
                 && (
                     (0 <= r[Register::A] && r[Register::A] < 0x100)
                         && (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
@@ -972,7 +972,7 @@ pub mod spec {
                 ),
         )]
         contract_alu_or_indirect: {
-            rom,
+            rom_end,
             k: [Instruction::Alu8 { op: Alu::Or, src: Operand::HlIndirect }],
             regs: r,
             f: _,
@@ -1029,7 +1029,7 @@ pub mod spec {
         /// CP A,source: independent byte arithmetic/logic and all four flags.
         #[k::claim(all_paths)]
         #[k::requires(
-            bytes::length(rom) == 0
+            rom_end == 0
                 && (
                     (0 <= r[Register::A] && r[Register::A] < 0x100)
                         && (0 <= m[pc] && m[pc] < 0x100)
@@ -1037,7 +1037,7 @@ pub mod spec {
                 ),
         )]
         contract_alu_cp_immediate: {
-            rom,
+            rom_end,
             k: [Instruction::Alu8 { op: Alu::Cp, src: Operand::Immediate }],
             regs: r,
             f: _,
@@ -1062,7 +1062,7 @@ pub mod spec {
         /// CP A,source: independent byte arithmetic/logic and all four flags.
         #[k::claim(all_paths)]
         #[k::requires(
-            bytes::length(rom) == 0
+            rom_end == 0
                 && (
                     (0 <= r[Register::A] && r[Register::A] < 0x100)
                         && (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
@@ -1073,7 +1073,7 @@ pub mod spec {
                 ),
         )]
         contract_alu_cp_indirect: {
-            rom,
+            rom_end,
             k: [Instruction::Alu8 { op: Alu::Cp, src: Operand::HlIndirect }],
             regs: r,
             f: _,
@@ -1126,7 +1126,7 @@ pub mod spec {
         /// INC: byte result, flag behavior and read/modify/write ordering where applicable.
         #[k::claim(all_paths)]
         #[k::requires(
-            bytes::length(rom) == 0
+            rom_end == 0
                 && (
                     (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
                         && m[r[Register::H] * 0x100 + r[Register::L]] < 0x100)
@@ -1135,7 +1135,7 @@ pub mod spec {
                 ),
         )]
         contract_unary_inc_indirect: {
-            rom,
+            rom_end,
             k: [Instruction::Update8 { op: Unary::Inc, target: Operand::HlIndirect }],
             regs: r,
             f: Flags { c: carry, .. },
@@ -1197,7 +1197,7 @@ pub mod spec {
         /// DEC: byte result, flag behavior and read/modify/write ordering where applicable.
         #[k::claim(all_paths)]
         #[k::requires(
-            bytes::length(rom) == 0
+            rom_end == 0
                 && (
                     (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
                         && m[r[Register::H] * 0x100 + r[Register::L]] < 0x100)
@@ -1206,7 +1206,7 @@ pub mod spec {
                 ),
         )]
         contract_unary_dec_indirect: {
-            rom,
+            rom_end,
             k: [Instruction::Update8 { op: Unary::Dec, target: Operand::HlIndirect }],
             regs: r,
             f: Flags { c: carry, .. },
@@ -1268,7 +1268,7 @@ pub mod spec {
         /// RLC: byte result, flag behavior and read/modify/write ordering where applicable.
         #[k::claim(all_paths)]
         #[k::requires(
-            bytes::length(rom) == 0
+            rom_end == 0
                 && (
                     (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
                         && m[r[Register::H] * 0x100 + r[Register::L]] < 0x100)
@@ -1277,7 +1277,7 @@ pub mod spec {
                 ),
         )]
         contract_unary_rlc_indirect: {
-            rom,
+            rom_end,
             k: [Instruction::Update8 { op: Unary::Rlc, target: Operand::HlIndirect }],
             regs: r,
             f: _,
@@ -1350,7 +1350,7 @@ pub mod spec {
         /// RRC: byte result, flag behavior and read/modify/write ordering where applicable.
         #[k::claim(all_paths)]
         #[k::requires(
-            bytes::length(rom) == 0
+            rom_end == 0
                 && (
                     (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
                         && m[r[Register::H] * 0x100 + r[Register::L]] < 0x100)
@@ -1359,7 +1359,7 @@ pub mod spec {
                 ),
         )]
         contract_unary_rrc_indirect: {
-            rom,
+            rom_end,
             k: [Instruction::Update8 { op: Unary::Rrc, target: Operand::HlIndirect }],
             regs: r,
             f: _,
@@ -1432,7 +1432,7 @@ pub mod spec {
         /// RL: byte result, flag behavior and read/modify/write ordering where applicable.
         #[k::claim(all_paths)]
         #[k::requires(
-            bytes::length(rom) == 0
+            rom_end == 0
                 && (
                     (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
                         && m[r[Register::H] * 0x100 + r[Register::L]] < 0x100)
@@ -1441,7 +1441,7 @@ pub mod spec {
                 ),
         )]
         contract_unary_rl_indirect: {
-            rom,
+            rom_end,
             k: [Instruction::Update8 { op: Unary::Rl, target: Operand::HlIndirect }],
             regs: r,
             f: Flags { c: carry, .. },
@@ -1505,7 +1505,7 @@ pub mod spec {
         /// RR: byte result, flag behavior and read/modify/write ordering where applicable.
         #[k::claim(all_paths)]
         #[k::requires(
-            bytes::length(rom) == 0
+            rom_end == 0
                 && (
                     (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
                         && m[r[Register::H] * 0x100 + r[Register::L]] < 0x100)
@@ -1514,7 +1514,7 @@ pub mod spec {
                 ),
         )]
         contract_unary_rr_indirect: {
-            rom,
+            rom_end,
             k: [Instruction::Update8 { op: Unary::Rr, target: Operand::HlIndirect }],
             regs: r,
             f: Flags { c: carry, .. },
@@ -1573,7 +1573,7 @@ pub mod spec {
         /// SLA: byte result, flag behavior and read/modify/write ordering where applicable.
         #[k::claim(all_paths)]
         #[k::requires(
-            bytes::length(rom) == 0
+            rom_end == 0
                 && (
                     (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
                         && m[r[Register::H] * 0x100 + r[Register::L]] < 0x100)
@@ -1582,7 +1582,7 @@ pub mod spec {
                 ),
         )]
         contract_unary_sla_indirect: {
-            rom,
+            rom_end,
             k: [Instruction::Update8 { op: Unary::Sla, target: Operand::HlIndirect }],
             regs: r,
             f: _,
@@ -1644,7 +1644,7 @@ pub mod spec {
         /// SRA: byte result, flag behavior and read/modify/write ordering where applicable.
         #[k::claim(all_paths)]
         #[k::requires(
-            bytes::length(rom) == 0
+            rom_end == 0
                 && (
                     (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
                         && m[r[Register::H] * 0x100 + r[Register::L]] < 0x100)
@@ -1653,7 +1653,7 @@ pub mod spec {
                 ),
         )]
         contract_unary_sra_indirect: {
-            rom,
+            rom_end,
             k: [Instruction::Update8 { op: Unary::Sra, target: Operand::HlIndirect }],
             regs: r,
             f: _,
@@ -1721,7 +1721,7 @@ pub mod spec {
         /// SWAP: byte result, flag behavior and read/modify/write ordering where applicable.
         #[k::claim(all_paths)]
         #[k::requires(
-            bytes::length(rom) == 0
+            rom_end == 0
                 && (
                     (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
                         && m[r[Register::H] * 0x100 + r[Register::L]] < 0x100)
@@ -1730,7 +1730,7 @@ pub mod spec {
                 ),
         )]
         contract_unary_swap_indirect: {
-            rom,
+            rom_end,
             k: [Instruction::Update8 { op: Unary::Swap, target: Operand::HlIndirect }],
             regs: r,
             f: _,
@@ -1797,7 +1797,7 @@ pub mod spec {
         /// SRL: byte result, flag behavior and read/modify/write ordering where applicable.
         #[k::claim(all_paths)]
         #[k::requires(
-            bytes::length(rom) == 0
+            rom_end == 0
                 && (
                     (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
                         && m[r[Register::H] * 0x100 + r[Register::L]] < 0x100)
@@ -1806,7 +1806,7 @@ pub mod spec {
                 ),
         )]
         contract_unary_srl_indirect: {
-            rom,
+            rom_end,
             k: [Instruction::Update8 { op: Unary::Srl, target: Operand::HlIndirect }],
             regs: r,
             f: _,
@@ -2034,7 +2034,7 @@ pub mod spec {
         /// ResetBit: all bit positions 0..7, preserving required flags and unrelated state.
         #[k::claim(all_paths)]
         #[k::requires(
-            bytes::length(rom) == 0
+            rom_end == 0
                 && (
                     0 <= bit
                         && bit < 8
@@ -2046,7 +2046,7 @@ pub mod spec {
                 ),
         )]
         contract_bit_resetbit_indirect: {
-            rom,
+            rom_end,
             k: [
                 Instruction::Update8 {
                     op: Unary::ResetBit { bit: bit @ (0 | 1 | 2 | 3 | 4 | 5 | 6 | 7) },
@@ -2119,7 +2119,7 @@ pub mod spec {
         /// SetBit: all bit positions 0..7, preserving required flags and unrelated state.
         #[k::claim(all_paths)]
         #[k::requires(
-            bytes::length(rom) == 0
+            rom_end == 0
                 && (
                     0 <= bit
                         && bit < 8
@@ -2131,7 +2131,7 @@ pub mod spec {
                 ),
         )]
         contract_bit_setbit_indirect: {
-            rom,
+            rom_end,
             k: [
                 Instruction::Update8 {
                     op: Unary::SetBit { bit: bit @ (0 | 1 | 2 | 3 | 4 | 5 | 6 | 7) },
@@ -2202,7 +2202,7 @@ pub mod spec {
         /// TestBit: all bit positions 0..7, preserving required flags and unrelated state.
         #[k::claim(all_paths)]
         #[k::requires(
-            bytes::length(rom) == 0
+            rom_end == 0
                 && (
                     0 <= bit
                         && bit < 8
@@ -2214,7 +2214,7 @@ pub mod spec {
                 ),
         )]
         contract_bit_testbit_indirect: {
-            rom,
+            rom_end,
             k: [
                 Instruction::TestBit {
                     bit: bit @ (0 | 1 | 2 | 3 | 4 | 5 | 6 | 7),

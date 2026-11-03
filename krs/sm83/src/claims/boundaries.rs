@@ -10,7 +10,7 @@ use crate::decode::{Address, Condition, Instruction, Operand, Pair16};
 use crate::interrupt::{IE, IF, Step};
 use crate::machine::{Event, Register};
 use crate::micro::Micro;
-use k::builtin::{Int, bytes, kequal};
+use k::builtin::{Int, kequal};
 
 /// Pan Docs interrupt priority; test requests from bit 0 through bit 4.
 /// One expression, not an `if` chain: a branching body becomes one equation per branch, and
@@ -79,7 +79,7 @@ pub mod spec {
         /// Pan Docs HALT: no requested interrupt enters halted mode, independently of IME.
         #[k::claim(all_paths)]
         #[k::requires(
-            bytes::length(rom) == 0
+            rom_end == 0
                 && (
                     (0 <= m[IE] && m[IE] < 0x100)
                         && (0 <= m[IF] && m[IF] < 0x100)
@@ -87,7 +87,7 @@ pub mod spec {
                 ),
         )]
         contract_halt_enter: {
-            rom,
+            rom_end,
             k: [Instruction::Halt],
             memory: m,
             halted: false,
@@ -99,7 +99,7 @@ pub mod spec {
         /// Pan Docs HALT bug: IME clear with a pending interrupt does not halt; next fetch suppresses increment.
         #[k::claim(all_paths)]
         #[k::requires(
-            bytes::length(rom) == 0
+            rom_end == 0
                 && (
                     (0 <= m[IE] && m[IE] < 0x100)
                         && (0 <= m[IF] && m[IF] < 0x100)
@@ -107,7 +107,7 @@ pub mod spec {
                 ),
         )]
         contract_halt_bug_set: {
-            rom,
+            rom_end,
             k: [Instruction::Halt],
             ime: false,
             halted: false,
@@ -121,7 +121,7 @@ pub mod spec {
         /// SameSuite buffered VBlank/STAT case: delayed IME has taken effect and return PC remains on HALT.
         #[k::claim(all_paths)]
         #[k::requires(
-            bytes::length(rom) == 0
+            rom_end == 0
                 && (
                     (0 <= m[IE] && m[IE] < 0x100)
                         && (0 <= m[IF] && m[IF] < 0x100)
@@ -131,7 +131,7 @@ pub mod spec {
                 ),
         )]
         contract_halt_pending_ime: {
-            rom,
+            rom_end,
             k: [Instruction::Halt],
             pc: pc,
             ime: true,
@@ -146,7 +146,7 @@ pub mod spec {
         /// HALT with no request: one idle cycle, no fetch and no architectural state change.
         #[k::claim(all_paths)]
         #[k::requires(
-            bytes::length(rom) == 0
+            rom_end == 0
                 && (
                     (0 <= m[IE] && m[IE] < 0x100)
                         && (0 <= m[IF] && m[IF] < 0x100)
@@ -154,7 +154,7 @@ pub mod spec {
                 ),
         )]
         contract_halt_idle: {
-            rom,
+            rom_end,
             k: [Step::Boundary],
             halted: true,
             memory: m,
@@ -167,7 +167,7 @@ pub mod spec {
         /// Pan Docs HALT: pending request wakes IME=0; fetch the next NOP without acknowledging IF.
         #[k::claim(all_paths)]
         #[k::requires(
-            bytes::length(rom) == 0
+            rom_end == 0
                 && (
                     (0 <= m[IE] && m[IE] < 0x100)
                         && (0 <= m[IF] && m[IF] < 0x100)
@@ -177,7 +177,7 @@ pub mod spec {
                 ),
         )]
         contract_halt_wake_without_dispatch: {
-            rom,
+            rom_end,
             k: [Step::Boundary],
             halted: true,
             ime: false,
@@ -196,7 +196,7 @@ pub mod spec {
         /// IME and pending request select dispatch before executing another opcode.
         #[k::claim(all_paths)]
         #[k::requires(
-            bytes::length(rom) == 0
+            rom_end == 0
                 && (
                     (0 <= m[IE] && m[IE] < 0x100)
                         && (0 <= m[IF] && m[IF] < 0x100)
@@ -204,7 +204,7 @@ pub mod spec {
                 ),
         )]
         contract_boundary_choose_dispatch: {
-            rom,
+            rom_end,
             k: [Step::Boundary],
             halted: false,
             ime: true,
@@ -218,14 +218,14 @@ pub mod spec {
         /// EI delay: old IME prevents dispatch at this boundary, even if a request is pending.
         #[k::claim(all_paths)]
         #[k::requires(
-            bytes::length(rom) == 0
+            rom_end == 0
                 && (
                     (0 <= m[IE] && m[IE] < 0x100)
                         && (0 <= m[IF] && m[IF] < 0x100)
                 ),
         )]
         contract_boundary_apply_ei_delay: {
-            rom,
+            rom_end,
             k: [Step::Boundary],
             halted: false,
             ime: false,
@@ -240,7 +240,7 @@ pub mod spec {
         /// Five-cycle dispatch: lowest requested bit wins, clear only its IF bit and IME, push PC high then low.
         #[k::claim(all_paths)]
         #[k::requires(
-            bytes::length(rom) == 0
+            rom_end == 0
                 && (
                     (0 <= m[IE] && m[IE] < 0x100)
                         && (0 <= m[IF] && m[IF] < 0x100)
@@ -261,7 +261,7 @@ pub mod spec {
                 ),
         )]
         contract_dispatch_running: {
-            rom,
+            rom_end,
             k: [Step::Boundary],
             halted: false,
             ime: true,
@@ -301,7 +301,7 @@ pub mod spec {
         /// Five-cycle dispatch: lowest requested bit wins, clear only its IF bit and IME, push PC high then low.
         #[k::claim(all_paths)]
         #[k::requires(
-            bytes::length(rom) == 0
+            rom_end == 0
                 && (
                     (0 <= m[IE] && m[IE] < 0x100)
                         && (0 <= m[IF] && m[IF] < 0x100)
@@ -322,7 +322,7 @@ pub mod spec {
                 ),
         )]
         contract_dispatch_wake: {
-            rom,
+            rom_end,
             k: [Step::Boundary],
             halted: true,
             ime: true,
@@ -364,7 +364,7 @@ pub mod spec {
         /// Writing 0x02 clears the pending timer bit (0b0000_0100), cancelling dispatch.
         #[k::claim(all_paths)]
         #[k::requires(
-            bytes::length(rom) == 0
+            rom_end == 0
                 && (
                     m[IE] == 0b0000_0100
                         && m[IF] == 0b0000_0100
@@ -376,7 +376,7 @@ pub mod spec {
                 ),
         )]
         contract_dispatch_ie_high_cancels: {
-            rom,
+            rom_end,
             k: [Step::Dispatch],
             ime: true,
             pc: 0x0200,
@@ -403,7 +403,7 @@ pub mod spec {
         /// Writing 0x35 clears the serial bit (0b0000_1000), but IE was already sampled.
         #[k::claim(all_paths)]
         #[k::requires(
-            bytes::length(rom) == 0
+            rom_end == 0
                 && (
                     m[IE] == 0b0000_1000
                         && m[IF] == 0b0000_1000
@@ -415,7 +415,7 @@ pub mod spec {
                 ),
         )]
         contract_dispatch_ie_low_too_late: {
-            rom,
+            rom_end,
             k: [Step::Dispatch],
             ime: true,
             pc: 0x0235,
@@ -441,7 +441,7 @@ pub mod spec {
         /// Pan Docs and mooneye EI timing: one following instruction executes; DI cancels the delayed enable.
         #[k::claim(all_paths)]
         #[k::requires(
-            bytes::length(rom) == 0
+            rom_end == 0
                 && (
                     m[IE] == 0b0000_0001
                         && m[IF] == 0b0000_0001
@@ -450,7 +450,7 @@ pub mod spec {
                 ),
         )]
         contract_ei_then_nop: {
-            rom,
+            rom_end,
             k: [Step::Boundary],
             pc: 0x0100,
             ime: false,
@@ -473,7 +473,7 @@ pub mod spec {
         /// Pan Docs and mooneye EI timing: one following instruction executes; DI cancels the delayed enable.
         #[k::claim(all_paths)]
         #[k::requires(
-            bytes::length(rom) == 0
+            rom_end == 0
                 && (
                     m[IE] == 0b0000_0001
                         && m[IF] == 0b0000_0001
@@ -482,7 +482,7 @@ pub mod spec {
                 ),
         )]
         contract_ei_then_di: {
-            rom,
+            rom_end,
             k: [Step::Boundary],
             pc: 0x0100,
             ime: false,
@@ -505,7 +505,7 @@ pub mod spec {
         /// SameSuite ei_delay_halt: prebuffered VBlank/STAT, EI followed by HALT, return PC remains on HALT; no timer arrival modeled.
         #[k::claim(all_paths)]
         #[k::requires(
-            bytes::length(rom) == 0
+            rom_end == 0
                 && (
                     m[IE] == 0b0000_0111
                         && m[IF] == 0b0000_0011
@@ -514,7 +514,7 @@ pub mod spec {
                 ),
         )]
         contract_ei_then_halt_buffered: {
-            rom,
+            rom_end,
             k: [Step::Boundary],
             pc: 0x0100,
             ime: false,
