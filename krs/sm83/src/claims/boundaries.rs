@@ -9,6 +9,7 @@ use crate::alu::{Alu, Unary};
 use crate::decode::{Address, Condition, Instruction, Operand, Pair16};
 use crate::interrupt::{IE, IF, Step};
 use crate::machine::{Event, Register};
+use crate::well_formed::{IsByte, IsWord};
 use crate::micro::Micro;
 use k::builtin::{Int, kequal};
 
@@ -83,8 +84,8 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= m[IE] && m[IE] < 0x100)
-                        && (0 <= m[IF] && m[IF] < 0x100)
+                    IsByte(m[IE])
+                        && IsByte(m[IF])
                         && !((m[IE] & m[IF] & 0b0001_1111) != 0)
                 ),
         )]
@@ -103,8 +104,8 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= m[IE] && m[IE] < 0x100)
-                        && (0 <= m[IF] && m[IF] < 0x100)
+                    IsByte(m[IE])
+                        && IsByte(m[IF])
                         && ((m[IE] & m[IF] & 0b0001_1111) != 0)
                 ),
         )]
@@ -125,11 +126,11 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= m[IE] && m[IE] < 0x100)
-                        && (0 <= m[IF] && m[IF] < 0x100)
+                    IsByte(m[IE])
+                        && IsByte(m[IF])
                         && ((m[IE] & m[IF] & 0b0001_1111) != 0)
                         && (m[IE] & m[IF] & 0b0000_0011) != 0
-                        && (0 <= pc && pc < 0x1_0000)
+                        && IsWord(pc)
                 ),
         )]
         contract_halt_pending_ime: {
@@ -150,8 +151,8 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= m[IE] && m[IE] < 0x100)
-                        && (0 <= m[IF] && m[IF] < 0x100)
+                    IsByte(m[IE])
+                        && IsByte(m[IF])
                         && !((m[IE] & m[IF] & 0b0001_1111) != 0)
                 ),
         )]
@@ -171,10 +172,10 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= m[IE] && m[IE] < 0x100)
-                        && (0 <= m[IF] && m[IF] < 0x100)
+                    IsByte(m[IE])
+                        && IsByte(m[IF])
                         && ((m[IE] & m[IF] & 0b0001_1111) != 0)
-                        && (0 <= pc && pc < 0x1_0000)
+                        && IsWord(pc)
                         && m[pc] == 0x00
                 ),
         )]
@@ -200,8 +201,8 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= m[IE] && m[IE] < 0x100)
-                        && (0 <= m[IF] && m[IF] < 0x100)
+                    IsByte(m[IE])
+                        && IsByte(m[IF])
                         && ((m[IE] & m[IF] & 0b0001_1111) != 0)
                 ),
         )]
@@ -222,8 +223,8 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= m[IE] && m[IE] < 0x100)
-                        && (0 <= m[IF] && m[IF] < 0x100)
+                    IsByte(m[IE])
+                        && IsByte(m[IF])
                 ),
         )]
         contract_boundary_apply_ei_delay: {
@@ -244,22 +245,20 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= m[IE] && m[IE] < 0x100)
-                        && (0 <= m[IF] && m[IF] < 0x100)
+                    IsByte(m[IE])
+                        && IsByte(m[IF])
                         && ((m[IE] & m[IF] & 0b0001_1111) != 0)
-                        && (0 <= pc && pc < 0x1_0000)
-                        && (0 <= sp && sp < 0x1_0000)
-                        && (0 <= m[pc] && m[pc] < 0x100)
+                        && IsWord(pc)
+                        && IsWord(sp)
+                        && IsByte(m[pc])
                         && m.contains_key((sp + 0xFFFF) % 0x1_0000)
                         && m.contains_key((sp + 0xFFFE) % 0x1_0000)
                         && ((sp + 0xFFFF) % 0x1_0000) != IE
                         && ((sp + 0xFFFF) % 0x1_0000) != IF
                         && ((sp + 0xFFFE) % 0x1_0000) != IE
                         && ((sp + 0xFFFE) % 0x1_0000) != IF
-                        && (0 <= m[(sp + 0xFFFF) % 0x1_0000]
-                            && m[(sp + 0xFFFF) % 0x1_0000] < 0x100)
-                        && (0 <= m[(sp + 0xFFFE) % 0x1_0000]
-                            && m[(sp + 0xFFFE) % 0x1_0000] < 0x100)
+                        && IsByte(m[(sp + 0xFFFF) % 0x1_0000])
+                        && IsByte(m[(sp + 0xFFFE) % 0x1_0000])
                 ),
         )]
         contract_dispatch_running: {
@@ -305,22 +304,20 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= m[IE] && m[IE] < 0x100)
-                        && (0 <= m[IF] && m[IF] < 0x100)
+                    IsByte(m[IE])
+                        && IsByte(m[IF])
                         && ((m[IE] & m[IF] & 0b0001_1111) != 0)
-                        && (0 <= pc && pc < 0x1_0000)
-                        && (0 <= sp && sp < 0x1_0000)
-                        && (0 <= m[pc] && m[pc] < 0x100)
+                        && IsWord(pc)
+                        && IsWord(sp)
+                        && IsByte(m[pc])
                         && m.contains_key((sp + 0xFFFF) % 0x1_0000)
                         && m.contains_key((sp + 0xFFFE) % 0x1_0000)
                         && ((sp + 0xFFFF) % 0x1_0000) != IE
                         && ((sp + 0xFFFF) % 0x1_0000) != IF
                         && ((sp + 0xFFFE) % 0x1_0000) != IE
                         && ((sp + 0xFFFE) % 0x1_0000) != IF
-                        && (0 <= m[(sp + 0xFFFF) % 0x1_0000]
-                            && m[(sp + 0xFFFF) % 0x1_0000] < 0x100)
-                        && (0 <= m[(sp + 0xFFFE) % 0x1_0000]
-                            && m[(sp + 0xFFFE) % 0x1_0000] < 0x100)
+                        && IsByte(m[(sp + 0xFFFF) % 0x1_0000])
+                        && IsByte(m[(sp + 0xFFFE) % 0x1_0000])
                 ),
         )]
         contract_dispatch_wake: {
@@ -370,11 +367,11 @@ pub mod spec {
                 && (
                     m[IE] == 0b0000_0100
                         && m[IF] == 0b0000_0100
-                        && (0 <= m[0x0200] && m[0x0200] < 0x100)
+                        && IsByte(m[0x0200])
                         && m.contains_key(IE)
                         && m.contains_key(0xFFFE)
-                        && (0 <= m[IE] && m[IE] < 0x100)
-                        && (0 <= m[0xFFFE] && m[0xFFFE] < 0x100)
+                        && IsByte(m[IE])
+                        && IsByte(m[0xFFFE])
                 ),
         )]
         contract_dispatch_ie_high_cancels: {
@@ -409,11 +406,11 @@ pub mod spec {
                 && (
                     m[IE] == 0b0000_1000
                         && m[IF] == 0b0000_1000
-                        && (0 <= m[0x0235] && m[0x0235] < 0x100)
+                        && IsByte(m[0x0235])
                         && m.contains_key(0x0000)
                         && m.contains_key(IE)
-                        && (0 <= m[0x0000] && m[0x0000] < 0x100)
-                        && (0 <= m[IE] && m[IE] < 0x100)
+                        && IsByte(m[0x0000])
+                        && IsByte(m[IE])
                 ),
         )]
         contract_dispatch_ie_low_too_late: {

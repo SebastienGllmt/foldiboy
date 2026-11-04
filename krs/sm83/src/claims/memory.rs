@@ -8,6 +8,7 @@ use crate::Machine;
 use crate::alu::{Alu, Flags, Unary};
 use crate::decode::{Address, Condition, Instruction, Operand, Pair16};
 use crate::machine::{Event, Register};
+use crate::well_formed::{IsByte, IsWord};
 use k::builtin::{Bool, Int, int, kequal};
 
 /// RGBDS PUSH AF: the F byte holds Z, N, H, C in bits 7 to 4 and zero in bits 3 to 0.
@@ -35,10 +36,9 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= r[high] && r[high] < 0x100)
-                        && (0 <= r[low] && r[low] < 0x100)
-                        && (0 <= m[r[high] * 0x100 + r[low]]
-                            && m[r[high] * 0x100 + r[low]] < 0x100)
+                    IsByte(r[high])
+                        && IsByte(r[low])
+                        && IsByte(m[r[high] * 0x100 + r[low]])
                 ),
         )]
         contract_load_a_pair: {
@@ -68,12 +68,11 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= r[high] && r[high] < 0x100)
-                        && (0 <= r[low] && r[low] < 0x100)
-                        && (0 <= r[Register::A] && r[Register::A] < 0x100)
+                    IsByte(r[high])
+                        && IsByte(r[low])
+                        && IsByte(r[Register::A])
                         && m.contains_key(r[high] * 0x100 + r[low])
-                        && (0 <= m[r[high] * 0x100 + r[low]]
-                            && m[r[high] * 0x100 + r[low]] < 0x100)
+                        && IsByte(m[r[high] * 0x100 + r[low]])
                 ),
         )]
         contract_store_a_pair: {
@@ -103,12 +102,10 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= r[Register::H] && r[Register::H] < 0x100)
-                        && (0 <= r[Register::L] && r[Register::L] < 0x100)
+                    IsByte(r[Register::H])
+                        && IsByte(r[Register::L])
                         && (delta == 1 || delta == -1)
-                        && (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
-                            && m[r[Register::H] * 0x100 + r[Register::L]]
-                                < 0x100)
+                        && IsByte(m[r[Register::H] * 0x100 + r[Register::L]])
                 ),
         )]
         contract_load_a_hl_step: {
@@ -147,14 +144,12 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= r[Register::H] && r[Register::H] < 0x100)
-                        && (0 <= r[Register::L] && r[Register::L] < 0x100)
+                    IsByte(r[Register::H])
+                        && IsByte(r[Register::L])
                         && (delta == 1 || delta == -1)
-                        && (0 <= r[Register::A] && r[Register::A] < 0x100)
+                        && IsByte(r[Register::A])
                         && m.contains_key(r[Register::H] * 0x100 + r[Register::L])
-                        && (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
-                            && m[r[Register::H] * 0x100 + r[Register::L]]
-                                < 0x100)
+                        && IsByte(m[r[Register::H] * 0x100 + r[Register::L]])
                 ),
         )]
         contract_store_a_hl_step: {
@@ -193,9 +188,8 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= r[Register::C] && r[Register::C] < 0x100)
-                        && (0 <= m[0xFF00 + r[Register::C]]
-                            && m[0xFF00 + r[Register::C]] < 0x100)
+                    IsByte(r[Register::C])
+                        && IsByte(m[0xFF00 + r[Register::C]])
                 ),
         )]
         contract_load_a_high_c: {
@@ -222,11 +216,10 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= r[Register::C] && r[Register::C] < 0x100)
-                        && (0 <= r[Register::A] && r[Register::A] < 0x100)
+                    IsByte(r[Register::C])
+                        && IsByte(r[Register::A])
                         && m.contains_key(0xFF00 + r[Register::C])
-                        && (0 <= m[0xFF00 + r[Register::C]]
-                            && m[0xFF00 + r[Register::C]] < 0x100)
+                        && IsByte(m[0xFF00 + r[Register::C]])
                 ),
         )]
         contract_store_a_high_c: {
@@ -256,10 +249,9 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= pc && pc < 0x1_0000)
-                        && (0 <= m[pc] && m[pc] < 0x100)
-                        && (0 <= m[0xFF00 + m[pc]]
-                            && m[0xFF00 + m[pc]] < 0x100)
+                    IsWord(pc)
+                        && IsByte(m[pc])
+                        && IsByte(m[0xFF00 + m[pc]])
                 ),
         )]
         contract_load_a_high_immediate: {
@@ -289,12 +281,11 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= pc && pc < 0x1_0000)
-                        && (0 <= m[pc] && m[pc] < 0x100)
-                        && (0 <= r[Register::A] && r[Register::A] < 0x100)
+                    IsWord(pc)
+                        && IsByte(m[pc])
+                        && IsByte(r[Register::A])
                         && m.contains_key(0xFF00 + m[pc])
-                        && (0 <= m[0xFF00 + m[pc]]
-                            && m[0xFF00 + m[pc]] < 0x100)
+                        && IsByte(m[0xFF00 + m[pc]])
                 ),
         )]
         contract_store_a_high_immediate: {
@@ -327,12 +318,10 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= pc && pc < 0x1_0000)
-                        && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100)
-                        && (0 <= m[pc] && m[pc] < 0x100)
-                        && (0 <= m[m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]]
-                            && m[m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]]
-                                < 0x100)
+                    IsWord(pc)
+                        && IsByte(m[(pc + 1) % 0x1_0000])
+                        && IsByte(m[pc])
+                        && IsByte(m[m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]])
                 ),
         )]
         contract_load_a_absolute: {
@@ -366,14 +355,12 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= pc && pc < 0x1_0000)
-                        && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100)
-                        && (0 <= m[pc] && m[pc] < 0x100)
-                        && (0 <= r[Register::A] && r[Register::A] < 0x100)
+                    IsWord(pc)
+                        && IsByte(m[(pc + 1) % 0x1_0000])
+                        && IsByte(m[pc])
+                        && IsByte(r[Register::A])
                         && m.contains_key(m[(pc + 1) % 0x1_0000] * 0x100 + m[pc])
-                        && (0 <= m[m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]]
-                            && m[m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]]
-                                < 0x100)
+                        && IsByte(m[m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]])
                 ),
         )]
         contract_store_a_absolute: {
@@ -407,17 +394,14 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= pc && pc < 0x1_0000)
-                        && (0 <= sp && sp < 0x1_0000)
-                        && (0 <= m[pc] && m[pc] < 0x100)
-                        && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100)
+                    IsWord(pc)
+                        && IsWord(sp)
+                        && IsByte(m[pc])
+                        && IsByte(m[(pc + 1) % 0x1_0000])
                         && m.contains_key(m[(pc + 1) % 0x1_0000] * 0x100 + m[pc])
                         && m.contains_key(((m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]) + 1) % 0x1_0000)
-                        && (0 <= m[m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]]
-                            && m[m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]] < 0x100)
-                        && (0
-                            <= m[((m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]) + 1) % 0x1_0000]
-                            && m[((m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]) + 1) % 0x1_0000] < 0x100)
+                        && IsByte(m[m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]])
+                        && (IsByte(m[((m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]) + 1) % 0x1_0000]))
                 ),
         )]
         contract_store_sp: {
@@ -459,15 +443,13 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= sp && sp < 0x1_0000)
-                        && (0 <= r[high] && r[high] < 0x100)
-                        && (0 <= r[low] && r[low] < 0x100)
+                    IsWord(sp)
+                        && IsByte(r[high])
+                        && IsByte(r[low])
                         && m.contains_key((sp + 0xFFFF) % 0x1_0000)
                         && m.contains_key((sp + 0xFFFE) % 0x1_0000)
-                        && (0 <= m[(sp + 0xFFFF) % 0x1_0000]
-                            && m[(sp + 0xFFFF) % 0x1_0000] < 0x100)
-                        && (0 <= m[(sp + 0xFFFE) % 0x1_0000]
-                            && m[(sp + 0xFFFE) % 0x1_0000] < 0x100)
+                        && IsByte(m[(sp + 0xFFFF) % 0x1_0000])
+                        && IsByte(m[(sp + 0xFFFE) % 0x1_0000])
                 ),
         )]
         contract_push_registers: {
@@ -504,14 +486,12 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= sp && sp < 0x1_0000)
-                        && (0 <= r[Register::A] && r[Register::A] < 0x100)
+                    IsWord(sp)
+                        && IsByte(r[Register::A])
                         && m.contains_key((sp + 0xFFFF) % 0x1_0000)
                         && m.contains_key((sp + 0xFFFE) % 0x1_0000)
-                        && (0 <= m[(sp + 0xFFFF) % 0x1_0000]
-                            && m[(sp + 0xFFFF) % 0x1_0000] < 0x100)
-                        && (0 <= m[(sp + 0xFFFE) % 0x1_0000]
-                            && m[(sp + 0xFFFE) % 0x1_0000] < 0x100)
+                        && IsByte(m[(sp + 0xFFFF) % 0x1_0000])
+                        && IsByte(m[(sp + 0xFFFE) % 0x1_0000])
                 ),
         )]
         contract_push_af: {
@@ -549,9 +529,9 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= sp && sp < 0x1_0000)
-                        && (0 <= m[sp] && m[sp] < 0x100)
-                        && (0 <= m[(sp + 1) % 0x1_0000] && m[(sp + 1) % 0x1_0000] < 0x100)
+                    IsWord(sp)
+                        && IsByte(m[sp])
+                        && IsByte(m[(sp + 1) % 0x1_0000])
                 ),
         )]
         contract_pop_registers: {
@@ -581,9 +561,9 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= sp && sp < 0x1_0000)
-                        && (0 <= m[sp] && m[sp] < 0x100)
-                        && (0 <= m[(sp + 1) % 0x1_0000] && m[(sp + 1) % 0x1_0000] < 0x100)
+                    IsWord(sp)
+                        && IsByte(m[sp])
+                        && IsByte(m[(sp + 1) % 0x1_0000])
                 ),
         )]
         contract_pop_af: {
@@ -620,9 +600,9 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= pc && pc < 0x1_0000)
-                        && (0 <= sp && sp < 0x1_0000)
-                        && (0 <= m[pc] && m[pc] < 0x100)
+                    IsWord(pc)
+                        && IsWord(sp)
+                        && IsByte(m[pc])
                 ),
         )]
         contract_sp_offset_hl: {
@@ -664,9 +644,9 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= pc && pc < 0x1_0000)
-                        && (0 <= sp && sp < 0x1_0000)
-                        && (0 <= m[pc] && m[pc] < 0x100)
+                    IsWord(pc)
+                        && IsWord(sp)
+                        && IsByte(m[pc])
                 ),
         )]
         contract_sp_offset_sp: {
