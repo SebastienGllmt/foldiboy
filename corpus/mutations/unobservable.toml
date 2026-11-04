@@ -1,0 +1,85 @@
+# Controls: each changes only W or Z after its last read, the internal registers the definition
+# declares unobservable (krs/sm83/src/machine.rs). kink compares every other cell, so each must
+# survive; a kill here means W or Z reached an observable cell (sm83-refactor R8; the first run's
+# internal set, without the two that changed a write's old byte, which events no longer carry).
+
+[[mutation]]
+id = "wz-jp-clears-w"
+misunderstanding = "a taken JP also clears W"
+
+  [[mutation.edit]]
+  rule = "jump-taken"
+  find = "<w> High:Int </w>"
+  replace = "<w> High:Int => 0 </w>"
+
+[[mutation]]
+id = "wz-call-clears-z"
+misunderstanding = "a taken CALL also clears Z"
+
+  [[mutation.edit]]
+  rule = "call-taken"
+  find = "<z> Low:Int </z>"
+  replace = "<z> Low:Int => 0 </z>"
+
+[[mutation]]
+id = "wz-store-pair-bumps-w"
+misunderstanding = "storing W and Z into a pair also increments W"
+
+  [[mutation.edit]]
+  rule = "store-pair"
+  find = "<w> W:Int </w>"
+  replace = "<w> W:Int => W:Int +Int 1 </w>"
+
+[[mutation]]
+id = "wz-check-bit-clears-z"
+misunderstanding = "BIT also clears Z"
+
+  [[mutation.edit]]
+  rule = "check-bit"
+  find = "<z> Value:Int </z>"
+  replace = "<z> Value:Int => 0 </z>"
+
+[[mutation]]
+id = "wz-alu-clears-z"
+misunderstanding = "an ALU operation also clears Z"
+
+  [[mutation.edit]]
+  rule = "alu-a"
+  find = "<z> Value:Int </z>"
+  replace = "<z> Value:Int => 0 </z>"
+
+[[mutation]]
+id = "wz-store-z-bumps-z"
+misunderstanding = "a register store also increments Z"
+
+  [[mutation.edit]]
+  rule = "store-z-register"
+  find = "<z> Value:Int </z>"
+  replace = "<z> Value:Int => Value:Int +Int 1 </z>"
+
+[[mutation]]
+id = "wz-jr-clears-z"
+misunderstanding = "a taken JR also clears Z"
+
+  [[mutation.edit]]
+  rule = "jump-relative-taken"
+  find = "<z> Offset:Int </z>"
+  replace = "<z> Offset:Int => 0 </z>"
+
+[[mutation]]
+id = "wz-store-sp-clears-w"
+misunderstanding = "LD (nn),SP also clears W"
+
+  [[mutation.edit]]
+  rule = "store-sp-at-wz"
+  find = "<w> W:Int </w>"
+  replace = "<w> W:Int => 0 </w>"
+
+[[mutation]]
+id = "wz-store-sp-bumps-z"
+misunderstanding = "LD (nn),SP also increments Z"
+
+  [[mutation.edit]]
+  rule = "store-sp-at-wz"
+  find = "<z> Z:Int </z>"
+  replace = "<z> Z:Int => Z:Int +Int 1 </z>"

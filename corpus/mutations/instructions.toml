@@ -1,0 +1,325 @@
+# Misunderstandings of the instructions' rewrite rules: bus order, internal cycles, the stack,
+# memory, interrupts. K patches of ../definition.k, each anchored by its rule's label, the KRS item
+# (sm83-refactor R8; the first run's set, draft-personal/observer-design/measurements/kill-power.md,
+# re-anchored on the current definition).
+
+[[mutation]]
+id = "add-hl-sub"
+misunderstanding = "ADD HL,rr subtracts"
+
+  [[mutation.edit]]
+  rule = "add-hl"
+  find = "word ( hl ( Registers:Map ) +Int pairValue"
+  replace = "word ( hl ( Registers:Map ) -Int pairValue"
+
+[[mutation]]
+id = "add-sp-unsigned"
+misunderstanding = "ADD SP,e adds the offset unsigned"
+
+  [[mutation.edit]]
+  rule = "add-sp-z"
+  find = "Sp:Int +Int signed ( Offset:Int )"
+  replace = "Sp:Int +Int Offset:Int"
+
+[[mutation]]
+id = "alu-a-wrong-reg"
+misunderstanding = "an ALU result goes to B instead of A"
+
+  [[mutation.edit]]
+  rule = "alu-a"
+  find = "Registers:Map [ a <- aluResult"
+  replace = "Registers:Map [ b <- aluResult"
+
+[[mutation]]
+id = "ei-never-enables"
+misunderstanding = "the EI delay never sets IME"
+
+  [[mutation.edit]]
+  rule = "boundary-fetch"
+  find = "Ime:Bool orElseBool Pending:Bool"
+  replace = "Ime:Bool"
+
+[[mutation]]
+id = "call-swap-bytes"
+misunderstanding = "CALL pushes the low byte of PC first"
+
+  [[mutation.edit]]
+  rule = "call-taken"
+  find = "high ( Pc:Int ) ) ~> # writeByte ( word ( Sp:Int -Int 2 ) , low ( Pc:Int ) )"
+  replace = "low ( Pc:Int ) ) ~> # writeByte ( word ( Sp:Int -Int 2 ) , high ( Pc:Int ) )"
+
+[[mutation]]
+id = "call-no-idle"
+misunderstanding = "a taken CALL has no internal cycle"
+
+  [[mutation.edit]]
+  rule = "call-taken"
+  find = "# callIf ( Cond:Cond ) => # idle ~> # writeByte"
+  replace = "# callIf ( Cond:Cond ) => # writeByte"
+
+[[mutation]]
+id = "call-sp-off-by-one"
+misunderstanding = "a taken CALL decrements SP by 1"
+
+  [[mutation.edit]]
+  rule = "call-taken"
+  find = "<sp> Sp:Int => word ( Sp:Int -Int 2 ) </sp>"
+  replace = "<sp> Sp:Int => word ( Sp:Int -Int 1 ) </sp>"
+
+[[mutation]]
+id = "dec16-by-two"
+misunderstanding = "DEC rr subtracts 2"
+
+  [[mutation.edit]]
+  rule = "dec16"
+  find = "Sp:Int ) -Int 1 ) )"
+  replace = "Sp:Int ) -Int 2 ) )"
+
+[[mutation]]
+id = "dispatch-one-idle"
+misunderstanding = "interrupt dispatch has one internal cycle, not two"
+
+  [[mutation.edit]]
+  rule = "dispatch"
+  find = "# discardFetch ~> # idle ~> # idle ~>"
+  replace = "# discardFetch ~> # idle ~>"
+
+[[mutation]]
+id = "discard-fetch-idle"
+misunderstanding = "interrupt dispatch begins with an internal cycle, not a read of the opcode at PC (the Rust CPU's reading)"
+
+  [[mutation.edit]]
+  rule = "discard-fetch-rom"
+  find = "Log:List ListItem(read ( Pc:Int , Rom:Bytes [ Pc:Int ] ))"
+  replace = "Log:List ListItem(idle)"
+
+[[mutation]]
+id = "ei-sets-false"
+misunderstanding = "EI does not set the pending flag"
+
+  [[mutation.edit]]
+  rule = "enable-interrupts"
+  find = "<eiPending> _ => true </eiPending>"
+  replace = "<eiPending> _ => false </eiPending>"
+
+[[mutation]]
+id = "idle-no-log"
+misunderstanding = "an internal cycle is not a bus event"
+
+  [[mutation.edit]]
+  rule = "idle"
+  find = "Log:List ListItem(idle)"
+  replace = "Log:List"
+
+[[mutation]]
+id = "jump-hl-plus-one"
+misunderstanding = "JP HL jumps to HL+1"
+
+  [[mutation.edit]]
+  rule = "jump-hl"
+  find = "<pc> _ => hl ( Registers:Map ) </pc>"
+  replace = "<pc> _ => hl ( Registers:Map ) +Int 1 </pc>"
+
+[[mutation]]
+id = "jr-taken-no-idle"
+misunderstanding = "a taken JR has no internal cycle"
+
+  [[mutation.edit]]
+  rule = "jump-relative-taken"
+  find = "=> # idle ... </k>"
+  replace = "=> .K ... </k>"
+
+[[mutation]]
+id = "jr-backwards"
+misunderstanding = "a taken JR subtracts the offset"
+
+  [[mutation.edit]]
+  rule = "jump-relative-taken"
+  find = "Pc:Int +Int signed ( Offset:Int )"
+  replace = "Pc:Int -Int signed ( Offset:Int )"
+
+[[mutation]]
+id = "jp-swap-bytes"
+misunderstanding = "a taken JP swaps the target's bytes"
+
+  [[mutation.edit]]
+  rule = "jump-taken"
+  find = "pair ( High:Int , Low:Int )"
+  replace = "pair ( Low:Int , High:Int )"
+
+[[mutation]]
+id = "pop-high-off"
+misunderstanding = "POP reads the high byte at SP+2"
+
+  [[mutation.edit]]
+  rule = "pop"
+  find = "# readW ( word ( Sp:Int +Int 1 ) )"
+  replace = "# readW ( word ( Sp:Int +Int 2 ) )"
+
+[[mutation]]
+id = "ret-sp-off-by-one"
+misunderstanding = "RET increments SP by 1"
+
+  [[mutation.edit]]
+  rule = "pop-pc-taken"
+  find = "<sp> Sp:Int => word ( Sp:Int +Int 2 ) </sp>"
+  replace = "<sp> Sp:Int => word ( Sp:Int +Int 1 ) </sp>"
+
+[[mutation]]
+id = "push-swap-bytes"
+misunderstanding = "PUSH writes the low byte first"
+
+  [[mutation.edit]]
+  rule = "push"
+  find = "word ( Sp:Int -Int 1 ) , high ("
+  replace = "word ( Sp:Int -Int 1 ) , low ("
+
+  [[mutation.edit]]
+  rule = "push"
+  find = "word ( Sp:Int -Int 2 ) , low ("
+  replace = "word ( Sp:Int -Int 2 ) , high ("
+
+[[mutation]]
+id = "push-no-idle"
+misunderstanding = "PUSH has no internal cycle"
+
+  [[mutation.edit]]
+  rule = "push"
+  find = "push Pair:RegPair => # idle ~> # writeByte"
+  replace = "push Pair:RegPair => # writeByte"
+
+[[mutation]]
+id = "read-z-logs-zero"
+misunderstanding = "a RAM read logs value 0 on the bus (the register still gets the byte)"
+
+  [[mutation.edit]]
+  rule = "read-z"
+  find = "ListItem(read ( Addr:Int , Value:Int ))"
+  replace = "ListItem(read ( Addr:Int , 0 ))"
+
+[[mutation]]
+id = "hl-step-reversed"
+misunderstanding = "(HL+) and (HL-) step the wrong way"
+
+  [[mutation.edit]]
+  rule = "resolve-via-hl-step"
+  find = "+Int Delta:Int"
+  replace = "-Int Delta:Int"
+
+[[mutation]]
+id = "rst-off-by-one"
+misunderstanding = "RST jumps to its target + 1"
+
+  [[mutation.edit]]
+  rule = "restart"
+  find = "<pc> Pc:Int => Target:Int </pc>"
+  replace = "<pc> Pc:Int => Target:Int +Int 1 </pc>"
+
+[[mutation]]
+id = "reti-no-ime"
+misunderstanding = "RETI does not set IME"
+
+  [[mutation.edit]]
+  rule = "return-from-interrupt"
+  find = "<ime> _ => true </ime>"
+  replace = "<ime> _ => false </ime>"
+
+[[mutation]]
+id = "dispatch-keeps-ime"
+misunderstanding = "dispatch leaves IME set"
+
+  [[mutation.edit]]
+  rule = "select-vector"
+  find = "<ime> _ => false </ime>"
+  replace = "<ime> _ => true </ime>"
+
+[[mutation]]
+id = "if-ack-adds"
+misunderstanding = "dispatch sets the served IF bit again instead of clearing it"
+
+  [[mutation.edit]]
+  rule = "select-vector"
+  find = "-Int lowestRequest"
+  replace = "+Int lowestRequest"
+
+[[mutation]]
+id = "pop-af-swapped"
+misunderstanding = "POP AF puts the high byte in F and the low byte in A"
+
+  [[mutation.edit]]
+  rule = "set-pair-af"
+  find = "a <- high ( Value:Int )"
+  replace = "a <- low ( Value:Int )"
+
+  [[mutation.edit]]
+  rule = "set-pair-af"
+  find = "byteFlags ( low ( Value:Int ) )"
+  replace = "byteFlags ( high ( Value:Int ) )"
+
+[[mutation]]
+id = "set-pair-swap"
+misunderstanding = "16-bit register writes swap the bytes"
+
+  [[mutation.edit]]
+  rule = "set-pair-registers"
+  find = "[ High:Reg8 <- high ( Value:Int ) ] [ Low:Reg8 <- low ( Value:Int ) ]"
+  replace = "[ High:Reg8 <- low ( Value:Int ) ] [ Low:Reg8 <- high ( Value:Int ) ]"
+
+[[mutation]]
+id = "store-sp-swap"
+misunderstanding = "LD (nn),SP stores the high byte first"
+
+  [[mutation.edit]]
+  rule = "store-sp-at-wz"
+  find = "pair ( W:Int , Z:Int ) , low ( Sp:Int )"
+  replace = "pair ( W:Int , Z:Int ) , high ( Sp:Int )"
+
+  [[mutation.edit]]
+  rule = "store-sp-at-wz"
+  find = "+Int 1 ) , high ( Sp:Int )"
+  replace = "+Int 1 ) , low ( Sp:Int )"
+
+[[mutation]]
+id = "write-a-swap-wz"
+misunderstanding = "LD (rr),A writes to the address with its bytes swapped"
+
+  [[mutation.edit]]
+  rule = "write-a-at-wz"
+  find = "pair ( W:Int , Z:Int ) , A:Int"
+  replace = "pair ( Z:Int , W:Int ) , A:Int"
+
+[[mutation]]
+id = "write-memory-plus-one"
+misunderstanding = "a write stores value+1 in memory but puts the right value on the bus"
+
+  [[mutation.edit]]
+  rule = "write-byte"
+  find = "Memory:Map [ Addr:Int <- Value:Int ]"
+  replace = "Memory:Map [ Addr:Int <- Value:Int +Int 1 ]"
+
+[[mutation]]
+id = "halt-bug-not-set"
+misunderstanding = "HALT with IME clear and a request pending does not cause the HALT bug"
+
+  [[mutation.edit]]
+  rule = "halt-bug"
+  find = "<haltBug> _ => true </haltBug>"
+  replace = "<haltBug> _ => false </haltBug>"
+
+[[mutation]]
+id = "halt-dispatching-keeps-pc"
+misunderstanding = "HALT with IME set and a request pending dispatches with PC after the HALT"
+
+  [[mutation.edit]]
+  rule = "halt-dispatching"
+  find = "<pc> Pc:Int => word ( Pc:Int -Int 1 ) </pc>"
+  replace = "<pc> Pc:Int </pc>"
+
+[[mutation]]
+id = "update-z-identity"
+misunderstanding = "read-modify-write instructions leave the value unchanged"
+
+  [[mutation.edit]]
+  rule = "update-z"
+  find = "<z> Value:Int => unaryResult ( Op:UnaryOp , Value:Int , Flags:FlagSet ) </z>"
+  replace = "<z> Value:Int => Value:Int </z>"

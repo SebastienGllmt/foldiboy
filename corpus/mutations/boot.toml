@@ -1,0 +1,29 @@
+# Misunderstandings of the boot state every case starts from (krs/sm83/src/boot.rs). A case's
+# inputs apply these functions, so a mutant's run starts from the mutant's boot state.
+
+[[mutation]]
+id = "boot-a-cgb"
+misunderstanding = "the boot ROM leaves A = $11 (the CGB value) on a DMG"
+
+  [[mutation.edit]]
+  rule = "dmg_registers"
+  find = "[ a <- 1 ]"
+  replace = "[ a <- 17 ]"
+
+[[mutation]]
+id = "boot-sp-fffc"
+misunderstanding = "the boot ROM leaves SP at $FFFC"
+
+  [[mutation.edit]]
+  rule = "boot_sp"
+  find = "=> 65534"
+  replace = "=> 65532"
+
+[[mutation]]
+id = "rom-region-16k"
+misunderstanding = "the ROM region is the first 16 KiB of the cartridge"
+
+  [[mutation.edit]]
+  rule = "rom_region"
+  find = "32768"
+  replace = "16384"

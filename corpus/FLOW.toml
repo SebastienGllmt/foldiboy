@@ -1,0 +1,16 @@
+# The corpus as kink's corpus for the SM83 definition (krs/sm83, facet main; sm83-refactor R8):
+# `krs kink <verb>` runs every case against the definition and its mutations (mutations/*.toml,
+# K patches of definition.k anchored by KRS item). kink compares a mutant's end with the
+# definition's on every cell the definition does not declare unobservable (W and Z).
+# run-kink.sh builds the cartridges first; each case document names its build/<id>.gb.
+
+[spec]
+krs = { definition = "main" }
+
+[budget]
+time_ms = 30000
+max_depth = 200000
+work_factor = 4
+
+[[program]]
+cases = "cases/*/case.toml"

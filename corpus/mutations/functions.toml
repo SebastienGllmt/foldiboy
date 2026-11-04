@@ -1,0 +1,318 @@
+# Misunderstandings of the functions the instructions apply: ALU results and flags, decoding,
+# conditions, interrupt selection. K patches of ../definition.k, each anchored by its equation's
+# label, the KRS item (sm83-refactor R8; the first run's set, re-anchored).
+
+[[mutation]]
+id = "add-h-ge"
+misunderstanding = "ADD sets H when the low nibbles sum to 15"
+
+  [[mutation.edit]]
+  rule = "add_flags"
+  find = "((A:Int &Int 15) +Int (B:Int &Int 15)) >Int 15"
+  replace = "((A:Int &Int 15) +Int (B:Int &Int 15)) >=Int 15"
+
+[[mutation]]
+id = "add-c-ge"
+misunderstanding = "ADD sets C when the sum is 255"
+
+  [[mutation.edit]]
+  rule = "add_flags"
+  find = "(A:Int +Int B:Int) >Int 255"
+  replace = "(A:Int +Int B:Int) >=Int 255"
+
+[[mutation]]
+id = "sub-reversed"
+misunderstanding = "SUB computes B - A"
+
+  [[mutation.edit]]
+  rule = "sub_result"
+  find = "byte ( A:Int -Int B:Int )"
+  replace = "byte ( B:Int -Int A:Int )"
+
+[[mutation]]
+id = "sbc-adds-carry"
+misunderstanding = "SBC adds the carry"
+
+  [[mutation.edit]]
+  rule = "sbc_result"
+  find = "-Int carryIn ( Flags:FlagSet )"
+  replace = "+Int carryIn ( Flags:FlagSet )"
+
+[[mutation]]
+id = "sub-n-clear"
+misunderstanding = "SUB clears N"
+
+  [[mutation.edit]]
+  rule = "sub_flags"
+  find = "A:Int ==Int B:Int , true ,"
+  replace = "A:Int ==Int B:Int , false ,"
+
+[[mutation]]
+id = "adc-subs-carry"
+misunderstanding = "ADC subtracts the carry"
+
+  [[mutation.edit]]
+  rule = "adc_result"
+  find = "+Int carryIn ( Flags:FlagSet ) )"
+  replace = "-Int carryIn ( Flags:FlagSet ) )"
+
+[[mutation]]
+id = "and-h-clear"
+misunderstanding = "AND clears H"
+
+  [[mutation.edit]]
+  rule = "and_flags"
+  find = ", false , true , false )"
+  replace = ", false , false , false )"
+
+[[mutation]]
+id = "xor-is-or"
+misunderstanding = "XOR computes OR"
+
+  [[mutation.edit]]
+  rule = "xor_result"
+  find = "A:Int xorInt B:Int"
+  replace = "A:Int |Int B:Int"
+
+[[mutation]]
+id = "or-is-xor"
+misunderstanding = "OR computes XOR"
+
+  [[mutation.edit]]
+  rule = "or_result"
+  find = "A:Int |Int B:Int"
+  replace = "A:Int xorInt B:Int"
+
+[[mutation]]
+id = "cp-flags-swapped"
+misunderstanding = "CP compares B with A"
+
+  [[mutation.edit]]
+  rule = "cp_flags"
+  find = "aluFlags ( sub , A:Int , B:Int , Flags:FlagSet )"
+  replace = "aluFlags ( sub , B:Int , A:Int , Flags:FlagSet )"
+
+[[mutation]]
+id = "inc-h-wrong"
+misunderstanding = "INC sets H when the low nibble was 0"
+
+  [[mutation.edit]]
+  rule = "inc_flags"
+  find = "(Value:Int &Int 15) ==Int 15"
+  replace = "(Value:Int &Int 15) ==Int 0"
+
+[[mutation]]
+id = "dec-z-off-by-one"
+misunderstanding = "DEC sets Z when the operand was 0"
+
+  [[mutation.edit]]
+  rule = "dec_flags"
+  find = "Value:Int ==Int 1"
+  replace = "Value:Int ==Int 0"
+
+[[mutation]]
+id = "daa-low-ge"
+misunderstanding = "DAA corrects a low digit of 9"
+
+  [[mutation.edit]]
+  rule = "daa_low_2"
+  find = "(Value:Int &Int 15) >Int 9"
+  replace = "(Value:Int &Int 15) >=Int 9"
+
+[[mutation]]
+id = "daa-high-ge"
+misunderstanding = "DAA corrects a value of $99"
+
+  [[mutation.edit]]
+  rule = "daa_high_2"
+  find = "Value:Int >Int 153"
+  replace = "Value:Int >=Int 153"
+
+[[mutation]]
+id = "daa-high-16"
+misunderstanding = "DAA's high correction is $10"
+
+  [[mutation.edit]]
+  rule = "daa_correction"
+  find = "*Int 96"
+  replace = "*Int 16"
+
+[[mutation]]
+id = "daa-h-kept"
+misunderstanding = "DAA keeps H instead of clearing it"
+
+  [[mutation.edit]]
+  rule = "daa_flags"
+  find = "subtractSet ( Flags:FlagSet ) , false ,"
+  replace = "subtractSet ( Flags:FlagSet ) , halfCarrySet ( Flags:FlagSet ) ,"
+
+[[mutation]]
+id = "swap-shift-3"
+misunderstanding = "SWAP shifts the low nibble by 3"
+
+  [[mutation.edit]]
+  rule = "swap_result"
+  find = "<<Int 4"
+  replace = "<<Int 3"
+
+[[mutation]]
+id = "rlc-no-wrap"
+misunderstanding = "RLC drops the bit it rotates out"
+
+  [[mutation.edit]]
+  rule = "rlc_result"
+  find = "byte ( Value:Int <<Int 1 ) |Int (Value:Int >>Int 7)"
+  replace = "byte ( Value:Int <<Int 1 )"
+
+[[mutation]]
+id = "rr-is-rrc"
+misunderstanding = "RR rotates bit 0 in instead of the carry"
+
+  [[mutation.edit]]
+  rule = "rr_result"
+  find = "carryIn ( Flags:FlagSet ) <<Int 7"
+  replace = "(Value:Int &Int 1) <<Int 7"
+
+[[mutation]]
+id = "sra-no-sign"
+misunderstanding = "SRA drops the sign bit"
+
+  [[mutation.edit]]
+  rule = "sra_result"
+  find = "(Value:Int >>Int 1) |Int (Value:Int &Int 128)"
+  replace = "Value:Int >>Int 1"
+
+[[mutation]]
+id = "sla-carry-bit0"
+misunderstanding = "SLA takes the carry from bit 0"
+
+  [[mutation.edit]]
+  rule = "sla_flags"
+  find = "(Value:Int &Int 128) =/=Int 0"
+  replace = "(Value:Int &Int 1) =/=Int 0"
+
+[[mutation]]
+id = "shift-z-never"
+misunderstanding = "rotates and shifts never set Z"
+
+  [[mutation.edit]]
+  rule = "shift_flags"
+  find = "flags ( Result:Int ==Int 0 ,"
+  replace = "flags ( false ,"
+
+[[mutation]]
+id = "bit-z-inverted"
+misunderstanding = "BIT sets Z when the bit is set"
+
+  [[mutation.edit]]
+  rule = "bit_flags"
+  find = "(1 <<Int Bit:Int)) ==Int 0"
+  replace = "(1 <<Int Bit:Int)) =/=Int 0"
+
+[[mutation]]
+id = "set-bit-off-by-one"
+misunderstanding = "SET sets the next bit up"
+
+  [[mutation.edit]]
+  rule = "set_bit_result"
+  find = "1 <<Int Bit:Int"
+  replace = "1 <<Int (Bit:Int +Int 1)"
+
+[[mutation]]
+id = "cpl-n-clear"
+misunderstanding = "CPL clears N"
+
+  [[mutation.edit]]
+  rule = "cpl_flags"
+  find = "zeroSet ( Flags:FlagSet ) , true , true"
+  replace = "zeroSet ( Flags:FlagSet ) , false , true"
+
+[[mutation]]
+id = "ccf-is-scf"
+misunderstanding = "CCF keeps the carry"
+
+  [[mutation.edit]]
+  rule = "ccf_flags"
+  find = "notBool carrySet ( Flags:FlagSet )"
+  replace = "carrySet ( Flags:FlagSet )"
+
+[[mutation]]
+id = "add-hl-h-bit7"
+misunderstanding = "ADD HL takes H from bit 7 instead of bit 11"
+
+  [[mutation.edit]]
+  rule = "add_hl_flags"
+  find = "((Hl:Int &Int 4095) +Int (Value:Int &Int 4095)) >Int 4095"
+  replace = "((Hl:Int &Int 255) +Int (Value:Int &Int 255)) >Int 255"
+
+[[mutation]]
+id = "signed-off-by-one"
+misunderstanding = "negative offsets are one too large"
+
+  [[mutation.edit]]
+  rule = "signed_2"
+  find = "Value:Int -Int 256"
+  replace = "Value:Int -Int 255"
+
+[[mutation]]
+id = "holds-nz-inverted"
+misunderstanding = "NZ holds when Z is set"
+
+  [[mutation.edit]]
+  rule = "holds_not_zero"
+  find = "notBool Z:Bool"
+  replace = "Z:Bool"
+
+[[mutation]]
+id = "carry-reads-h"
+misunderstanding = "the carry test reads the H flag"
+
+  [[mutation.edit]]
+  rule = "carry_set_1"
+  find = "flags ( _ , _ , _ , C:Bool ) ) => C:Bool"
+  replace = "flags ( _ , _ , C:Bool , _ ) ) => C:Bool"
+
+[[mutation]]
+id = "vblank-vector"
+misunderstanding = "the VBlank vector is $48"
+
+  [[mutation.edit]]
+  rule = "interrupt_vector_1"
+  find = "=> 64"
+  replace = "=> 72"
+
+[[mutation]]
+id = "requested-mask-15"
+misunderstanding = "the interrupt mask ignores bit 4 (joypad)"
+
+  [[mutation.edit]]
+  rule = "requested"
+  find = "&Int 31"
+  replace = "&Int 15"
+
+[[mutation]]
+id = "dispatch-ignores-ime"
+misunderstanding = "dispatch ignores IME"
+
+  [[mutation.edit]]
+  rule = "dispatches"
+  find = "Ime:Bool andThenBool interruptRequested ( Memory:Map )"
+  replace = "interruptRequested ( Memory:Map )"
+
+[[mutation]]
+id = "decode-jr-nz"
+misunderstanding = "opcode $18 decodes as JR NZ"
+
+  [[mutation.edit]]
+  rule = "decode_jr"
+  find = "jr always , e"
+  replace = "jr nz , e"
+
+[[mutation]]
+id = "pair-af-swapped"
+misunderstanding = "the value of AF puts F in the high byte"
+
+  [[mutation.edit]]
+  rule = "pair_value_af"
+  find = "pair ( {Registers:Map [ a ]}:>Int , flagByte ( Flags:FlagSet ) )"
+  replace = "pair ( flagByte ( Flags:FlagSet ) , {Registers:Map [ a ]}:>Int )"
