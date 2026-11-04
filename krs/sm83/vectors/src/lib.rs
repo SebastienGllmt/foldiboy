@@ -12,6 +12,9 @@ use krs_exec::{
 use krs_ir::measure::Timings;
 use krs_ir_levels::DefinitionIr;
 
+pub mod observation;
+pub mod rust_cpu;
+
 pub fn load(path: &Path) -> (DefinitionIr, CompiledStage) {
     let definition: DefinitionIr =
         krs_ir::json::from_slice(&fs::read(path).expect("definition IR")).expect("definition IR JSON");
