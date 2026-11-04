@@ -29,3 +29,11 @@ normalizations = ["CompressIdle"]
 left = "krs"
 right = "rust-cpu"
 tier = "Writes"
+
+# The same pair with reads in order. Two known differences, cases interrupt and joypad-int: the
+# definition's dispatch starts with a discarded opcode read at PC (krs/sm83/README.md, after SameBoy;
+# Pan Docs gives the five cycles but not this bus order), and the Rust CPU's dispatch reads nothing.
+[[pair]]
+left = "krs"
+right = "rust-cpu"
+tier = "Accesses"

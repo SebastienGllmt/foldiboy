@@ -29,13 +29,16 @@ The Rust CPU starts from that same state, read from the definition's configurati
 | `file` | An observation another system recorded: `<dir>/<case>.json` in the comparator's input encoding | As recorded |
 
 Each run becomes an observation: the end class, the event log (`read`, `write`, `idle`) and the end state.
-The comparator definition (`krs/sm83-compare`) compares two observations under a tier and normalizations:
-- `Full`: every event.
-- `Writes`: only writes.
-- `CompressIdle`: runs of idle events become counts.
+The comparator definition (`krs/sm83-compare`) compares two observations under a tier and normalizations. The normalization `CompressIdle` turns runs of idle events into counts.
 
-The Rust CPU performs an instruction's accesses at once, with no internal cycles, so it is compared at `Writes`.
-Its interrupt logic's `IE` and `IF` accesses are not bus cycles (`memory::Bus::read_interrupt_register`), so they are not logged.
+Tiers: `Writes` keeps only the writes. `Accesses` keeps the reads and writes in order but drops idles. `Full` keeps every event.
+
+The Rust CPU performs an instruction's accesses at once, with no internal cycles, so it is compared at `Writes` and `Accesses`.
+At `Writes` every seed case is equal.
+At `Accesses`, 15 of 17 are equal; `interrupt` and `joypad-int` differ.
+The definition's interrupt dispatch begins with a discarded opcode read at `PC`, which the Rust CPU does not perform.
+That bus order follows SameBoy (`krs/sm83/README.md`); Pan Docs gives only the five cycles, so which system matches hardware is open until a hardware run decides it.
+The Rust CPU's interrupt logic accesses `IE` and `IF` without bus cycles (`memory::Bus::read_interrupt_register`), so those accesses are not logged.
 
 The comparator is interim: k-rust request FB-21 asks for the same comparison in k-rust. The observations are its input either way.
 

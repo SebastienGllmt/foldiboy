@@ -18,13 +18,20 @@
           "right": "rust-cpu",
           "tier": "Writes",
           "verdict": "Equal"
+        },
+        {
+          "left": "krs",
+          "normalizations": [],
+          "right": "rust-cpu",
+          "tier": "Accesses",
+          "verdict": "Equal"
         }
       ],
       "systems": {
         "krs": {
           "cost": {
             "rewrite_steps": 135,
-            "wall_ms": 17
+            "wall_ms": 16
           },
           "end": "Locked",
           "events": 52
@@ -58,13 +65,20 @@
           "right": "rust-cpu",
           "tier": "Writes",
           "verdict": "Equal"
+        },
+        {
+          "left": "krs",
+          "normalizations": [],
+          "right": "rust-cpu",
+          "tier": "Accesses",
+          "verdict": "Equal"
         }
       ],
       "systems": {
         "krs": {
           "cost": {
             "rewrite_steps": 151,
-            "wall_ms": 13
+            "wall_ms": 18
           },
           "end": "Locked",
           "events": 69
@@ -98,13 +112,20 @@
           "right": "rust-cpu",
           "tier": "Writes",
           "verdict": "Equal"
+        },
+        {
+          "left": "krs",
+          "normalizations": [],
+          "right": "rust-cpu",
+          "tier": "Accesses",
+          "verdict": "Equal"
         }
       ],
       "systems": {
         "krs": {
           "cost": {
             "rewrite_steps": 154,
-            "wall_ms": 10
+            "wall_ms": 13
           },
           "end": "Locked",
           "events": 71
@@ -138,13 +159,20 @@
           "right": "rust-cpu",
           "tier": "Writes",
           "verdict": "Equal"
+        },
+        {
+          "left": "krs",
+          "normalizations": [],
+          "right": "rust-cpu",
+          "tier": "Accesses",
+          "verdict": "Equal"
         }
       ],
       "systems": {
         "krs": {
           "cost": {
             "rewrite_steps": 216,
-            "wall_ms": 16
+            "wall_ms": 24
           },
           "end": "Locked",
           "events": 76
@@ -178,13 +206,20 @@
           "right": "rust-cpu",
           "tier": "Writes",
           "verdict": "Equal"
+        },
+        {
+          "left": "krs",
+          "normalizations": [],
+          "right": "rust-cpu",
+          "tier": "Accesses",
+          "verdict": "Equal"
         }
       ],
       "systems": {
         "krs": {
           "cost": {
             "rewrite_steps": 135,
-            "wall_ms": 16
+            "wall_ms": 11
           },
           "end": "Locked",
           "events": 60
@@ -218,13 +253,20 @@
           "right": "rust-cpu",
           "tier": "Writes",
           "verdict": "Equal"
+        },
+        {
+          "left": "krs",
+          "normalizations": [],
+          "right": "rust-cpu",
+          "tier": "Accesses",
+          "verdict": "Equal"
         }
       ],
       "systems": {
         "krs": {
           "cost": {
             "rewrite_steps": 152,
-            "wall_ms": 12
+            "wall_ms": 17
           },
           "end": "Locked",
           "events": 52
@@ -258,13 +300,20 @@
           "right": "rust-cpu",
           "tier": "Writes",
           "verdict": "Equal"
+        },
+        {
+          "left": "krs",
+          "normalizations": [],
+          "right": "rust-cpu",
+          "tier": "Accesses",
+          "verdict": "Equal"
         }
       ],
       "systems": {
         "krs": {
           "cost": {
             "rewrite_steps": 182,
-            "wall_ms": 20
+            "wall_ms": 21
           },
           "end": "Locked",
           "events": 76
@@ -298,13 +347,20 @@
           "right": "rust-cpu",
           "tier": "Writes",
           "verdict": "Equal"
+        },
+        {
+          "left": "krs",
+          "normalizations": [],
+          "right": "rust-cpu",
+          "tier": "Accesses",
+          "verdict": "Equal"
         }
       ],
       "systems": {
         "krs": {
           "cost": {
             "rewrite_steps": 92,
-            "wall_ms": 10
+            "wall_ms": 7
           },
           "end": "Locked",
           "events": 39
@@ -338,13 +394,20 @@
           "right": "rust-cpu",
           "tier": "Writes",
           "verdict": "Equal"
+        },
+        {
+          "left": "krs",
+          "normalizations": [],
+          "right": "rust-cpu",
+          "tier": "Accesses",
+          "verdict": "Equal"
         }
       ],
       "systems": {
         "krs": {
           "cost": {
             "rewrite_steps": 114,
-            "wall_ms": 13
+            "wall_ms": 11
           },
           "end": "Locked",
           "events": 55
@@ -377,6 +440,13 @@
           "normalizations": [],
           "right": "rust-cpu",
           "tier": "Writes",
+          "verdict": "Equal"
+        },
+        {
+          "left": "krs",
+          "normalizations": [],
+          "right": "rust-cpu",
+          "tier": "Accesses",
           "verdict": "Equal"
         }
       ],
@@ -418,13 +488,20 @@
           "right": "rust-cpu",
           "tier": "Writes",
           "verdict": "Equal"
+        },
+        {
+          "left": "krs",
+          "normalizations": [],
+          "right": "rust-cpu",
+          "tier": "Accesses",
+          "verdict": "Equal"
         }
       ],
       "systems": {
         "krs": {
           "cost": {
             "rewrite_steps": 169,
-            "wall_ms": 17
+            "wall_ms": 12
           },
           "end": "Locked",
           "events": 68
@@ -458,13 +535,20 @@
           "right": "rust-cpu",
           "tier": "Writes",
           "verdict": "Equal"
+        },
+        {
+          "left": "krs",
+          "normalizations": [],
+          "right": "rust-cpu",
+          "tier": "Accesses",
+          "verdict": "LogDiffers { position: 16, left: [Event { event: Read { addr: 346, value: 4 } }, Event { event: Write { addr: 65533, value: 1 } }, Event { event: Write { addr: 65532, value: 90 } }, Event { event: Read { addr: 64, value: 62 } }, Event { event: Read { addr: 65, value: 119 } }, Event { event: Read { addr: 66, value: 217 } }, Event { event: Read { addr: 65532, value: 90 } }, Event { event: Read { addr: 65533, value: 1 } }, Event { event: Read { addr: 346, value: 4 } }, Event { event: Write { addr: 65533, value: 1 } }, Event { event: Write { addr: 65532, value: 90 } }, Event { event: Read { addr: 80, value: 12 } }, Event { event: Read { addr: 81, value: 217 } }, Event { event: Read { addr: 65532, value: 90 } }, Event { event: Read { addr: 65533, value: 1 } }, Event { event: Read { addr: 346, value: 4 } }, Event { event: Read { addr: 347, value: 243 } }, Event { event: Read { addr: 348, value: 245 } }, Event { event: Write { addr: 65533, value: 119 } }, Event { event: Write { addr: 65532, value: 16 } }, Event { event: Read { addr: 349, value: 197 } }, Event { event: Write { addr: 65531, value: 1 } }, Event { event: Write { addr: 65530, value: 20 } }, Event { event: Read { addr: 350, value: 213 } }, Event { event: Write { addr: 65529, value: 0 } }, Event { event: Write { addr: 65528, value: 216 } }, Event { event: Read { addr: 351, value: 229 } }, Event { event: Write { addr: 65527, value: 1 } }, Event { event: Write { addr: 65526, value: 77 } }, Event { event: Read { addr: 352, value: 8 } }, Event { event: Read { addr: 353, value: 0 } }, Event { event: Read { addr: 354, value: 192 } }, Event { event: Write { addr: 49152, value: 246 } }, Event { event: Write { addr: 49153, value: 255 } }, Event { event: Read { addr: 355, value: 221 } }], right: [Event { event: Write { addr: 65533, value: 1 } }, Event { event: Write { addr: 65532, value: 90 } }, Event { event: Read { addr: 64, value: 62 } }, Event { event: Read { addr: 65, value: 119 } }, Event { event: Read { addr: 66, value: 217 } }, Event { event: Read { addr: 65532, value: 90 } }, Event { event: Read { addr: 65533, value: 1 } }, Event { event: Write { addr: 65533, value: 1 } }, Event { event: Write { addr: 65532, value: 90 } }, Event { event: Read { addr: 80, value: 12 } }, Event { event: Read { addr: 81, value: 217 } }, Event { event: Read { addr: 65532, value: 90 } }, Event { event: Read { addr: 65533, value: 1 } }, Event { event: Read { addr: 346, value: 4 } }, Event { event: Read { addr: 347, value: 243 } }, Event { event: Read { addr: 348, value: 245 } }, Event { event: Write { addr: 65533, value: 119 } }, Event { event: Write { addr: 65532, value: 16 } }, Event { event: Read { addr: 349, value: 197 } }, Event { event: Write { addr: 65531, value: 1 } }, Event { event: Write { addr: 65530, value: 20 } }, Event { event: Read { addr: 350, value: 213 } }, Event { event: Write { addr: 65529, value: 0 } }, Event { event: Write { addr: 65528, value: 216 } }, Event { event: Read { addr: 351, value: 229 } }, Event { event: Write { addr: 65527, value: 1 } }, Event { event: Write { addr: 65526, value: 77 } }, Event { event: Read { addr: 352, value: 8 } }, Event { event: Read { addr: 353, value: 0 } }, Event { event: Read { addr: 354, value: 192 } }, Event { event: Write { addr: 49152, value: 246 } }, Event { event: Write { addr: 49153, value: 255 } }, Event { event: Read { addr: 355, value: 221 } }] }"
         }
       ],
       "systems": {
         "krs": {
           "cost": {
             "rewrite_steps": 139,
-            "wall_ms": 11
+            "wall_ms": 16
           },
           "end": "Locked",
           "events": 62
@@ -498,13 +582,20 @@
           "right": "rust-cpu",
           "tier": "Writes",
           "verdict": "Equal"
+        },
+        {
+          "left": "krs",
+          "normalizations": [],
+          "right": "rust-cpu",
+          "tier": "Accesses",
+          "verdict": "LogDiffers { position: 14, left: [Event { event: Read { addr: 344, value: 243 } }, Event { event: Write { addr: 65533, value: 1 } }, Event { event: Write { addr: 65532, value: 88 } }, Event { event: Read { addr: 96, value: 6 } }, Event { event: Read { addr: 97, value: 102 } }, Event { event: Read { addr: 98, value: 217 } }, Event { event: Read { addr: 65532, value: 88 } }, Event { event: Read { addr: 65533, value: 1 } }, Event { event: Read { addr: 344, value: 243 } }, Event { event: Read { addr: 345, value: 245 } }, Event { event: Write { addr: 65533, value: 16 } }, Event { event: Write { addr: 65532, value: 176 } }, Event { event: Read { addr: 346, value: 197 } }, Event { event: Write { addr: 65531, value: 102 } }, Event { event: Write { addr: 65530, value: 19 } }, Event { event: Read { addr: 347, value: 213 } }, Event { event: Write { addr: 65529, value: 0 } }, Event { event: Write { addr: 65528, value: 216 } }, Event { event: Read { addr: 348, value: 229 } }, Event { event: Write { addr: 65527, value: 1 } }, Event { event: Write { addr: 65526, value: 77 } }, Event { event: Read { addr: 349, value: 8 } }, Event { event: Read { addr: 350, value: 0 } }, Event { event: Read { addr: 351, value: 192 } }, Event { event: Write { addr: 49152, value: 246 } }, Event { event: Write { addr: 49153, value: 255 } }, Event { event: Read { addr: 352, value: 221 } }], right: [Event { event: Write { addr: 65533, value: 1 } }, Event { event: Write { addr: 65532, value: 88 } }, Event { event: Read { addr: 96, value: 6 } }, Event { event: Read { addr: 97, value: 102 } }, Event { event: Read { addr: 98, value: 217 } }, Event { event: Read { addr: 65532, value: 88 } }, Event { event: Read { addr: 65533, value: 1 } }, Event { event: Read { addr: 344, value: 243 } }, Event { event: Read { addr: 345, value: 245 } }, Event { event: Write { addr: 65533, value: 16 } }, Event { event: Write { addr: 65532, value: 176 } }, Event { event: Read { addr: 346, value: 197 } }, Event { event: Write { addr: 65531, value: 102 } }, Event { event: Write { addr: 65530, value: 19 } }, Event { event: Read { addr: 347, value: 213 } }, Event { event: Write { addr: 65529, value: 0 } }, Event { event: Write { addr: 65528, value: 216 } }, Event { event: Read { addr: 348, value: 229 } }, Event { event: Write { addr: 65527, value: 1 } }, Event { event: Write { addr: 65526, value: 77 } }, Event { event: Read { addr: 349, value: 8 } }, Event { event: Read { addr: 350, value: 0 } }, Event { event: Read { addr: 351, value: 192 } }, Event { event: Write { addr: 49152, value: 246 } }, Event { event: Write { addr: 49153, value: 255 } }, Event { event: Read { addr: 352, value: 221 } }] }"
         }
       ],
       "systems": {
         "krs": {
           "cost": {
             "rewrite_steps": 104,
-            "wall_ms": 11
+            "wall_ms": 8
           },
           "end": "Locked",
           "events": 49
@@ -538,13 +629,20 @@
           "right": "rust-cpu",
           "tier": "Writes",
           "verdict": "Equal"
+        },
+        {
+          "left": "krs",
+          "normalizations": [],
+          "right": "rust-cpu",
+          "tier": "Accesses",
+          "verdict": "Equal"
         }
       ],
       "systems": {
         "krs": {
           "cost": {
             "rewrite_steps": 163,
-            "wall_ms": 17
+            "wall_ms": 12
           },
           "end": "Locked",
           "events": 65
@@ -578,13 +676,20 @@
           "right": "rust-cpu",
           "tier": "Writes",
           "verdict": "Equal"
+        },
+        {
+          "left": "krs",
+          "normalizations": [],
+          "right": "rust-cpu",
+          "tier": "Accesses",
+          "verdict": "Equal"
         }
       ],
       "systems": {
         "krs": {
           "cost": {
             "rewrite_steps": 146,
-            "wall_ms": 16
+            "wall_ms": 11
           },
           "end": "Locked",
           "events": 59
@@ -618,13 +723,20 @@
           "right": "rust-cpu",
           "tier": "Writes",
           "verdict": "Equal"
+        },
+        {
+          "left": "krs",
+          "normalizations": [],
+          "right": "rust-cpu",
+          "tier": "Accesses",
+          "verdict": "Equal"
         }
       ],
       "systems": {
         "krs": {
           "cost": {
             "rewrite_steps": 107,
-            "wall_ms": 10
+            "wall_ms": 13
           },
           "end": "Locked",
           "events": 54
@@ -658,13 +770,20 @@
           "right": "rust-cpu",
           "tier": "Writes",
           "verdict": "Equal"
+        },
+        {
+          "left": "krs",
+          "normalizations": [],
+          "right": "rust-cpu",
+          "tier": "Accesses",
+          "verdict": "Equal"
         }
       ],
       "systems": {
         "krs": {
           "cost": {
             "rewrite_steps": 139,
-            "wall_ms": 16
+            "wall_ms": 17
           },
           "end": "Locked",
           "events": 62
