@@ -12,10 +12,10 @@ export LD_LIBRARY_PATH="$Z3_LIB${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 export LIBRARY_PATH="$Z3_LIB${LIBRARY_PATH:+:$LIBRARY_PATH}"
 ./build.sh "$@"
 sm83=../krs/sm83
-(cd "$sm83" && CARGO_TARGET_DIR="$PWD/target" "$KRS_BIN" emit-k --manifest-path Cargo.toml --package foldiboy-sm83 \
+(cd "$sm83" && CARGO_TARGET_DIR="$PWD/target" "$KRS_BIN" emit-k --ir --manifest-path Cargo.toml --package foldiboy-sm83 \
   --definition main --dependency foldiboy-sm83-core:core --dependency foldiboy-sm83-events:events \
   --output "$corpus/build/ir/sm83" >/dev/null)
-(cd ../krs/sm83-compare && CARGO_TARGET_DIR="$PWD/target" "$KRS_BIN" emit-k --manifest-path Cargo.toml \
+(cd ../krs/sm83-compare && CARGO_TARGET_DIR="$PWD/target" "$KRS_BIN" emit-k --ir --manifest-path Cargo.toml \
   --package foldiboy-sm83-compare --definition compare --dependency foldiboy-sm83-observe:observe \
   --dependency foldiboy-sm83-events:events --output "$corpus/build/ir/compare" >/dev/null)
 (cd "$sm83/vectors" && cargo build --release --offline --quiet --bin sm83-corpus)

@@ -1,9 +1,8 @@
 # The corpus manifest (draft-personal/corpus-contract D-CASE-LAYOUT; sm83-refactor R7).
 # run.sh builds the cases and runs them on every system below; each pair is compared by the
 # comparator definition (krs/sm83-compare) under its tier and normalizations.
-schema_version = 1
-machine = "machines/dmg-cpu-stage.toml"
-roms = "build"
+# Each case is cases/<id>/case.toml, the krs case document krs kink (FLOW.toml) reads too.
+schema_version = 2
 
 # The SM83 definition through krs-exec; budget in rewrite steps.
 [[system]]
@@ -30,8 +29,8 @@ left = "krs"
 right = "rust-cpu"
 tier = "Writes"
 
-# The same pair with reads in order. Two known differences, cases interrupt and joypad-int: the
-# definition's dispatch starts with a discarded opcode read at PC (krs/sm83/README.md, after SameBoy;
+# The same pair with reads in order. Every case that dispatches an interrupt differs, by one read per
+# dispatch: the definition's dispatch starts with a discarded opcode read at PC (krs/sm83/README.md, after SameBoy;
 # Pan Docs gives the five cycles but not this bus order), and the Rust CPU's dispatch reads nothing.
 [[pair]]
 left = "krs"

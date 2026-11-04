@@ -1,9 +1,10 @@
 //! Runs the corpus (`corpus/` at the repository root) on every system its manifest names and
 //! compares the systems pair by pair (draft-personal/corpus-contract sm83-refactor R7).
 //!
-//! A case is a cartridge ROM; every system starts from the machine state the manifest's
-//! machine document gives, a krs case document of the SM83 definition's inputs to which the
-//! runner adds the cartridge. Each system's run becomes an observation (end class, event log,
+//! A case is `cases/<id>/case.toml`, a krs case document of the SM83 definition's inputs (the
+//! cartridge and the boot state), the document `krs run --case` and `krs kink` read; every system
+//! starts from the state the definition's initializer builds from it. Each system's run becomes an
+//! observation (end class, event log,
 //! end state); two observations are compared by the comparator definition (`sm83-compare`)
 //! under the pair's tier and normalizations.
 //!
@@ -35,10 +36,6 @@ use sm83_vectors::{Names, cell, load};
 #[serde(deny_unknown_fields)]
 struct Manifest {
     schema_version: u32,
-    /// The machine document: a krs case of the SM83 definition's inputs, without `rom`.
-    machine: PathBuf,
-    /// Where the corpus build writes `<case>.gb`.
-    roms: PathBuf,
     /// The cases, by id; every directory under `cases/` when absent.
     cases: Option<Vec<String>>,
     system: Vec<System>,
@@ -160,17 +157,11 @@ struct Context<'a> {
 fn run_case(context: &Context, semantics: &mut Semantics, comparator: &mut Semantics, case_id: &str) -> Json {
     let names = Names::new(semantics.values());
     let manifest = context.manifest;
-    let machine_path = context.root.join(&manifest.machine);
-    let rom = context.root.join(&manifest.roms).join(format!("{case_id}.gb"));
+    let case_path = context.root.join("cases").join(case_id).join("case.toml");
     let initial = (|| -> Result<_, String> {
-        let text = fs::read_to_string(&machine_path).map_err(|error| format!("{}: {error}", machine_path.display()))?;
-        let mut case = Case::from_toml(&text).map_err(|error| format!("{error:?}"))?;
-        let rom = fs::canonicalize(&rom).map_err(|error| format!("{}: {error}", rom.display()))?;
-        case.inputs.push((
-            "rom".to_owned(),
-            json!({ "$call": { "RomRegion": { "cartridge": { "$file": rom.to_string_lossy() } } } }),
-        ));
-        let mut files = Files { base: machine_path.parent().unwrap_or(Path::new(".")).to_owned() };
+        let text = fs::read_to_string(&case_path).map_err(|error| format!("{}: {error}", case_path.display()))?;
+        let case = Case::from_toml(&text).map_err(|error| format!("{error:?}"))?;
+        let mut files = Files { base: case_path.parent().unwrap_or(Path::new(".")).to_owned() };
         let inputs = semantics.case_inputs(&case, None, &mut files).map_err(|error| error.to_string())?;
         let state = semantics.configure(&inputs).map_err(|error| format!("configure: {error}"))?;
         let report =
@@ -276,7 +267,7 @@ fn main() {
         usage()
     };
     let manifest: Manifest = toml::from_str(&fs::read_to_string(&manifest_path).expect("manifest")).expect("manifest TOML");
-    assert_eq!(manifest.schema_version, 1, "manifest schema_version");
+    assert_eq!(manifest.schema_version, 2, "manifest schema_version");
     let root = manifest_path.parent().unwrap_or(Path::new(".")).to_owned();
     let mut cases = manifest.cases.clone().unwrap_or_else(|| {
         let mut ids: Vec<String> = fs::read_dir(root.join("cases"))
