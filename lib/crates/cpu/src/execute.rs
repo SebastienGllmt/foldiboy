@@ -412,8 +412,8 @@ impl<B: Bus> GbCpu<B> {
                 }
             }
             InterruptCtl::Halt => {
-                let ie = self.bus.read(0xFFFF);
-                let if_reg = self.bus.read(0xFF0F);
+                let ie = self.bus.read_interrupt_register(0xFFFF);
+                let if_reg = self.bus.read_interrupt_register(0xFF0F);
                 let pending = (ie & if_reg & 0x1F) != 0;
 
                 if !self.ime && self.ime_delay.is_none() && pending {

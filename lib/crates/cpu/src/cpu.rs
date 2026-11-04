@@ -79,8 +79,8 @@ impl<B: Bus> GbCpu<B> {
     pub fn step(&mut self) -> u32 {
         // If halted, check wake condition
         if self.halted {
-            let ie = self.bus.read(0xFFFF);
-            let if_reg = self.bus.read(0xFF0F);
+            let ie = self.bus.read_interrupt_register(0xFFFF);
+            let if_reg = self.bus.read_interrupt_register(0xFF0F);
             if (ie & if_reg & 0x1F) != 0 {
                 self.halted = false;
                 if self.ime {
@@ -151,8 +151,8 @@ impl<B: Bus> GbCpu<B> {
             return 0;
         }
 
-        let ie = self.bus.read(0xFFFF);
-        let if_reg = self.bus.read(0xFF0F);
+        let ie = self.bus.read_interrupt_register(0xFFFF);
+        let if_reg = self.bus.read_interrupt_register(0xFF0F);
         let pending = ie & if_reg & 0x1F;
 
         if pending == 0 {
@@ -167,8 +167,8 @@ impl<B: Bus> GbCpu<B> {
         self.bus.write(self.regs.sp, (self.regs.pc >> 8) as u8);
 
         // Re-read IE & IF: the push above may have changed IE
-        let ie2 = self.bus.read(0xFFFF);
-        let if2 = self.bus.read(0xFF0F);
+        let ie2 = self.bus.read_interrupt_register(0xFFFF);
+        let if2 = self.bus.read_interrupt_register(0xFF0F);
         let pending2 = ie2 & if2 & 0x1F;
 
         // Push PC low byte
@@ -181,7 +181,7 @@ impl<B: Bus> GbCpu<B> {
         } else {
             // Dispatch highest-priority interrupt from the *updated* pending set
             let bit = pending2.trailing_zeros() as u8;
-            self.bus.write(0xFF0F, if2 & !(1 << bit));
+            self.bus.write_interrupt_register(0xFF0F, if2 & !(1 << bit));
             self.regs.pc = 0x0040u16 + (bit as u16) * 8;
         }
 
