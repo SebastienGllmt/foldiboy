@@ -96,6 +96,10 @@ pub enum Reduction {
     /// The end class, the write events and the end state: no timing.
     #[k::syntax("writes")]
     Writes,
+    /// The end class, the read and write events in order, and the end state: the bus
+    /// transactions without their timing, for a system that does not model internal cycles.
+    #[k::syntax("accesses")]
+    Accesses,
 }
 
 /// A named, versioned normalization of event logs.
@@ -266,6 +270,7 @@ k::equations! {
     for TierLog;
     tier_full: (Reduction::Full, log) => log;
     tier_writes: (Reduction::Writes, log) => WritesAcc(log, []);
+    tier_accesses: (Reduction::Accesses, log) => AccessesAcc(log, []);
 }
 
 /// The write events of a log.
@@ -281,6 +286,21 @@ k::equations! {
     /// The log is empty.
     #[k::equation(owise)]
     writes_end: (_, acc) => acc;
+}
+
+/// The read and write events of a log.
+#[k::function(total, internal)]
+pub fn AccessesAcc(log: Term<List<Logged>>, acc: Term<List<Logged>>) -> Term<List<Logged>>;
+
+k::equations! {
+    for AccessesAcc;
+    accesses_keep_read: ([x @ Entry::Event { event: Event::Read { .. } }, rest @ ..], acc) => AccessesAcc(rest, [..acc, x]);
+    accesses_keep_write: ([x @ Entry::Event { event: Event::Write { .. } }, rest @ ..], acc) => AccessesAcc(rest, [..acc, x]);
+    accesses_drop_idle: ([Entry::Event { event: Event::Idle }, rest @ ..], acc) => AccessesAcc(rest, acc);
+    accesses_drop_idles: ([Entry::Idles { .. }, rest @ ..], acc) => AccessesAcc(rest, acc);
+    /// The log is empty.
+    #[k::equation(owise)]
+    accesses_end: (_, acc) => acc;
 }
 
 // --- Comparison ---------------------------------------------------------------------------

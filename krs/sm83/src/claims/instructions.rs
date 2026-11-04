@@ -11,6 +11,7 @@ use crate::alu::{Alu, Flags, Unary};
 use crate::decode::{Address, Condition, Instruction, Operand, Pair16};
 use crate::interrupt::Step;
 use crate::machine::{Event, Register};
+use crate::well_formed::{IsByte, IsWord};
 use k::builtin::{Bool, Int, int, kequal};
 
 /// RGBDS DAA: adjust the high digit after a carry or an addition above BCD 99.
@@ -83,7 +84,7 @@ pub mod spec {
 
         /// LD r8,source: load one byte, preserve flags and all other registers.
         #[k::claim(all_paths)]
-        #[k::requires((0 <= r[src] && r[src] < 0x100))]
+        #[k::requires(IsByte(r[src]))]
         contract_ld8_register: {
             k: [Instruction::Ld8 { dst: Operand::Reg { r: dst }, src: Operand::Reg { r: src } }],
             regs: r,
@@ -96,7 +97,7 @@ pub mod spec {
 
         /// LD r8,source: load one byte, preserve flags and all other registers.
         #[k::claim(all_paths)]
-        #[k::requires(rom_end == 0 && ((0 <= pc && pc < 0x1_0000) && (0 <= m[pc] && m[pc] < 0x100)))]
+        #[k::requires(rom_end == 0 && (IsWord(pc) && IsByte(m[pc])))]
         contract_ld8_immediate: {
             rom_end,
             k: [Instruction::Ld8 { dst: Operand::Reg { r: dst }, src: Operand::Immediate }],
@@ -118,11 +119,9 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= r[Register::H] && r[Register::H] < 0x100)
-                        && (0 <= r[Register::L] && r[Register::L] < 0x100)
-                        && (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
-                            && m[r[Register::H] * 0x100 + r[Register::L]]
-                                < 0x100)
+                    IsByte(r[Register::H])
+                        && IsByte(r[Register::L])
+                        && IsByte(m[r[Register::H] * 0x100 + r[Register::L]])
                 ),
         )]
         contract_ld8_indirect: {
@@ -150,13 +149,11 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= r[Register::H] && r[Register::H] < 0x100)
-                        && (0 <= r[Register::L] && r[Register::L] < 0x100)
-                        && (0 <= r[src] && r[src] < 0x100)
+                    IsByte(r[Register::H])
+                        && IsByte(r[Register::L])
+                        && IsByte(r[src])
                         && m.contains_key(r[Register::H] * 0x100 + r[Register::L])
-                        && (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
-                            && m[r[Register::H] * 0x100 + r[Register::L]]
-                                < 0x100)
+                        && IsByte(m[r[Register::H] * 0x100 + r[Register::L]])
                 ),
         )]
         contract_ld8_store_register: {
@@ -184,14 +181,12 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= r[Register::H] && r[Register::H] < 0x100)
-                        && (0 <= r[Register::L] && r[Register::L] < 0x100)
-                        && (0 <= m[pc] && m[pc] < 0x100)
+                    IsByte(r[Register::H])
+                        && IsByte(r[Register::L])
+                        && IsByte(m[pc])
                         && m.contains_key(r[Register::H] * 0x100 + r[Register::L])
-                        && (0 <= pc && pc < 0x1_0000)
-                        && (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
-                            && m[r[Register::H] * 0x100 + r[Register::L]]
-                                < 0x100)
+                        && IsWord(pc)
+                        && IsByte(m[r[Register::H] * 0x100 + r[Register::L]])
                 ),
         )]
         contract_ld8_store_immediate: {
@@ -222,9 +217,9 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= pc && pc < 0x1_0000)
-                        && (0 <= m[pc] && m[pc] < 0x100)
-                        && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100)
+                    IsWord(pc)
+                        && IsByte(m[pc])
+                        && IsByte(m[(pc + 1) % 0x1_0000])
                 ),
         )]
         contract_ld16_registers: {
@@ -254,9 +249,9 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= pc && pc < 0x1_0000)
-                        && (0 <= m[pc] && m[pc] < 0x100)
-                        && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100)
+                    IsWord(pc)
+                        && IsByte(m[pc])
+                        && IsByte(m[(pc + 1) % 0x1_0000])
                 ),
         )]
         contract_ld16_sp: {
@@ -284,8 +279,8 @@ pub mod spec {
         /// LD SP,HL: preserve flags and take one internal cycle.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[Register::H] && r[Register::H] < 0x100)
-                && (0 <= r[Register::L] && r[Register::L] < 0x100),
+            IsByte(r[Register::H])
+                && IsByte(r[Register::L]),
         )]
         contract_ld_sp_hl: {
             k: [Instruction::LdSpHl],
@@ -301,8 +296,8 @@ pub mod spec {
         /// ADD A,source: independent byte arithmetic/logic and all four flags.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[Register::A] && r[Register::A] < 0x100)
-                && (0 <= r[src] && r[src] < 0x100),
+            IsByte(r[Register::A])
+                && IsByte(r[src]),
         )]
         contract_alu_add_register: {
             k: [Instruction::Alu8 { op: Alu::Add, src: Operand::Reg { r: src } }],
@@ -328,9 +323,9 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= r[Register::A] && r[Register::A] < 0x100)
-                        && (0 <= m[pc] && m[pc] < 0x100)
-                        && (0 <= pc && pc < 0x1_0000)
+                    IsByte(r[Register::A])
+                        && IsByte(m[pc])
+                        && IsWord(pc)
                 ),
         )]
         contract_alu_add_immediate: {
@@ -361,12 +356,10 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= r[Register::A] && r[Register::A] < 0x100)
-                        && (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
-                            && m[r[Register::H] * 0x100 + r[Register::L]]
-                                < 0x100)
-                        && (0 <= r[Register::H] && r[Register::H] < 0x100)
-                        && (0 <= r[Register::L] && r[Register::L] < 0x100)
+                    IsByte(r[Register::A])
+                        && IsByte(m[r[Register::H] * 0x100 + r[Register::L]])
+                        && IsByte(r[Register::H])
+                        && IsByte(r[Register::L])
                 ),
         )]
         contract_alu_add_indirect: {
@@ -404,8 +397,8 @@ pub mod spec {
         /// ADC A,source: independent byte arithmetic/logic and all four flags.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[Register::A] && r[Register::A] < 0x100)
-                && (0 <= r[src] && r[src] < 0x100),
+            IsByte(r[Register::A])
+                && IsByte(r[src]),
         )]
         contract_alu_adc_register: {
             k: [Instruction::Alu8 { op: Alu::Adc, src: Operand::Reg { r: src } }],
@@ -434,9 +427,9 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= r[Register::A] && r[Register::A] < 0x100)
-                        && (0 <= m[pc] && m[pc] < 0x100)
-                        && (0 <= pc && pc < 0x1_0000)
+                    IsByte(r[Register::A])
+                        && IsByte(m[pc])
+                        && IsWord(pc)
                 ),
         )]
         contract_alu_adc_immediate: {
@@ -470,12 +463,10 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= r[Register::A] && r[Register::A] < 0x100)
-                        && (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
-                            && m[r[Register::H] * 0x100 + r[Register::L]]
-                                < 0x100)
-                        && (0 <= r[Register::H] && r[Register::H] < 0x100)
-                        && (0 <= r[Register::L] && r[Register::L] < 0x100)
+                    IsByte(r[Register::A])
+                        && IsByte(m[r[Register::H] * 0x100 + r[Register::L]])
+                        && IsByte(r[Register::H])
+                        && IsByte(r[Register::L])
                 ),
         )]
         contract_alu_adc_indirect: {
@@ -514,8 +505,8 @@ pub mod spec {
         /// SUB A,source: independent byte arithmetic/logic and all four flags.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[Register::A] && r[Register::A] < 0x100)
-                && (0 <= r[src] && r[src] < 0x100),
+            IsByte(r[Register::A])
+                && IsByte(r[src]),
         )]
         contract_alu_sub_register: {
             k: [Instruction::Alu8 { op: Alu::Sub, src: Operand::Reg { r: src } }],
@@ -541,9 +532,9 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= r[Register::A] && r[Register::A] < 0x100)
-                        && (0 <= m[pc] && m[pc] < 0x100)
-                        && (0 <= pc && pc < 0x1_0000)
+                    IsByte(r[Register::A])
+                        && IsByte(m[pc])
+                        && IsWord(pc)
                 ),
         )]
         contract_alu_sub_immediate: {
@@ -574,12 +565,10 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= r[Register::A] && r[Register::A] < 0x100)
-                        && (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
-                            && m[r[Register::H] * 0x100 + r[Register::L]]
-                                < 0x100)
-                        && (0 <= r[Register::H] && r[Register::H] < 0x100)
-                        && (0 <= r[Register::L] && r[Register::L] < 0x100)
+                    IsByte(r[Register::A])
+                        && IsByte(m[r[Register::H] * 0x100 + r[Register::L]])
+                        && IsByte(r[Register::H])
+                        && IsByte(r[Register::L])
                 ),
         )]
         contract_alu_sub_indirect: {
@@ -619,8 +608,8 @@ pub mod spec {
         /// SBC A,source: independent byte arithmetic/logic and all four flags.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[Register::A] && r[Register::A] < 0x100)
-                && (0 <= r[src] && r[src] < 0x100),
+            IsByte(r[Register::A])
+                && IsByte(r[src]),
         )]
         contract_alu_sbc_register: {
             k: [Instruction::Alu8 { op: Alu::Sbc, src: Operand::Reg { r: src } }],
@@ -649,9 +638,9 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= r[Register::A] && r[Register::A] < 0x100)
-                        && (0 <= m[pc] && m[pc] < 0x100)
-                        && (0 <= pc && pc < 0x1_0000)
+                    IsByte(r[Register::A])
+                        && IsByte(m[pc])
+                        && IsWord(pc)
                 ),
         )]
         contract_alu_sbc_immediate: {
@@ -685,12 +674,10 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= r[Register::A] && r[Register::A] < 0x100)
-                        && (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
-                            && m[r[Register::H] * 0x100 + r[Register::L]]
-                                < 0x100)
-                        && (0 <= r[Register::H] && r[Register::H] < 0x100)
-                        && (0 <= r[Register::L] && r[Register::L] < 0x100)
+                    IsByte(r[Register::A])
+                        && IsByte(m[r[Register::H] * 0x100 + r[Register::L]])
+                        && IsByte(r[Register::H])
+                        && IsByte(r[Register::L])
                 ),
         )]
         contract_alu_sbc_indirect: {
@@ -731,8 +718,8 @@ pub mod spec {
         /// AND A,source: independent byte arithmetic/logic and all four flags.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[Register::A] && r[Register::A] < 0x100)
-                && (0 <= r[src] && r[src] < 0x100),
+            IsByte(r[Register::A])
+                && IsByte(r[src]),
         )]
         contract_alu_and_register: {
             k: [Instruction::Alu8 { op: Alu::And, src: Operand::Reg { r: src } }],
@@ -753,9 +740,9 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= r[Register::A] && r[Register::A] < 0x100)
-                        && (0 <= m[pc] && m[pc] < 0x100)
-                        && (0 <= pc && pc < 0x1_0000)
+                    IsByte(r[Register::A])
+                        && IsByte(m[pc])
+                        && IsWord(pc)
                 ),
         )]
         contract_alu_and_immediate: {
@@ -781,12 +768,10 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= r[Register::A] && r[Register::A] < 0x100)
-                        && (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
-                            && m[r[Register::H] * 0x100 + r[Register::L]]
-                                < 0x100)
-                        && (0 <= r[Register::H] && r[Register::H] < 0x100)
-                        && (0 <= r[Register::L] && r[Register::L] < 0x100)
+                    IsByte(r[Register::A])
+                        && IsByte(m[r[Register::H] * 0x100 + r[Register::L]])
+                        && IsByte(r[Register::H])
+                        && IsByte(r[Register::L])
                 ),
         )]
         contract_alu_and_indirect: {
@@ -822,8 +807,8 @@ pub mod spec {
         /// XOR A,source: independent byte arithmetic/logic and all four flags.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[Register::A] && r[Register::A] < 0x100)
-                && (0 <= r[src] && r[src] < 0x100),
+            IsByte(r[Register::A])
+                && IsByte(r[src]),
         )]
         contract_alu_xor_register: {
             k: [Instruction::Alu8 { op: Alu::Xor, src: Operand::Reg { r: src } }],
@@ -844,9 +829,9 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= r[Register::A] && r[Register::A] < 0x100)
-                        && (0 <= m[pc] && m[pc] < 0x100)
-                        && (0 <= pc && pc < 0x1_0000)
+                    IsByte(r[Register::A])
+                        && IsByte(m[pc])
+                        && IsWord(pc)
                 ),
         )]
         contract_alu_xor_immediate: {
@@ -872,12 +857,10 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= r[Register::A] && r[Register::A] < 0x100)
-                        && (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
-                            && m[r[Register::H] * 0x100 + r[Register::L]]
-                                < 0x100)
-                        && (0 <= r[Register::H] && r[Register::H] < 0x100)
-                        && (0 <= r[Register::L] && r[Register::L] < 0x100)
+                    IsByte(r[Register::A])
+                        && IsByte(m[r[Register::H] * 0x100 + r[Register::L]])
+                        && IsByte(r[Register::H])
+                        && IsByte(r[Register::L])
                 ),
         )]
         contract_alu_xor_indirect: {
@@ -913,8 +896,8 @@ pub mod spec {
         /// OR A,source: independent byte arithmetic/logic and all four flags.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[Register::A] && r[Register::A] < 0x100)
-                && (0 <= r[src] && r[src] < 0x100),
+            IsByte(r[Register::A])
+                && IsByte(r[src]),
         )]
         contract_alu_or_register: {
             k: [Instruction::Alu8 { op: Alu::Or, src: Operand::Reg { r: src } }],
@@ -935,9 +918,9 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= r[Register::A] && r[Register::A] < 0x100)
-                        && (0 <= m[pc] && m[pc] < 0x100)
-                        && (0 <= pc && pc < 0x1_0000)
+                    IsByte(r[Register::A])
+                        && IsByte(m[pc])
+                        && IsWord(pc)
                 ),
         )]
         contract_alu_or_immediate: {
@@ -963,12 +946,10 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= r[Register::A] && r[Register::A] < 0x100)
-                        && (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
-                            && m[r[Register::H] * 0x100 + r[Register::L]]
-                                < 0x100)
-                        && (0 <= r[Register::H] && r[Register::H] < 0x100)
-                        && (0 <= r[Register::L] && r[Register::L] < 0x100)
+                    IsByte(r[Register::A])
+                        && IsByte(m[r[Register::H] * 0x100 + r[Register::L]])
+                        && IsByte(r[Register::H])
+                        && IsByte(r[Register::L])
                 ),
         )]
         contract_alu_or_indirect: {
@@ -1004,8 +985,8 @@ pub mod spec {
         /// CP A,source: independent byte arithmetic/logic and all four flags.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[Register::A] && r[Register::A] < 0x100)
-                && (0 <= r[src] && r[src] < 0x100),
+            IsByte(r[Register::A])
+                && IsByte(r[src]),
         )]
         contract_alu_cp_register: {
             k: [Instruction::Alu8 { op: Alu::Cp, src: Operand::Reg { r: src } }],
@@ -1031,9 +1012,9 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= r[Register::A] && r[Register::A] < 0x100)
-                        && (0 <= m[pc] && m[pc] < 0x100)
-                        && (0 <= pc && pc < 0x1_0000)
+                    IsByte(r[Register::A])
+                        && IsByte(m[pc])
+                        && IsWord(pc)
                 ),
         )]
         contract_alu_cp_immediate: {
@@ -1064,12 +1045,10 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= r[Register::A] && r[Register::A] < 0x100)
-                        && (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
-                            && m[r[Register::H] * 0x100 + r[Register::L]]
-                                < 0x100)
-                        && (0 <= r[Register::H] && r[Register::H] < 0x100)
-                        && (0 <= r[Register::L] && r[Register::L] < 0x100)
+                    IsByte(r[Register::A])
+                        && IsByte(m[r[Register::H] * 0x100 + r[Register::L]])
+                        && IsByte(r[Register::H])
+                        && IsByte(r[Register::L])
                 ),
         )]
         contract_alu_cp_indirect: {
@@ -1102,7 +1081,7 @@ pub mod spec {
         /// INC: byte result, flag behavior and read/modify/write ordering where applicable.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[target] && r[target] < 0x100),
+            IsByte(r[target]),
         )]
         contract_unary_inc_register: {
             k: [Instruction::Update8 { op: Unary::Inc, target: Operand::Reg { r: target } }],
@@ -1128,10 +1107,9 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
-                        && m[r[Register::H] * 0x100 + r[Register::L]] < 0x100)
-                        && (0 <= r[Register::H] && r[Register::H] < 0x100)
-                        && (0 <= r[Register::L] && r[Register::L] < 0x100)
+                    IsByte(m[r[Register::H] * 0x100 + r[Register::L]])
+                        && IsByte(r[Register::H])
+                        && IsByte(r[Register::L])
                 ),
         )]
         contract_unary_inc_indirect: {
@@ -1173,7 +1151,7 @@ pub mod spec {
         /// DEC: byte result, flag behavior and read/modify/write ordering where applicable.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[target] && r[target] < 0x100),
+            IsByte(r[target]),
         )]
         contract_unary_dec_register: {
             k: [Instruction::Update8 { op: Unary::Dec, target: Operand::Reg { r: target } }],
@@ -1199,10 +1177,9 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
-                        && m[r[Register::H] * 0x100 + r[Register::L]] < 0x100)
-                        && (0 <= r[Register::H] && r[Register::H] < 0x100)
-                        && (0 <= r[Register::L] && r[Register::L] < 0x100)
+                    IsByte(m[r[Register::H] * 0x100 + r[Register::L]])
+                        && IsByte(r[Register::H])
+                        && IsByte(r[Register::L])
                 ),
         )]
         contract_unary_dec_indirect: {
@@ -1244,7 +1221,7 @@ pub mod spec {
         /// RLC: byte result, flag behavior and read/modify/write ordering where applicable.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[target] && r[target] < 0x100),
+            IsByte(r[target]),
         )]
         contract_unary_rlc_register: {
             k: [Instruction::Update8 { op: Unary::Rlc, target: Operand::Reg { r: target } }],
@@ -1270,10 +1247,9 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
-                        && m[r[Register::H] * 0x100 + r[Register::L]] < 0x100)
-                        && (0 <= r[Register::H] && r[Register::H] < 0x100)
-                        && (0 <= r[Register::L] && r[Register::L] < 0x100)
+                    IsByte(m[r[Register::H] * 0x100 + r[Register::L]])
+                        && IsByte(r[Register::H])
+                        && IsByte(r[Register::L])
                 ),
         )]
         contract_unary_rlc_indirect: {
@@ -1326,7 +1302,7 @@ pub mod spec {
         /// RRC: byte result, flag behavior and read/modify/write ordering where applicable.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[target] && r[target] < 0x100),
+            IsByte(r[target]),
         )]
         contract_unary_rrc_register: {
             k: [Instruction::Update8 { op: Unary::Rrc, target: Operand::Reg { r: target } }],
@@ -1352,10 +1328,9 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
-                        && m[r[Register::H] * 0x100 + r[Register::L]] < 0x100)
-                        && (0 <= r[Register::H] && r[Register::H] < 0x100)
-                        && (0 <= r[Register::L] && r[Register::L] < 0x100)
+                    IsByte(m[r[Register::H] * 0x100 + r[Register::L]])
+                        && IsByte(r[Register::H])
+                        && IsByte(r[Register::L])
                 ),
         )]
         contract_unary_rrc_indirect: {
@@ -1408,7 +1383,7 @@ pub mod spec {
         /// RL: byte result, flag behavior and read/modify/write ordering where applicable.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[target] && r[target] < 0x100),
+            IsByte(r[target]),
         )]
         contract_unary_rl_register: {
             k: [Instruction::Update8 { op: Unary::Rl, target: Operand::Reg { r: target } }],
@@ -1434,10 +1409,9 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
-                        && m[r[Register::H] * 0x100 + r[Register::L]] < 0x100)
-                        && (0 <= r[Register::H] && r[Register::H] < 0x100)
-                        && (0 <= r[Register::L] && r[Register::L] < 0x100)
+                    IsByte(m[r[Register::H] * 0x100 + r[Register::L]])
+                        && IsByte(r[Register::H])
+                        && IsByte(r[Register::L])
                 ),
         )]
         contract_unary_rl_indirect: {
@@ -1481,7 +1455,7 @@ pub mod spec {
         /// RR: byte result, flag behavior and read/modify/write ordering where applicable.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[target] && r[target] < 0x100),
+            IsByte(r[target]),
         )]
         contract_unary_rr_register: {
             k: [Instruction::Update8 { op: Unary::Rr, target: Operand::Reg { r: target } }],
@@ -1507,10 +1481,9 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
-                        && m[r[Register::H] * 0x100 + r[Register::L]] < 0x100)
-                        && (0 <= r[Register::H] && r[Register::H] < 0x100)
-                        && (0 <= r[Register::L] && r[Register::L] < 0x100)
+                    IsByte(m[r[Register::H] * 0x100 + r[Register::L]])
+                        && IsByte(r[Register::H])
+                        && IsByte(r[Register::L])
                 ),
         )]
         contract_unary_rr_indirect: {
@@ -1554,7 +1527,7 @@ pub mod spec {
         /// SLA: byte result, flag behavior and read/modify/write ordering where applicable.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[target] && r[target] < 0x100),
+            IsByte(r[target]),
         )]
         contract_unary_sla_register: {
             k: [Instruction::Update8 { op: Unary::Sla, target: Operand::Reg { r: target } }],
@@ -1575,10 +1548,9 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
-                        && m[r[Register::H] * 0x100 + r[Register::L]] < 0x100)
-                        && (0 <= r[Register::H] && r[Register::H] < 0x100)
-                        && (0 <= r[Register::L] && r[Register::L] < 0x100)
+                    IsByte(m[r[Register::H] * 0x100 + r[Register::L]])
+                        && IsByte(r[Register::H])
+                        && IsByte(r[Register::L])
                 ),
         )]
         contract_unary_sla_indirect: {
@@ -1620,7 +1592,7 @@ pub mod spec {
         /// SRA: byte result, flag behavior and read/modify/write ordering where applicable.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[target] && r[target] < 0x100),
+            IsByte(r[target]),
         )]
         contract_unary_sra_register: {
             k: [Instruction::Update8 { op: Unary::Sra, target: Operand::Reg { r: target } }],
@@ -1646,10 +1618,9 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
-                        && m[r[Register::H] * 0x100 + r[Register::L]] < 0x100)
-                        && (0 <= r[Register::H] && r[Register::H] < 0x100)
-                        && (0 <= r[Register::L] && r[Register::L] < 0x100)
+                    IsByte(m[r[Register::H] * 0x100 + r[Register::L]])
+                        && IsByte(r[Register::H])
+                        && IsByte(r[Register::L])
                 ),
         )]
         contract_unary_sra_indirect: {
@@ -1702,7 +1673,7 @@ pub mod spec {
         /// SWAP: byte result, flag behavior and read/modify/write ordering where applicable.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[target] && r[target] < 0x100),
+            IsByte(r[target]),
         )]
         contract_unary_swap_register: {
             k: [Instruction::Update8 { op: Unary::Swap, target: Operand::Reg { r: target } }],
@@ -1723,10 +1694,9 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
-                        && m[r[Register::H] * 0x100 + r[Register::L]] < 0x100)
-                        && (0 <= r[Register::H] && r[Register::H] < 0x100)
-                        && (0 <= r[Register::L] && r[Register::L] < 0x100)
+                    IsByte(m[r[Register::H] * 0x100 + r[Register::L]])
+                        && IsByte(r[Register::H])
+                        && IsByte(r[Register::L])
                 ),
         )]
         contract_unary_swap_indirect: {
@@ -1778,7 +1748,7 @@ pub mod spec {
         /// SRL: byte result, flag behavior and read/modify/write ordering where applicable.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[target] && r[target] < 0x100),
+            IsByte(r[target]),
         )]
         contract_unary_srl_register: {
             k: [Instruction::Update8 { op: Unary::Srl, target: Operand::Reg { r: target } }],
@@ -1799,10 +1769,9 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
-                        && m[r[Register::H] * 0x100 + r[Register::L]] < 0x100)
-                        && (0 <= r[Register::H] && r[Register::H] < 0x100)
-                        && (0 <= r[Register::L] && r[Register::L] < 0x100)
+                    IsByte(m[r[Register::H] * 0x100 + r[Register::L]])
+                        && IsByte(r[Register::H])
+                        && IsByte(r[Register::L])
                 ),
         )]
         contract_unary_srl_indirect: {
@@ -1844,7 +1813,7 @@ pub mod spec {
         /// RLCA: byte result, flag behavior and read/modify/write ordering where applicable.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[Register::A] && r[Register::A] < 0x100),
+            IsByte(r[Register::A]),
         )]
         contract_unary_rlca_accumulator: {
             k: [Instruction::Update8 { op: Unary::Rlca, target: Operand::Reg { r: Register::A } }],
@@ -1866,7 +1835,7 @@ pub mod spec {
         /// RRCA: byte result, flag behavior and read/modify/write ordering where applicable.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[Register::A] && r[Register::A] < 0x100),
+            IsByte(r[Register::A]),
         )]
         contract_unary_rrca_accumulator: {
             k: [Instruction::Update8 { op: Unary::Rrca, target: Operand::Reg { r: Register::A } }],
@@ -1885,7 +1854,7 @@ pub mod spec {
         /// RLA: byte result, flag behavior and read/modify/write ordering where applicable.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[Register::A] && r[Register::A] < 0x100),
+            IsByte(r[Register::A]),
         )]
         contract_unary_rla_accumulator: {
             k: [Instruction::Update8 { op: Unary::Rla, target: Operand::Reg { r: Register::A } }],
@@ -1907,7 +1876,7 @@ pub mod spec {
         /// RRA: byte result, flag behavior and read/modify/write ordering where applicable.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[Register::A] && r[Register::A] < 0x100),
+            IsByte(r[Register::A]),
         )]
         contract_unary_rra_accumulator: {
             k: [Instruction::Update8 { op: Unary::Rra, target: Operand::Reg { r: Register::A } }],
@@ -1926,7 +1895,7 @@ pub mod spec {
         /// DAA: byte result, flag behavior and read/modify/write ordering where applicable.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[Register::A] && r[Register::A] < 0x100),
+            IsByte(r[Register::A]),
         )]
         contract_unary_daa_accumulator: {
             k: [Instruction::Update8 { op: Unary::Daa, target: Operand::Reg { r: Register::A } }],
@@ -1953,7 +1922,7 @@ pub mod spec {
         /// CPL: byte result, flag behavior and read/modify/write ordering where applicable.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[Register::A] && r[Register::A] < 0x100),
+            IsByte(r[Register::A]),
         )]
         contract_unary_cpl_accumulator: {
             k: [Instruction::Update8 { op: Unary::Cpl, target: Operand::Reg { r: Register::A } }],
@@ -1972,7 +1941,7 @@ pub mod spec {
         /// SCF: byte result, flag behavior and read/modify/write ordering where applicable.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[Register::A] && r[Register::A] < 0x100),
+            IsByte(r[Register::A]),
         )]
         contract_unary_scf_accumulator: {
             k: [Instruction::Update8 { op: Unary::Scf, target: Operand::Reg { r: Register::A } }],
@@ -1991,7 +1960,7 @@ pub mod spec {
         /// CCF: byte result, flag behavior and read/modify/write ordering where applicable.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[Register::A] && r[Register::A] < 0x100),
+            IsByte(r[Register::A]),
         )]
         contract_unary_ccf_accumulator: {
             k: [Instruction::Update8 { op: Unary::Ccf, target: Operand::Reg { r: Register::A } }],
@@ -2012,7 +1981,7 @@ pub mod spec {
         #[k::requires(
             0 <= bit
                 && bit < 8
-                && (0 <= r[target] && r[target] < 0x100),
+                && IsByte(r[target]),
         )]
         contract_bit_resetbit_register: {
             k: [
@@ -2038,11 +2007,9 @@ pub mod spec {
                 && (
                     0 <= bit
                         && bit < 8
-                        && (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
-                            && m[r[Register::H] * 0x100 + r[Register::L]]
-                                < 0x100)
-                        && (0 <= r[Register::H] && r[Register::H] < 0x100)
-                        && (0 <= r[Register::L] && r[Register::L] < 0x100)
+                        && IsByte(m[r[Register::H] * 0x100 + r[Register::L]])
+                        && IsByte(r[Register::H])
+                        && IsByte(r[Register::L])
                 ),
         )]
         contract_bit_resetbit_indirect: {
@@ -2094,7 +2061,7 @@ pub mod spec {
         #[k::requires(
             0 <= bit
                 && bit < 8
-                && (0 <= r[target] && r[target] < 0x100),
+                && IsByte(r[target]),
         )]
         contract_bit_setbit_register: {
             k: [
@@ -2123,11 +2090,9 @@ pub mod spec {
                 && (
                     0 <= bit
                         && bit < 8
-                        && (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
-                            && m[r[Register::H] * 0x100 + r[Register::L]]
-                                < 0x100)
-                        && (0 <= r[Register::H] && r[Register::H] < 0x100)
-                        && (0 <= r[Register::L] && r[Register::L] < 0x100)
+                        && IsByte(m[r[Register::H] * 0x100 + r[Register::L]])
+                        && IsByte(r[Register::H])
+                        && IsByte(r[Register::L])
                 ),
         )]
         contract_bit_setbit_indirect: {
@@ -2179,7 +2144,7 @@ pub mod spec {
         #[k::requires(
             0 <= bit
                 && bit < 8
-                && (0 <= r[target] && r[target] < 0x100),
+                && IsByte(r[target]),
         )]
         contract_bit_testbit_register: {
             k: [
@@ -2206,11 +2171,9 @@ pub mod spec {
                 && (
                     0 <= bit
                         && bit < 8
-                        && (0 <= m[r[Register::H] * 0x100 + r[Register::L]]
-                            && m[r[Register::H] * 0x100 + r[Register::L]]
-                                < 0x100)
-                        && (0 <= r[Register::H] && r[Register::H] < 0x100)
-                        && (0 <= r[Register::L] && r[Register::L] < 0x100)
+                        && IsByte(m[r[Register::H] * 0x100 + r[Register::L]])
+                        && IsByte(r[Register::H])
+                        && IsByte(r[Register::L])
                 ),
         )]
         contract_bit_testbit_indirect: {
@@ -2247,8 +2210,8 @@ pub mod spec {
         /// 16-bit increment/decrement wraps, preserves flags and takes one internal cycle.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[high] && r[high] < 0x100)
-                && (0 <= r[low] && r[low] < 0x100),
+            IsByte(r[high])
+                && IsByte(r[low]),
         )]
         contract_inc16_registers: {
             k: [Instruction::Inc16 { pair: Pair16::Registers { high, low } }],
@@ -2267,7 +2230,7 @@ pub mod spec {
 
         /// 16-bit increment/decrement wraps, preserves flags and takes one internal cycle.
         #[k::claim(all_paths)]
-        #[k::requires((0 <= sp && sp < 0x1_0000))]
+        #[k::requires(IsWord(sp))]
         contract_inc16_sp: {
             k: [Instruction::Inc16 { pair: Pair16::StackPointer }],
             regs: r,
@@ -2282,8 +2245,8 @@ pub mod spec {
         /// 16-bit increment/decrement wraps, preserves flags and takes one internal cycle.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[high] && r[high] < 0x100)
-                && (0 <= r[low] && r[low] < 0x100),
+            IsByte(r[high])
+                && IsByte(r[low]),
         )]
         contract_dec16_registers: {
             k: [Instruction::Dec16 { pair: Pair16::Registers { high, low } }],
@@ -2302,7 +2265,7 @@ pub mod spec {
 
         /// 16-bit increment/decrement wraps, preserves flags and takes one internal cycle.
         #[k::claim(all_paths)]
-        #[k::requires((0 <= sp && sp < 0x1_0000))]
+        #[k::requires(IsWord(sp))]
         contract_dec16_sp: {
             k: [Instruction::Dec16 { pair: Pair16::StackPointer }],
             regs: r,
@@ -2317,8 +2280,8 @@ pub mod spec {
         /// JP HL: jump to the register pair, with no extra bus cycle.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[Register::H] && r[Register::H] < 0x100)
-                && (0 <= r[Register::L] && r[Register::L] < 0x100),
+            IsByte(r[Register::H])
+                && IsByte(r[Register::L]),
         )]
         contract_jump_hl: {
             k: [Instruction::JumpHl],
@@ -2354,10 +2317,10 @@ pub mod spec {
         /// ADD HL,r16: wrap, carry out of bits 11 and 15, preserve Z, clear N; includes source=HL.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[Register::H] && r[Register::H] < 0x100)
-                && (0 <= r[Register::L] && r[Register::L] < 0x100)
-                && (0 <= r[high] && r[high] < 0x100)
-                && (0 <= r[low] && r[low] < 0x100),
+            IsByte(r[Register::H])
+                && IsByte(r[Register::L])
+                && IsByte(r[high])
+                && IsByte(r[low]),
         )]
         contract_add_hl_registers: {
             k: [Instruction::AddHl { pair: Pair16::Registers { high, low } }],
@@ -2392,9 +2355,9 @@ pub mod spec {
         /// ADD HL,r16: wrap, carry out of bits 11 and 15, preserve Z, clear N; includes source=HL.
         #[k::claim(all_paths)]
         #[k::requires(
-            (0 <= r[Register::H] && r[Register::H] < 0x100)
-                && (0 <= r[Register::L] && r[Register::L] < 0x100)
-                && (0 <= sp && sp < 0x1_0000),
+            IsByte(r[Register::H])
+                && IsByte(r[Register::L])
+                && IsWord(sp),
         )]
         contract_add_hl_sp: {
             k: [Instruction::AddHl { pair: Pair16::StackPointer }],

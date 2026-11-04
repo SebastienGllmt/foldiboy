@@ -1,0 +1,20 @@
+# The machine every corpus case starts on: a DMG after its boot ROM, in the CPU stage
+# (draft-personal/corpus-contract D-CASE-ROM, D-INIT, D-MEMORY).
+#
+# A krs case document of the SM83 definition's inputs (krs/sm83/src/machine.rs, init), without `rom`:
+# the corpus runner adds each case's cartridge as rom = RomRegion(cartridge). Every value is the
+# specification's own (krs/sm83/src/boot.rs), so every system starts from the state the definition states.
+# RAM starts empty: a program reads only bytes it wrote. CpuStageIo holds IE, IF and the CPU stage's
+# display stand-ins (LCDC 0, LY $FF), which are not hardware values.
+[inputs]
+regs = { "$call" = { DmgRegisters = [] } }
+f = { "$call" = { DmgFlags = [] } }
+pc = { "$call" = { BootPc = [] } }
+sp = { "$call" = { BootSp = [] } }
+ime = false
+ei_pending = false
+halted = false
+halt_bug = false
+w = 0
+z = 0
+memory = { "$call" = { CpuStageIo = [] } }

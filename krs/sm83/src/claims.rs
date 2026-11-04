@@ -13,6 +13,7 @@ pub mod add_hl_de {
     use crate::alu::Flags;
     use crate::decode::{Instruction, Pair16};
     use crate::machine::{Event, Register};
+    use crate::well_formed::IsByte;
 
     k::claims! {
         for Machine;
@@ -24,10 +25,10 @@ pub mod add_hl_de {
         /// Start at the decoded instruction, after fetch and arbitration.
         #[k::claim(all_paths)]
         #[k::requires(
-            0 <= r[Register::H] && r[Register::H] < 0x100
-                && 0 <= r[Register::L] && r[Register::L] < 0x100
-                && 0 <= r[Register::D] && r[Register::D] < 0x100
-                && 0 <= r[Register::E] && r[Register::E] < 0x100
+            IsByte(r[Register::H])
+                && IsByte(r[Register::L])
+                && IsByte(r[Register::D])
+                && IsByte(r[Register::E])
         )]
         add_hl_de: {
             k: [

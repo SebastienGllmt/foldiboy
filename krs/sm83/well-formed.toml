@@ -3,15 +3,20 @@
 # What two runs compare is the observation (end class, event log, end state) of the observation contract
 # (draft-personal/observer-design/design.md); the cells no comparison reads are declared in the
 # specification itself, as #[k::cell(unobservable)] in src/machine.rs (w and z), each with its tested reason.
-schema_version = 2
+schema_version = 3
 
-# The states the claims and case tooling quantify over (D-WELLFORMED). A KRS predicate with the same
-# content is to replace the byte-range preconditions each claim restates; until then this list is the
-# contract that case tooling checks initial states against.
+# The predicate is src/well_formed.rs: WellFormed(regs, pc, sp), built from IsByte and IsWord.
+# This file keeps only what that predicate cannot state.
 [well_formed]
-registers = "each of A B C D E H L is present and in 0..=0xFF"
-f = "any Flags value (four Booleans; no premise needed)"
-pc = "in 0..=0xFFFF"
-sp = "in 0..=0xFFFF"
-memory = "keys in 0..=0xFFFF, values in 0..=0xFF; IE (0xFFFF) and IF (0xFF0F) present"
+predicate = "src/well_formed.rs WellFormed"
+flags_and_control = "four Booleans and Boolean control cells: well formed by their sorts, no premise"
+memory = "keys in 0..=0xFFFF, values in 0..=0xFF; IE (0xFFFF) and IF (0xFF0F) present. A premise cannot quantify over a map's values, so claims state IsByte(m[addr]) for each address they read and case tooling checks a concrete memory byte by byte"
 halt = "halted and haltBug are not both true (read from the HALT rules; not yet proved as an invariant)"
+
+# Why claims state their own premises instead of WellFormed (measured 2026-11-04, contract-alu-add-register):
+# a claim with fewer premises is the stronger statement, and WellFormed(r, pc, sp) does not give IsByte(r[src])
+# for a symbolic register src (the prover does not split Reg8 into its seven constructors), so the claim is
+# stuck at its first step. A refinement theorem over WellFormed uses each claim through "WellFormed implies
+# the claim's premises", which holds by that seven-way split.
+[claims]
+premises = "minimal, spelled with IsByte and IsWord"

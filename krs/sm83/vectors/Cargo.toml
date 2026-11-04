@@ -1,6 +1,6 @@
 [package]
 name = "sm83-vectors"
-description = "Runs the SM83 KRS semantics against the SingleStepTests sm83 corpus"
+description = "Runs the SM83 KRS semantics against SingleStepTests, mooneye ROMs and the corpus"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.99"
@@ -11,6 +11,11 @@ krs-exec = { path = "/artifacts/worktrees/k-rust-foldiboy-pin/krs/crates/krs-exe
 krs-ir = { path = "/artifacts/worktrees/k-rust-foldiboy-pin/krs/crates/krs-ir" }
 krs-ir-levels = { path = "/artifacts/worktrees/k-rust-foldiboy-pin/krs/crates/krs-ir-levels" }
 serde_json = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+toml = "0.8"
+# The Rust emulator's CPU, a corpus system (src/rust_cpu.rs).
+cpu = { path = "../../../lib/crates/cpu" }
+memory = { path = "../../../lib/crates/memory" }
 
 [workspace]
 resolver = "3"

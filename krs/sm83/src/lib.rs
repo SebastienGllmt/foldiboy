@@ -14,6 +14,7 @@ pub mod execute;
 pub mod interrupt;
 pub mod machine;
 pub mod micro;
+pub mod well_formed;
 
 pub use alu::{
     AddHlFlags, AluFlags, AluResult, BitFlags, ByteFlags, CarryIn, CarrySet, DaaCorrection, DaaHigh, DaaLow,

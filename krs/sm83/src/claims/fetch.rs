@@ -9,6 +9,7 @@ use crate::alu::{Alu, Flags, Unary};
 use crate::decode::{Address, Condition, Instruction, Operand, Pair16};
 use crate::interrupt::{IE, IF, Step};
 use crate::machine::{Event, Register};
+use crate::well_formed::{IsByte, IsWord};
 use crate::micro::Micro;
 use k::builtin::{int, kequal};
 
@@ -20,7 +21,7 @@ pub mod spec {
 
         /// NOP: full opcode fetch, wrapping PC and preservation of every other cell.
         #[k::claim(all_paths)]
-        #[k::requires(rom_end == 0 && ((0 <= pc && pc < 0x1_0000) && m[pc] == 0x00))]
+        #[k::requires(rom_end == 0 && (IsWord(pc) && m[pc] == 0x00))]
         contract_fetch_nop: {
             rom_end,
             k: [Micro::Fetch],
@@ -39,9 +40,9 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= pc && pc < 0x1_0000)
+                    IsWord(pc)
                         && m[pc] == 0x06
-                        && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100)
+                        && IsByte(m[(pc + 1) % 0x1_0000])
                 ),
         )]
         contract_fetch_ld_b_immediate: {
@@ -70,9 +71,9 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= pc && pc < 0x1_0000)
+                    IsWord(pc)
                         && m[pc] == 0x0E
-                        && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100)
+                        && IsByte(m[(pc + 1) % 0x1_0000])
                 ),
         )]
         contract_fetch_ld_c_immediate: {
@@ -101,9 +102,9 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= pc && pc < 0x1_0000)
+                    IsWord(pc)
                         && m[pc] == 0x16
-                        && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100)
+                        && IsByte(m[(pc + 1) % 0x1_0000])
                 ),
         )]
         contract_fetch_ld_d_immediate: {
@@ -132,9 +133,9 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= pc && pc < 0x1_0000)
+                    IsWord(pc)
                         && m[pc] == 0x1E
-                        && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100)
+                        && IsByte(m[(pc + 1) % 0x1_0000])
                 ),
         )]
         contract_fetch_ld_e_immediate: {
@@ -163,9 +164,9 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= pc && pc < 0x1_0000)
+                    IsWord(pc)
                         && m[pc] == 0x26
-                        && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100)
+                        && IsByte(m[(pc + 1) % 0x1_0000])
                 ),
         )]
         contract_fetch_ld_h_immediate: {
@@ -194,9 +195,9 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= pc && pc < 0x1_0000)
+                    IsWord(pc)
                         && m[pc] == 0x2E
-                        && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100)
+                        && IsByte(m[(pc + 1) % 0x1_0000])
                 ),
         )]
         contract_fetch_ld_l_immediate: {
@@ -225,9 +226,9 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= pc && pc < 0x1_0000)
+                    IsWord(pc)
                         && m[pc] == 0x3E
-                        && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100)
+                        && IsByte(m[(pc + 1) % 0x1_0000])
                 ),
         )]
         contract_fetch_ld_a_immediate: {
@@ -256,10 +257,10 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= pc && pc < 0x1_0000)
+                    IsWord(pc)
                         && m[pc] == 0x01
-                        && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100)
-                        && (0 <= m[(pc + 2) % 0x1_0000] && m[(pc + 2) % 0x1_0000] < 0x100)
+                        && IsByte(m[(pc + 1) % 0x1_0000])
+                        && IsByte(m[(pc + 2) % 0x1_0000])
                 ),
         )]
         contract_fetch_ld_bc_immediate: {
@@ -295,10 +296,10 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= pc && pc < 0x1_0000)
+                    IsWord(pc)
                         && m[pc] == 0x11
-                        && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100)
-                        && (0 <= m[(pc + 2) % 0x1_0000] && m[(pc + 2) % 0x1_0000] < 0x100)
+                        && IsByte(m[(pc + 1) % 0x1_0000])
+                        && IsByte(m[(pc + 2) % 0x1_0000])
                 ),
         )]
         contract_fetch_ld_de_immediate: {
@@ -334,10 +335,10 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= pc && pc < 0x1_0000)
+                    IsWord(pc)
                         && m[pc] == 0x21
-                        && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100)
-                        && (0 <= m[(pc + 2) % 0x1_0000] && m[(pc + 2) % 0x1_0000] < 0x100)
+                        && IsByte(m[(pc + 1) % 0x1_0000])
+                        && IsByte(m[(pc + 2) % 0x1_0000])
                 ),
         )]
         contract_fetch_ld_hl_immediate: {
@@ -373,10 +374,10 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= pc && pc < 0x1_0000)
+                    IsWord(pc)
                         && m[pc] == 0x31
-                        && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100)
-                        && (0 <= m[(pc + 2) % 0x1_0000] && m[(pc + 2) % 0x1_0000] < 0x100)
+                        && IsByte(m[(pc + 1) % 0x1_0000])
+                        && IsByte(m[(pc + 2) % 0x1_0000])
                 ),
         )]
         contract_fetch_ld_sp_immediate: {
@@ -405,7 +406,7 @@ pub mod spec {
 
         /// Pan Docs HALT bug: consume the bug flag and suppress precisely this opcode-fetch increment.
         #[k::claim(all_paths)]
-        #[k::requires(rom_end == 0 && ((0 <= pc && pc < 0x1_0000) && m[pc] == 0x00))]
+        #[k::requires(rom_end == 0 && (IsWord(pc) && m[pc] == 0x00))]
         contract_halt_bug_fetch_nop: {
             rom_end,
             k: [Micro::Fetch],
@@ -421,7 +422,7 @@ pub mod spec {
 
         /// HALT bug followed by LD B,d8: opcode is reread as the immediate byte.
         #[k::claim(all_paths)]
-        #[k::requires(rom_end == 0 && ((0 <= pc && pc < 0x1_0000) && m[pc] == 0x06))]
+        #[k::requires(rom_end == 0 && (IsWord(pc) && m[pc] == 0x06))]
         contract_halt_bug_repeats_immediate: {
             rom_end,
             k: [Micro::Fetch],
@@ -449,10 +450,10 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= pc && pc < 0x1_0000)
+                    IsWord(pc)
                         && m[pc] == 0xCB
                         && m[(pc + 1) % 0x1_0000] == 0x07
-                        && (0 <= r[Register::A] && r[Register::A] < 0x100)
+                        && IsByte(r[Register::A])
                 ),
         )]
         contract_fetch_cb_rlc_a: {
@@ -491,10 +492,10 @@ pub mod spec {
         #[k::requires(
             rom_end == 0
                 && (
-                    (0 <= pc && pc < 0x1_0000)
+                    IsWord(pc)
                         && m[pc] == 0x21
-                        && (0 <= m[(pc + 1) % 0x1_0000] && m[(pc + 1) % 0x1_0000] < 0x100)
-                        && (0 <= m[(pc + 2) % 0x1_0000] && m[(pc + 2) % 0x1_0000] < 0x100)
+                        && IsByte(m[(pc + 1) % 0x1_0000])
+                        && IsByte(m[(pc + 2) % 0x1_0000])
                         && m[IE] == 0
                         && m[IF] == 0
                 ),
