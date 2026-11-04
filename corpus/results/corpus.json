@@ -1,0 +1,686 @@
+{
+  "cases": [
+    {
+      "case": "alu",
+      "pairs": [
+        {
+          "left": "krs",
+          "normalizations": [
+            "CompressIdle"
+          ],
+          "right": "krs",
+          "tier": "Full",
+          "verdict": "Equal"
+        },
+        {
+          "left": "krs",
+          "normalizations": [],
+          "right": "rust-cpu",
+          "tier": "Writes",
+          "verdict": "Equal"
+        }
+      ],
+      "systems": {
+        "krs": {
+          "cost": {
+            "rewrite_steps": 135,
+            "wall_ms": 17
+          },
+          "end": "Locked",
+          "events": 52
+        },
+        "rust-cpu": {
+          "cost": {
+            "instructions": 22,
+            "m_cycles": 51,
+            "wall_ms": 0
+          },
+          "end": "Locked",
+          "events": 47
+        }
+      }
+    },
+    {
+      "case": "alu-flags",
+      "pairs": [
+        {
+          "left": "krs",
+          "normalizations": [
+            "CompressIdle"
+          ],
+          "right": "krs",
+          "tier": "Full",
+          "verdict": "Equal"
+        },
+        {
+          "left": "krs",
+          "normalizations": [],
+          "right": "rust-cpu",
+          "tier": "Writes",
+          "verdict": "Equal"
+        }
+      ],
+      "systems": {
+        "krs": {
+          "cost": {
+            "rewrite_steps": 151,
+            "wall_ms": 13
+          },
+          "end": "Locked",
+          "events": 69
+        },
+        "rust-cpu": {
+          "cost": {
+            "instructions": 24,
+            "m_cycles": 68,
+            "wall_ms": 0
+          },
+          "end": "Locked",
+          "events": 59
+        }
+      }
+    },
+    {
+      "case": "calls",
+      "pairs": [
+        {
+          "left": "krs",
+          "normalizations": [
+            "CompressIdle"
+          ],
+          "right": "krs",
+          "tier": "Full",
+          "verdict": "Equal"
+        },
+        {
+          "left": "krs",
+          "normalizations": [],
+          "right": "rust-cpu",
+          "tier": "Writes",
+          "verdict": "Equal"
+        }
+      ],
+      "systems": {
+        "krs": {
+          "cost": {
+            "rewrite_steps": 154,
+            "wall_ms": 10
+          },
+          "end": "Locked",
+          "events": 71
+        },
+        "rust-cpu": {
+          "cost": {
+            "instructions": 21,
+            "m_cycles": 70,
+            "wall_ms": 0
+          },
+          "end": "Locked",
+          "events": 57
+        }
+      }
+    },
+    {
+      "case": "cb",
+      "pairs": [
+        {
+          "left": "krs",
+          "normalizations": [
+            "CompressIdle"
+          ],
+          "right": "krs",
+          "tier": "Full",
+          "verdict": "Equal"
+        },
+        {
+          "left": "krs",
+          "normalizations": [],
+          "right": "rust-cpu",
+          "tier": "Writes",
+          "verdict": "Equal"
+        }
+      ],
+      "systems": {
+        "krs": {
+          "cost": {
+            "rewrite_steps": 216,
+            "wall_ms": 16
+          },
+          "end": "Locked",
+          "events": 76
+        },
+        "rust-cpu": {
+          "cost": {
+            "instructions": 29,
+            "m_cycles": 75,
+            "wall_ms": 0
+          },
+          "end": "Locked",
+          "events": 71
+        }
+      }
+    },
+    {
+      "case": "cb-flags",
+      "pairs": [
+        {
+          "left": "krs",
+          "normalizations": [
+            "CompressIdle"
+          ],
+          "right": "krs",
+          "tier": "Full",
+          "verdict": "Equal"
+        },
+        {
+          "left": "krs",
+          "normalizations": [],
+          "right": "rust-cpu",
+          "tier": "Writes",
+          "verdict": "Equal"
+        }
+      ],
+      "systems": {
+        "krs": {
+          "cost": {
+            "rewrite_steps": 135,
+            "wall_ms": 16
+          },
+          "end": "Locked",
+          "events": 60
+        },
+        "rust-cpu": {
+          "cost": {
+            "instructions": 20,
+            "m_cycles": 59,
+            "wall_ms": 0
+          },
+          "end": "Locked",
+          "events": 51
+        }
+      }
+    },
+    {
+      "case": "daa",
+      "pairs": [
+        {
+          "left": "krs",
+          "normalizations": [
+            "CompressIdle"
+          ],
+          "right": "krs",
+          "tier": "Full",
+          "verdict": "Equal"
+        },
+        {
+          "left": "krs",
+          "normalizations": [],
+          "right": "rust-cpu",
+          "tier": "Writes",
+          "verdict": "Equal"
+        }
+      ],
+      "systems": {
+        "krs": {
+          "cost": {
+            "rewrite_steps": 152,
+            "wall_ms": 12
+          },
+          "end": "Locked",
+          "events": 52
+        },
+        "rust-cpu": {
+          "cost": {
+            "instructions": 24,
+            "m_cycles": 51,
+            "wall_ms": 0
+          },
+          "end": "Locked",
+          "events": 47
+        }
+      }
+    },
+    {
+      "case": "daa-flags",
+      "pairs": [
+        {
+          "left": "krs",
+          "normalizations": [
+            "CompressIdle"
+          ],
+          "right": "krs",
+          "tier": "Full",
+          "verdict": "Equal"
+        },
+        {
+          "left": "krs",
+          "normalizations": [],
+          "right": "rust-cpu",
+          "tier": "Writes",
+          "verdict": "Equal"
+        }
+      ],
+      "systems": {
+        "krs": {
+          "cost": {
+            "rewrite_steps": 182,
+            "wall_ms": 20
+          },
+          "end": "Locked",
+          "events": 76
+        },
+        "rust-cpu": {
+          "cost": {
+            "instructions": 29,
+            "m_cycles": 75,
+            "wall_ms": 0
+          },
+          "end": "Locked",
+          "events": 65
+        }
+      }
+    },
+    {
+      "case": "halt-bug",
+      "pairs": [
+        {
+          "left": "krs",
+          "normalizations": [
+            "CompressIdle"
+          ],
+          "right": "krs",
+          "tier": "Full",
+          "verdict": "Equal"
+        },
+        {
+          "left": "krs",
+          "normalizations": [],
+          "right": "rust-cpu",
+          "tier": "Writes",
+          "verdict": "Equal"
+        }
+      ],
+      "systems": {
+        "krs": {
+          "cost": {
+            "rewrite_steps": 92,
+            "wall_ms": 10
+          },
+          "end": "Locked",
+          "events": 39
+        },
+        "rust-cpu": {
+          "cost": {
+            "instructions": 14,
+            "m_cycles": 38,
+            "wall_ms": 0
+          },
+          "end": "Locked",
+          "events": 34
+        }
+      }
+    },
+    {
+      "case": "hl-flags",
+      "pairs": [
+        {
+          "left": "krs",
+          "normalizations": [
+            "CompressIdle"
+          ],
+          "right": "krs",
+          "tier": "Full",
+          "verdict": "Equal"
+        },
+        {
+          "left": "krs",
+          "normalizations": [],
+          "right": "rust-cpu",
+          "tier": "Writes",
+          "verdict": "Equal"
+        }
+      ],
+      "systems": {
+        "krs": {
+          "cost": {
+            "rewrite_steps": 114,
+            "wall_ms": 13
+          },
+          "end": "Locked",
+          "events": 55
+        },
+        "rust-cpu": {
+          "cost": {
+            "instructions": 16,
+            "m_cycles": 54,
+            "wall_ms": 0
+          },
+          "end": "Locked",
+          "events": 45
+        }
+      }
+    },
+    {
+      "case": "incdec",
+      "pairs": [
+        {
+          "left": "krs",
+          "normalizations": [
+            "CompressIdle"
+          ],
+          "right": "krs",
+          "tier": "Full",
+          "verdict": "Equal"
+        },
+        {
+          "left": "krs",
+          "normalizations": [],
+          "right": "rust-cpu",
+          "tier": "Writes",
+          "verdict": "Equal"
+        }
+      ],
+      "systems": {
+        "krs": {
+          "cost": {
+            "rewrite_steps": 175,
+            "wall_ms": 17
+          },
+          "end": "Locked",
+          "events": 61
+        },
+        "rust-cpu": {
+          "cost": {
+            "instructions": 26,
+            "m_cycles": 60,
+            "wall_ms": 0
+          },
+          "end": "Locked",
+          "events": 56
+        }
+      }
+    },
+    {
+      "case": "indirect",
+      "pairs": [
+        {
+          "left": "krs",
+          "normalizations": [
+            "CompressIdle"
+          ],
+          "right": "krs",
+          "tier": "Full",
+          "verdict": "Equal"
+        },
+        {
+          "left": "krs",
+          "normalizations": [],
+          "right": "rust-cpu",
+          "tier": "Writes",
+          "verdict": "Equal"
+        }
+      ],
+      "systems": {
+        "krs": {
+          "cost": {
+            "rewrite_steps": 169,
+            "wall_ms": 17
+          },
+          "end": "Locked",
+          "events": 68
+        },
+        "rust-cpu": {
+          "cost": {
+            "instructions": 23,
+            "m_cycles": 67,
+            "wall_ms": 0
+          },
+          "end": "Locked",
+          "events": 63
+        }
+      }
+    },
+    {
+      "case": "interrupt",
+      "pairs": [
+        {
+          "left": "krs",
+          "normalizations": [
+            "CompressIdle"
+          ],
+          "right": "krs",
+          "tier": "Full",
+          "verdict": "Equal"
+        },
+        {
+          "left": "krs",
+          "normalizations": [],
+          "right": "rust-cpu",
+          "tier": "Writes",
+          "verdict": "Equal"
+        }
+      ],
+      "systems": {
+        "krs": {
+          "cost": {
+            "rewrite_steps": 139,
+            "wall_ms": 11
+          },
+          "end": "Locked",
+          "events": 62
+        },
+        "rust-cpu": {
+          "cost": {
+            "instructions": 19,
+            "m_cycles": 61,
+            "wall_ms": 0
+          },
+          "end": "Locked",
+          "events": 49
+        }
+      }
+    },
+    {
+      "case": "joypad-int",
+      "pairs": [
+        {
+          "left": "krs",
+          "normalizations": [
+            "CompressIdle"
+          ],
+          "right": "krs",
+          "tier": "Full",
+          "verdict": "Equal"
+        },
+        {
+          "left": "krs",
+          "normalizations": [],
+          "right": "rust-cpu",
+          "tier": "Writes",
+          "verdict": "Equal"
+        }
+      ],
+      "systems": {
+        "krs": {
+          "cost": {
+            "rewrite_steps": 104,
+            "wall_ms": 11
+          },
+          "end": "Locked",
+          "events": 49
+        },
+        "rust-cpu": {
+          "cost": {
+            "instructions": 15,
+            "m_cycles": 48,
+            "wall_ms": 0
+          },
+          "end": "Locked",
+          "events": 40
+        }
+      }
+    },
+    {
+      "case": "jumps",
+      "pairs": [
+        {
+          "left": "krs",
+          "normalizations": [
+            "CompressIdle"
+          ],
+          "right": "krs",
+          "tier": "Full",
+          "verdict": "Equal"
+        },
+        {
+          "left": "krs",
+          "normalizations": [],
+          "right": "rust-cpu",
+          "tier": "Writes",
+          "verdict": "Equal"
+        }
+      ],
+      "systems": {
+        "krs": {
+          "cost": {
+            "rewrite_steps": 163,
+            "wall_ms": 17
+          },
+          "end": "Locked",
+          "events": 65
+        },
+        "rust-cpu": {
+          "cost": {
+            "instructions": 24,
+            "m_cycles": 64,
+            "wall_ms": 0
+          },
+          "end": "Locked",
+          "events": 54
+        }
+      }
+    },
+    {
+      "case": "loads",
+      "pairs": [
+        {
+          "left": "krs",
+          "normalizations": [
+            "CompressIdle"
+          ],
+          "right": "krs",
+          "tier": "Full",
+          "verdict": "Equal"
+        },
+        {
+          "left": "krs",
+          "normalizations": [],
+          "right": "rust-cpu",
+          "tier": "Writes",
+          "verdict": "Equal"
+        }
+      ],
+      "systems": {
+        "krs": {
+          "cost": {
+            "rewrite_steps": 146,
+            "wall_ms": 16
+          },
+          "end": "Locked",
+          "events": 59
+        },
+        "rust-cpu": {
+          "cost": {
+            "instructions": 20,
+            "m_cycles": 58,
+            "wall_ms": 0
+          },
+          "end": "Locked",
+          "events": 54
+        }
+      }
+    },
+    {
+      "case": "stack",
+      "pairs": [
+        {
+          "left": "krs",
+          "normalizations": [
+            "CompressIdle"
+          ],
+          "right": "krs",
+          "tier": "Full",
+          "verdict": "Equal"
+        },
+        {
+          "left": "krs",
+          "normalizations": [],
+          "right": "rust-cpu",
+          "tier": "Writes",
+          "verdict": "Equal"
+        }
+      ],
+      "systems": {
+        "krs": {
+          "cost": {
+            "rewrite_steps": 107,
+            "wall_ms": 10
+          },
+          "end": "Locked",
+          "events": 54
+        },
+        "rust-cpu": {
+          "cost": {
+            "instructions": 15,
+            "m_cycles": 53,
+            "wall_ms": 0
+          },
+          "end": "Locked",
+          "events": 46
+        }
+      }
+    },
+    {
+      "case": "word16",
+      "pairs": [
+        {
+          "left": "krs",
+          "normalizations": [
+            "CompressIdle"
+          ],
+          "right": "krs",
+          "tier": "Full",
+          "verdict": "Equal"
+        },
+        {
+          "left": "krs",
+          "normalizations": [],
+          "right": "rust-cpu",
+          "tier": "Writes",
+          "verdict": "Equal"
+        }
+      ],
+      "systems": {
+        "krs": {
+          "cost": {
+            "rewrite_steps": 139,
+            "wall_ms": 16
+          },
+          "end": "Locked",
+          "events": 62
+        },
+        "rust-cpu": {
+          "cost": {
+            "instructions": 20,
+            "m_cycles": 61,
+            "wall_ms": 0
+          },
+          "end": "Locked",
+          "events": 47
+        }
+      }
+    }
+  ],
+  "manifest": "corpus.toml",
+  "schema_version": 1
+}
