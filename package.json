@@ -9,6 +9,11 @@
     "mooneye": "bun scripts/roms.ts mooneye && bun scripts/krs.ts cases krs/sm83/mooneye/mooneye.toml --output json --save krs/sm83/results/mooneye.jsonl",
     "sst": "bun scripts/singlestep.ts",
     "claims": "bun scripts/krs.ts prove --spec-module SM83-CONTRACTS-SPEC --depth 32 --claim-timeout 600 --output jsonl --save krs/sm83/results/claims.jsonl",
-    "compare": "bun scripts/roms.ts corpus && bun scripts/compare.ts"
+    "compare": "bun scripts/roms.ts corpus && bun scripts/compare.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5"
   }
 }

@@ -1,3 +1,4 @@
 target/
 **/wit/deps
 roms/**/*
+node_modules/
