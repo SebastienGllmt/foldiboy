@@ -62,7 +62,7 @@ export interface ClaimResult {
   source: string;
 }
 
-// Keep the logical path, as scripts/test.sh does: the workspace may reach this repository through a symlink,
+// Keep the logical path, as scripts/roms.ts does: the workspace may reach this repository through a symlink,
 // and docs/ and roms/ sit beside the logical checkout, not beside the canonical clone.
 function logicalRepoRoot(): string {
   const physical = resolve(import.meta.dir, "../..");
@@ -96,6 +96,21 @@ async function provenance(path: string, gitDir?: string): Promise<Provenance> {
   return { path: display(path), modified: info?.mtime.toISOString(), revision };
 }
 
+// The records of a JSON-lines file krs wrote (bun run sst, mooneye, claims).
+async function jsonLines<T>(path: string): Promise<T[]> {
+  return (await Bun.file(path).text()).split("\n").filter((line) => line.trim()).map((line) => JSON.parse(line) as T);
+}
+
+// A `krs cases` record: a case's verdict, or the run's summary.
+interface CaseRecord {
+  case?: string;
+  verdict?: string;
+  reason?: string;
+  difference?: { path?: string };
+}
+const caseName = (record: CaseRecord) => record.case!.split("#").at(-1)!;
+const caseFailure = (record: CaseRecord) => record.reason ?? (record.difference?.path ? `differs at ${record.difference.path}` : record.verdict);
+
 async function guard<D extends Dataset<unknown>>(id: string, problems: Problem[], load: () => Promise<D>): Promise<D | undefined> {
   try {
     return await load();
@@ -123,10 +138,19 @@ const stripLinks = (s: string) => s.replace(/\[([^\]]*)\](\([^)]*\))?/g, "$1").r
 export async function loadOpcodes(problems: Problem[]) {
   return guard("opcodes", problems, async () => {
     const opsPath = resolve(workspaceRoot, "docs/dmgops.json");
-    const vectorsPath = resolve(sm83, "results/vectors.json");
+    const vectorsPath = resolve(sm83, "results/singlestep.jsonl");
     const ops = (await Bun.file(opsPath).json()) as Record<"Unprefixed" | "CBPrefixed", { Name: string; Group: string }[]>;
-    const vectors = (await Bun.file(vectorsPath).json()) as { files: { file: string; passed: number; total: number; failures: { reason: string }[] }[] };
-    const byFile = new Map(vectors.files.map((f) => [f.file, f]));
+    // Per suite file (a case document named as the suite file): vectors, met, and the first failure.
+    const byFile = new Map<string, { passed: number; total: number; failure?: string }>();
+    for (const record of await jsonLines<CaseRecord>(vectorsPath)) {
+      if (!record.case) continue;
+      const name = record.case.split("#")[0]!.split("/").at(-1)!.replace(/\.json$/, "");
+      const file = byFile.get(name) ?? { passed: 0, total: 0 };
+      file.total += 1;
+      if (record.verdict === "met") file.passed += 1;
+      else file.failure ??= caseFailure(record);
+      byFile.set(name, file);
+    }
     const rows: OpcodeSlot[] = [];
     for (const [page, key, prefix] of [["base", "Unprefixed", ""], ["cb", "CBPrefixed", "cb "]] as const) {
       ops[key].forEach((op, code) => {
@@ -138,7 +162,7 @@ export async function loadOpcodes(problems: Problem[]) {
           group: op.Group,
           vectorsPassed: file?.passed,
           vectorsTotal: file?.total,
-          failure: file?.failures[0]?.reason,
+          failure: file?.failure,
         });
       });
     }
@@ -177,14 +201,14 @@ export async function loadMooneye(problems: Problem[]) {
   return guard("mooneye", problems, async () => {
     const dir = resolve(testRoot, "mooneye-test-suite/acceptance");
     const files = (await readdir(dir, { recursive: true })).filter((f) => f.endsWith(".s")).sort();
-    const reportPath = resolve(sm83, "results/mooneye.json");
-    const report = (await Bun.file(reportPath).exists())
-      ? ((await Bun.file(reportPath).json()) as { roms: { rom: string; verdict: string; reason?: string }[] })
-      : undefined;
-    const results = new Map(report?.roms.map((r) => [r.rom, r]));
+    const reportPath = resolve(sm83, "results/mooneye.jsonl");
+    const report = (await Bun.file(reportPath).exists()) ? (await jsonLines<CaseRecord>(reportPath)).filter((r) => r.case) : undefined;
+    // A case is named as its test's file, without the directory (krs/sm83/mooneye/mooneye.toml).
+    const results = new Map(report?.map((r) => [caseName(r), r]));
     const rows = files.map((f) => {
       const test = f.replace(/\.s$/, "");
-      return { suite: "mooneye acceptance", test, verdict: results.get(test)?.verdict, reason: results.get(test)?.reason };
+      const result = results.get(test.split("/").at(-1)!);
+      return { suite: "mooneye acceptance", test, verdict: result?.verdict, reason: result && result.verdict !== "met" ? caseFailure(result) : undefined };
     });
     const provenances = [await provenance(dir, resolve(testRoot, "mooneye-test-suite"))];
     if (report) provenances.push(await provenance(reportPath));
@@ -194,7 +218,7 @@ export async function loadMooneye(problems: Problem[]) {
 
 export async function loadStateCells(problems: Problem[]) {
   return guard("state", problems, async () => {
-    const path = resolve(sm83, "results/emitted/definition.k");
+    const path = resolve(repoRoot, "corpus/definition.k");
     const text = await Bun.file(path).text();
     const block = text.slice(text.indexOf("configuration"), text.indexOf("rule ", text.indexOf("configuration")));
     const rows = [...block.matchAll(/<(\w+)>\s*(.*?)\s*<\/\1>/g)].map(([, cell = "", initial = ""]) => ({ cell, initial }));
@@ -203,38 +227,23 @@ export async function loadStateCells(problems: Problem[]) {
   });
 }
 
-interface ClaimsRun {
-  k_rust: { revision: string; dirty: boolean };
-  foldiboy: { revision: string; dirty: boolean };
-  missing: string[];
-  invocations: { claims: string[]; finished: string; exit_status: number | null; budget_exceeded: boolean }[];
-}
-
 export async function loadClaims(problems: Problem[]) {
   return guard("claims", problems, async () => {
-    const path = resolve(sm83, "results/claims.json");
-    const doc = (await Bun.file(path).json()) as { prove: { claim: string; verdict: string; modality: string; origin?: { file: string; line: number } }[] };
-    const rows = doc.prove.map((p) => ({
-      claim: p.claim.split(".").slice(1).join("."),
-      module: p.claim.split(".")[0] ?? "",
-      verdict: p.verdict,
-      modality: p.modality,
-      source: p.origin ? `${p.origin.file}:${p.origin.line}` : "",
-    }));
-    const provenances = [await provenance(path)];
-    const runPath = resolve(sm83, "results/claims-run.json");
-    if (await Bun.file(runPath).exists()) {
-      const run = (await Bun.file(runPath).json()) as ClaimsRun;
-      const rev = (r: { revision: string; dirty: boolean }) => `${r.revision.slice(0, 9)}${r.dirty ? " (dirty)" : ""}`;
-      provenances.push({ path: display(runPath), modified: run.invocations.at(-1)?.finished, revision: `k-rust ${rev(run.k_rust)}, foldiboy ${rev(run.foldiboy)}` });
-      if (run.missing.length) problems.push({ severity: "warning", file: "source:claims", message: `the recorded claims run has no result for ${run.missing.join(", ")}` });
-      for (const inv of run.invocations) {
-        if (inv.budget_exceeded) problems.push({ severity: "info", file: "source:claims", message: `budget exceeded for ${inv.claims.length === 1 ? inv.claims[0] : `${inv.claims.length} claims`}` });
-        else if (inv.exit_status !== 0 && inv.exit_status !== 1) problems.push({ severity: "warning", file: "source:claims", message: `a claims invocation exited with status ${inv.exit_status}` });
-      }
-    } else {
-      problems.push({ severity: "info", file: "source:claims", message: "no claims-run.json: the claims result has no recorded revisions; run bun krs/sm83/run-claims.ts" });
-    }
-    return { id: "claims", title: "Native claim results", provenance: provenances, rows };
+    // `krs prove --output jsonl` (bun run claims): a record per claim, then the run's summary.
+    const path = resolve(sm83, "results/claims.jsonl");
+    const lines = await jsonLines<{ proof?: { claim: string; verdict: string; modality: string; origin?: { file: string; line: number } }; summary?: unknown }>(path);
+    const rows = lines.flatMap(({ proof: p }) =>
+      p
+        ? [{
+            claim: p.claim.split(".").slice(1).join("."),
+            module: p.claim.split(".")[0] ?? "",
+            verdict: p.verdict,
+            modality: p.modality,
+            source: p.origin ? `${p.origin.file}:${p.origin.line}` : "",
+          }]
+        : [],
+    );
+    if (lines.at(-1)?.summary === undefined) problems.push({ severity: "warning", file: "source:claims", message: "the recorded claims run did not finish (no summary line)" });
+    return { id: "claims", title: "Native claim results", provenance: [await provenance(path)], rows };
   });
 }

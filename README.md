@@ -110,6 +110,8 @@ foldiboy/
 ├── krs/
 │   ├── sm83-core/              Shared arithmetic and ALU semantics
 │   └── sm83/                   SM83 instruction-set semantics in KRS (K in Rust); see its README
+├── corpus/                     Cartridge cases every SM83 implementation runs; see its README
+├── scripts/                    The `bun run` commands of package.json: roms, test, kink, mooneye, sst, claims, compare
 └── README.md
 ```
 
@@ -132,16 +134,15 @@ This builds the guest WASM component, then compiles and runs the host. The host 
 
 ```bash
 # From the repository's workspace symlink, with test suites in ../roms/tests/:
-./scripts/setup-tests.sh  # build SameSuite ROMs and materialize WIT dependencies
-./scripts/test.sh
+bun run test
 ```
 
-The setup script uses RGBDS on PATH, or a pinned project-scoped Nix package.
+`bun run test` builds the SameSuite ROMs (RGBDS from a pinned nixpkgs) and runs the lib/ workspace's tests; arguments go to `cargo test`.
 Cargo restores WIT dependencies through the `wit-deps` build dependency; no separate CLI installation is required.
 Set `FOLDIBOY_TEST_ROOT` to the directory containing `gb-test-roms` and `SameSuite` (default: `../roms/tests/`) when using another layout or invoking the scripts through the canonical repository path.
 For direct Cargo invocations, use `cd lib && FOLDIBOY_TEST_ROOT=/path/to/test-suites cargo test --locked --workspace`.
 The current default suite has 350 passing tests and 6 ignored tests: five existing wave RAM tests and one optional game profiling test.
-Profiling requires `FOLDIBOY_PROFILE_ROM=/absolute/path/to/game.gb ./scripts/test.sh -p cpu --test opcode_profile -- --ignored`.
+Profiling requires `FOLDIBOY_PROFILE_ROM=/absolute/path/to/game.gb bun run test -p cpu --test opcode_profile -- --ignored`.
 The other downloaded suites are available for future integration; this command does not run Mooneye, acid2, Mealybug, MBC30, or RTC3 ROMs.
 
 **Game ROMs:**

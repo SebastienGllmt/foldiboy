@@ -67,7 +67,7 @@ pub struct Machine {
     /// same instruction, so its value at a boundary never reaches an event or an
     /// architectural cell. Tested by running SingleStepTests with two different
     /// initial values of `W` and `Z` (every vector starts at a boundary): every
-    /// vector gives the same result (`WZ=` of run-singlestep-tests.sh).
+    /// vector gives the same result (`bun run sst --wz W,Z`).
     #[k::cell(unobservable)]
     pub w: Int,
     /// Internal temporary register, the low byte of `WZ`. Unobservable for the

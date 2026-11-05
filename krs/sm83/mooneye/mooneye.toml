@@ -1,5 +1,5 @@
 # The mooneye acceptance ROMs that need only the CPU, RAM, IE and IF, on a DMG in the CPU stage.
-# run-mooneye-tests.sh builds the ROMs into ../results/mooneye/ and runs these cases with krs cases.
+# `bun run mooneye` builds the ROMs beside this file (scripts/roms.ts) and runs these cases with krs cases.
 #
 # Each case starts from its cartridge as the boot ROM leaves it (Boot, src/boot.rs). A mooneye
 # test ends by setting B C D E H L and looping on itself (`jr` to itself): 3 5 8 13 21 34 is a pass,
@@ -18,7 +18,7 @@ depth = 100000
 [[case]]
 name = "ei_sequence"
 [case.inputs]
-start = { "$call" = { Boot = { cartridge = { "$file" = "../results/mooneye/acceptance/ei_sequence.gb" } } } }
+start = { "$call" = { Boot = { cartridge = { "$file" = "ei_sequence.gb" } } } }
 [case.expect]
 halt = "depth-bound"
 compare = ["regs"]
@@ -29,7 +29,7 @@ cells = { regs = { A = 0, B = 3, C = 5, D = 8, E = 13, H = 21, L = 34 } }
 [[case]]
 name = "ei_timing"
 [case.inputs]
-start = { "$call" = { Boot = { cartridge = { "$file" = "../results/mooneye/acceptance/ei_timing.gb" } } } }
+start = { "$call" = { Boot = { cartridge = { "$file" = "ei_timing.gb" } } } }
 [case.expect]
 halt = "depth-bound"
 compare = ["regs"]
@@ -40,7 +40,7 @@ cells = { regs = { A = 0, B = 3, C = 5, D = 8, E = 13, H = 21, L = 34 } }
 [[case]]
 name = "rapid_di_ei"
 [case.inputs]
-start = { "$call" = { Boot = { cartridge = { "$file" = "../results/mooneye/acceptance/rapid_di_ei.gb" } } } }
+start = { "$call" = { Boot = { cartridge = { "$file" = "rapid_di_ei.gb" } } } }
 [case.expect]
 halt = "depth-bound"
 compare = ["regs"]
@@ -51,7 +51,7 @@ cells = { regs = { A = 0, B = 3, C = 5, D = 8, E = 13, H = 21, L = 34 } }
 [[case]]
 name = "reti_intr_timing"
 [case.inputs]
-start = { "$call" = { Boot = { cartridge = { "$file" = "../results/mooneye/acceptance/reti_intr_timing.gb" } } } }
+start = { "$call" = { Boot = { cartridge = { "$file" = "reti_intr_timing.gb" } } } }
 [case.expect]
 halt = "depth-bound"
 compare = ["regs"]
@@ -62,7 +62,7 @@ cells = { regs = { A = 0, B = 3, C = 5, D = 8, E = 13, H = 21, L = 34 } }
 [[case]]
 name = "ie_push"
 [case.inputs]
-start = { "$call" = { Boot = { cartridge = { "$file" = "../results/mooneye/acceptance/interrupts/ie_push.gb" } } } }
+start = { "$call" = { Boot = { cartridge = { "$file" = "ie_push.gb" } } } }
 [case.expect]
 halt = "depth-bound"
 compare = ["regs"]
@@ -73,7 +73,7 @@ cells = { regs = { A = 0, B = 3, C = 5, D = 8, E = 13, H = 21, L = 34 } }
 [[case]]
 name = "if_ie_registers"
 [case.inputs]
-start = { "$call" = { Boot = { cartridge = { "$file" = "../results/mooneye/acceptance/if_ie_registers.gb" } } } }
+start = { "$call" = { Boot = { cartridge = { "$file" = "if_ie_registers.gb" } } } }
 [case.expect]
 halt = "depth-bound"
 compare = ["regs"]

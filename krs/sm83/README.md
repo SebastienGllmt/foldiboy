@@ -14,7 +14,7 @@ An unused opcode locks the CPU: its step ends at `#locked`, after which nothing 
 `STOP` decodes to `stop`, which no rule executes: the model does not support it.
 
 A cartridge starts from the state a hardware model's boot ROM hands over, which `src/boot.rs` states once (`DmgRegisters`, `DmgFlags`, `BootPc`, `BootSp`, `DmgIo`, and `CpuStageIo` with the CPU stage's two display stand-ins), the cartridge's first 32 KiB as the ROM (`RomRegion`), and RAM that holds no byte until the program writes one. `Boot(cartridge)` puts these together as the definition's one input, `start` (a `State`, `src/machine.rs`); SingleStepTests states a `State` field by field instead.
-A case file gives each input as one of those functions applied with `{"$call": ..}` (`cases/mooneye.toml`, `../../corpus/cases/`).
+A cartridge's case file gives `start` as `Boot` applied with `{"$call": ..}` (`mooneye/mooneye.toml`, `../../corpus/cases/`).
 
 The initializer takes the whole architectural state at a boundary: `REGS`, `F`, `PC`, `SP`, `IME`, `EI_PENDING`, `HALTED`, `HALT_BUG` and `MEMORY`; and the unobservable registers `W` and `Z` (the harnesses pass 0), so a run can test that their initial value changes nothing observed.
 The bus log starts empty.
@@ -107,10 +107,10 @@ Arithmetic and ALU definitions live in `../sm83-core` and are re-exported by thi
 
 The KRS crates and the scripts use k-rust from a pinned worktree, `/artifacts/worktrees/k-rust-foldiboy-pin`, a detached checkout of the commit recorded in `../K_RUST_PIN`, with its `krs` CLI built there (`cargo build -p krs-cli --bin krs --locked`).
 Moving the pin is a deliberate change: check out the new commit there, rebuild, update `K_RUST_PIN`, and rerun the verification. The k-rust development checkout moves on its own; a `krs` binary and a `krs` crate from different commits disagree on the collector protocol.
-`KRS_ROOT` overrides the scripts' default. krs links the Z3 release its `Krs.lock` names (4.16.0), statically, so no Z3 library path is needed.
-The scripts compose the root definition with `--dependency foldiboy-sm83-core:core --dependency foldiboy-sm83-events:events`; direct KRS commands require the same selection.
-The scripts find the test suites as `scripts/test.sh` does, under `FOLDIBOY_TEST_ROOT` (by default `roms/tests` beside the repository, reached through its logical path): `sm83/v1` (SingleStepTests) and `mooneye-test-suite`.
-Build output goes to `target/` and `results/`, which are not tracked.
+`KRS_BIN` overrides the scripts' default binary. krs links the Z3 release its `Krs.lock` names (4.16.0), statically, so no Z3 library path is needed.
+The scripts are `bun run` commands of the repository's `package.json` (`../../scripts/`). `scripts/krs.ts` runs krs with the root definition's selection, `--dependency foldiboy-sm83-core:core --dependency foldiboy-sm83-events:events`; direct KRS commands require the same selection.
+The scripts find the test suites under `FOLDIBOY_TEST_ROOT` (by default `roms/tests` beside the repository, reached through its logical path): `sm83/v1` (SingleStepTests) and `mooneye-test-suite`.
+Build output goes to `target/`, `results/` and the mooneye ROMs beside `mooneye/mooneye.toml`, none of them tracked.
 
 ## Tools and workflow
 
@@ -122,11 +122,11 @@ Claims specify properties to check; they do not define additional CPU behavior.
 | KRS configuration, functions and `k::rules!` | Define the machine state and SM83 transitions. |
 | `krs check` | Check that the composed definition is well formed before executing or proving it. This does not establish SM83 correctness. |
 | `krs emit-k` | Generate K and definition IR from the semantics. The Rust CPU adapter (`../sm83-rust-cpu`) builds a case's initial state from the IR through `krs-exec`. |
-| `krs cases`, `krs run --case` | Run case documents and check each against its expectation: the upstream suites' cases and `cases/mooneye.toml`. |
-| `run-singlestep-tests.sh` | Run the upstream SingleStepTests SM83 corpus against the semantics. |
-| `run-mooneye-tests.sh` | Run upstream mooneye acceptance ROMs against the semantics. |
+| `krs cases`, `krs run --case` | Run case documents and check each against its expectation: the upstream suites' cases and `mooneye/mooneye.toml`. |
+| `bun run sst` | Run the upstream SingleStepTests SM83 corpus against the semantics. |
+| `bun run mooneye` | Run upstream mooneye acceptance ROMs against the semantics. |
 | `k::claims!` in [src/claims.rs](src/claims.rs) and [src/claims/](src/claims/README.md) | Specify CPU behavior as symbolic execution contracts over the KRS machine, so the native prover can check the instruction rules against them. |
-| `bun run-claims.ts` | Run `krs prove` over the contract suite with a per-claim timeout and record `results/claims.json` with `results/claims-run.json` (revisions, the solver, and the invocation's command, times and exit status). |
+| `bun run claims` | Run `krs prove` over the contract suite with a per-claim timeout and save its records to `results/claims.jsonl`. |
 | `krs prove` | Attempt to establish those claims using k-rust’s native reachability prover through `krs-exec`, with Z3 for symbolic conditions. A failed or stuck proof requires investigation; it does not by itself identify a CPU bug. |
 | `krust kcompile` | Compile emitted K semantics and a selected spec module to the KORE and runtime metadata consumed by k2lean. |
 | `k2lean gen`, `k2lean claims` | Generate a Lean semantics library, its equation obligations, and proofs of the selected KRS contracts. `gen --spec` includes expectation helpers used only by claims. |
@@ -163,8 +163,8 @@ Run the native contract suite (sources, justifications and coverage are in the [
 ```
 
 Success requires every selected claim to report `proven` and exit status 0.
-`bun run-claims.ts` runs the same command with `--output jsonl` and `--claim-timeout` (`CLAIM_TIMEOUT` seconds, default 600) and records the result and its revisions under `results/`.
-It reads the claim set from the emitted `spec.k`. krs proves each claim in a supervised worker: a claim that runs past the timeout gets the verdict `timeout`, and a solver crash costs only its claim (`crashed`); neither establishes anything about the claim.
+`bun run claims` runs the same command with `--output jsonl` and `--claim-timeout 600`, saves krs's records to `results/claims.jsonl` and prints the summary.
+krs proves each claim in a supervised worker: a claim that runs past the timeout gets the verdict `timeout`, and a solver crash costs only its claim (`crashed`); neither establishes anything about the claim.
 Each solver query is bounded by Z3 resource units rather than the clock, so a verdict does not depend on the host's load.
 The six bit-index contracts use exhaustive native cases over the three-bit opcode field.
 The [claim inventory](src/claims/README.md#proof-evidence) records the reviewed proof evidence; at k-rust `b06b9b869` every contract proves except `contract-unary-daa-accumulator`.
@@ -173,31 +173,31 @@ Proof output is printed to the terminal; any saved diagnostic runs belong in ign
 Run the concrete test suites:
 
 ```bash
-./run-singlestep-tests.sh
-./run-mooneye-tests.sh
+bun run sst
+bun run mooneye
 ```
 
 ## Upstream conformance suites
 
-`run-singlestep-tests.sh` and `run-mooneye-tests.sh` are adapters for the named upstream suites only.
+`bun run sst` (`scripts/singlestep.ts`) and `bun run mooneye` (`mooneye/mooneye.toml`) are adapters for the named upstream suites only.
 Their scope is building and loading those suites, executing them, and reporting their prescribed checks.
-Do not add project-authored test cases, proof workflows or general test infrastructure to these runners or to `singlestep-cases.py`.
+Do not add project-authored test cases, proof workflows or general test infrastructure to them.
 Changes should be limited to maintaining the suite integration as the build system, execution API or upstream suite changes.
 Keep project-authored verification separate, such as the symbolic contracts in `src/claims.rs`.
 
-`run-singlestep-tests.sh` checks the definition, converts every vector of the [SingleStepTests sm83](https://github.com/SingleStepTests/sm83) corpus into a case document (`singlestep-cases.py`, which states the mapping), and runs them with `krs cases`.
-Each vector becomes a named case: its inputs are the vector's initial state, and its expectation the final registers, flags, `PC`, `SP`, `IME`, `EI`'s pending state, memory and bus log, compared by `krs cases` cell by cell.
+`bun run sst` converts every vector of the [SingleStepTests sm83](https://github.com/SingleStepTests/sm83) corpus into a case document (`scripts/singlestep.ts`, which states the mapping), runs them with `krs cases`, and saves krs's records to `results/singlestep.jsonl`.
+Each vector becomes a named case: its `start` is the vector's initial state, a `State`, and its expectation the final registers, flags, `PC`, `SP`, `IME`, `EI`'s pending state, memory and bus log, compared by `krs cases` cell by cell.
 A case runs from its boundary to the next boundary rule: it stops before a boundary rule, at the second stop (the first is the initial state).
 `IE` and `IF` read as zero when a vector does not list them (no vector lists both), so no interrupt is requested: the corpus does not model interrupts.
 `F` is a `Flags` value built from the vector's byte.
 An idle cycle is compared by kind only, because the corpus records the address and data lines left on the bus, which this model does not track.
-`WZ=W,Z` sets the unobservable registers' initial value; every vector must give the same verdict for any value.
+`--wz W,Z` sets the unobservable registers' initial value; every vector must give the same verdict for any value.
 The corpus is generated by an emulator; it is conformance evidence, not hardware or proof evidence.
 
-`run-mooneye-tests.sh` builds the mooneye acceptance ROMs that need only the CPU, RAM, `IE` and `IF` (with `wla-dx` from an ephemeral `nix-shell`) and runs the cases of `cases/mooneye.toml` with `krs cases`.
-Each case is the ROM's cartridge with the specification's boot state (the CPU stage's `LY` reads `$FF`, so the mooneye harness skips its display code), and expects mooneye's pass registers, `B C D E H L` = 3 5 8 13 21 34, compared under the view `MooneyeResult` (`../sm83-views`).
+`bun run mooneye` builds the mooneye acceptance ROMs that need only the CPU, RAM, `IE` and `IF` (`scripts/roms.ts`, with WLA-DX from nixpkgs) beside `mooneye/mooneye.toml`, and runs its cases with `krs cases`.
+Each case starts from the ROM's cartridge as the boot ROM leaves it (`Boot`) (the CPU stage's `LY` reads `$FF`, so the mooneye harness skips its display code), and expects mooneye's pass registers, `B C D E H L` = 3 5 8 13 21 34, compared under the view `MooneyeResult` (`../sm83-views`).
 The tests' authors verified their expected results on hardware (the `Verified results` header of each mooneye source), so they are hardware evidence.
-A mooneye test ends by looping on itself, so each run is bounded at 100000 rewrite steps, past every ROM's result; `results/mooneye.json` records each case's verdict (`krs-cases/2`).
+A mooneye test ends by looping on itself, so each run is bounded at 100000 rewrite steps, past every ROM's result; `results/mooneye.jsonl` holds krs's record of each case (`krs-cases/2`).
 
 The migration from KRS `8299da60f` to `793cc0a3a` adds typed helper parameters and builtin list notation.
 Its emitted `definition.k` is byte-identical to the unchanged source emitted by `793cc0a3a`.

@@ -1,3 +1,5 @@
 target/
 results/
 Cargo.lock
+mooneye/*.gb
+mooneye/*.sym

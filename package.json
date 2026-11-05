@@ -1,0 +1,14 @@
+{
+  "name": "foldiboy",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "roms": "bun scripts/roms.ts",
+    "test": "bun scripts/test.ts",
+    "kink": "bun scripts/roms.ts corpus && bun scripts/krs.ts kink",
+    "mooneye": "bun scripts/roms.ts mooneye && bun scripts/krs.ts cases krs/sm83/mooneye/mooneye.toml --output json --save krs/sm83/results/mooneye.jsonl",
+    "sst": "bun scripts/singlestep.ts",
+    "claims": "bun scripts/krs.ts prove --spec-module SM83-CONTRACTS-SPEC --depth 32 --claim-timeout 600 --output jsonl --save krs/sm83/results/claims.jsonl",
+    "compare": "bun scripts/roms.ts corpus && bun scripts/compare.ts"
+  }
+}

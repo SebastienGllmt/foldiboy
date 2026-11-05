@@ -7,14 +7,11 @@ It includes unit tests and the Blargg/SameSuite ROM targets below; it does not r
 
 Clone [retrio/gb-test-roms](https://github.com/retrio/gb-test-roms) and [LIJI32/SameSuite](https://github.com/LIJI32/SameSuite) in the workspace’s `roms/tests/` directory, or set `FOLDIBOY_TEST_ROOT` to their parent directory.
 `gb-test-roms` contains compiled ROMs; SameSuite must be built with RGBDS.
-The helpers use the logical workspace path, including when its repositories are symlinks:
+`bun run test` builds SameSuite (`scripts/roms.ts`, RGBDS from a pinned nixpkgs) and runs the tests; it uses the logical workspace path, including when its repositories are symlinks:
 
 ```sh
-./scripts/setup-tests.sh
-./scripts/test.sh
+bun run test
 ```
-
-The setup helper uses RGBDS from PATH, falling back to a pinned project-scoped Nix package.
 Cargo restores locked WIT dependencies through the upstream `wit-deps` build dependency.
 The project-owned audio interface is tracked in `lib/interfaces/nightstream-audio/`.
 The external test ROM checkout revisions are not currently pinned by Cargo's lockfile.
@@ -53,7 +50,7 @@ The HALT and sound diagnostics are not all independent conformance assertions.
 Game profiling is optional and is not a conformance test:
 
 ```sh
-FOLDIBOY_PROFILE_ROM=/absolute/path/to/game.gb ./scripts/test.sh -p cpu --test opcode_profile -- --ignored
+FOLDIBOY_PROFILE_ROM=/absolute/path/to/game.gb bun run test -p cpu --test opcode_profile -- --ignored
 ```
 
 Native graphics/shutdown regression tests are separate from the guest workspace:
