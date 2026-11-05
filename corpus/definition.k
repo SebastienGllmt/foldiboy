@@ -22,6 +22,7 @@ module SM83-SYNTAX
   syntax Operand8
   syntax Reg8
   syntax RegPair
+  syntax Start
 
   // `(nn)`.
   syntax AddrMode ::= "(" "nn" ")" [symbol(addressAbsolute), format(%1%2%3)]
@@ -183,6 +184,9 @@ module SM83
   syntax UnaryOp ::= "accumulatorTable" "(" Int ")" [symbol(accumulatorTable), function, total]
   // The arithmetic table `alu`.
   syntax AluOp ::= "aluTable" "(" Int ")" [symbol(aluTable), function, total]
+  // A cartridge's start on a DMG in the CPU stage: the state the boot ROM
+  // leaves, with `W` and `Z` zero.
+  syntax Start ::= "boot" "(" Bytes ")" [symbol(boot), function, total]
   // Every model hands over at `$0100`.
   syntax Int ::= "bootPc" "(" ")" [symbol(bootPc), function, total]
   // Every model hands over with `SP` at `$FFFE`.
@@ -272,6 +276,26 @@ module SM83
   syntax RegPair ::= "rp" "(" Int ")" [symbol(rp), function, total]
   // The register-pair table `rp2` of `PUSH` and `POP`.
   syntax RegPair ::= "rp2" "(" Int ")" [symbol(rp2), function, total]
+  syntax Bool ::= "startEiPending" "(" Start ")" [symbol(startEiPending), function, total]
+  syntax FlagSet ::= "startF" "(" Start ")" [symbol(startF), function, total]
+  syntax Bool ::= "startHaltBug" "(" Start ")" [symbol(startHaltBug), function, total]
+  syntax Bool ::= "startHalted" "(" Start ")" [symbol(startHalted), function, total]
+  syntax Bool ::= "startIme" "(" Start ")" [symbol(startIme), function, total]
+  syntax Map ::= "startMemory" "(" Start ")" [symbol(startMemory), function, total]
+  syntax Int ::= "startPc" "(" Start ")" [symbol(startPc), function, total]
+  syntax Map ::= "startRegs" "(" Start ")" [symbol(startRegs), function, total]
+  syntax Bytes ::= "startRom" "(" Start ")" [symbol(startRom), function, total]
+  syntax Int ::= "startSp" "(" Start ")" [symbol(startSp), function, total]
+  syntax Int ::= "startW" "(" Start ")" [symbol(startW), function, total]
+  syntax Int ::= "startZ" "(" Start ")" [symbol(startZ), function, total]
+  // Where a run starts: an architectural state at an instruction boundary,
+  // every cell but the bus log, which starts empty.
+  // 
+  // A cartridge starts from the state its model's boot ROM leaves (`Boot`,
+  // boot.rs). Any other boundary state can start a run too (SingleStepTests),
+  // and so can any `W` and `Z`, so a run can test that their initial value
+  // changes no observation.
+  syntax Start ::= "state" "(" Map "," FlagSet "," Int "," Int "," Bool "," Bool "," Bool "," Bool "," Bytes "," Map "," Int "," Int ")" [symbol(state)]
   // The register file, `PC` and `SP` are well formed.
   // The flags are four Booleans and the other control cells are Booleans, so they need no premise.
   syntax Bool ::= "wellFormed" "(" Map "," Int "," Int ")" [symbol(wellFormed), function, total]
@@ -284,19 +308,19 @@ module SM83
   // KRS foldiboy-sm83/src/machine.rs: Machine
   configuration
     <k> # boundary </k>
-    <regs> $REGS:Map </regs>
-    <f> $F:FlagSet </f>
-    <pc> $PC:Int </pc>
-    <sp> $SP:Int </sp>
-    <ime> $IME:Bool </ime>
-    <eiPending> $EI_PENDING:Bool </eiPending>
-    <halted> $HALTED:Bool </halted>
-    <haltBug> $HALT_BUG:Bool </haltBug>
-    <w unobservable=""> $W:Int </w>
-    <z unobservable=""> $Z:Int </z>
-    <rom> $ROM:Bytes </rom>
-    <romEnd> lengthBytes($ROM:Bytes) </romEnd>
-    <memory> $MEMORY:Map </memory>
+    <regs> startRegs ( $START:Start ) </regs>
+    <f> startF ( $START:Start ) </f>
+    <pc> startPc ( $START:Start ) </pc>
+    <sp> startSp ( $START:Start ) </sp>
+    <ime> startIme ( $START:Start ) </ime>
+    <eiPending> startEiPending ( $START:Start ) </eiPending>
+    <halted> startHalted ( $START:Start ) </halted>
+    <haltBug> startHaltBug ( $START:Start ) </haltBug>
+    <w unobservable=""> startW ( $START:Start ) </w>
+    <z unobservable=""> startZ ( $START:Start ) </z>
+    <rom> startRom ( $START:Start ) </rom>
+    <romEnd> lengthBytes(startRom ( $START:Start )) </romEnd>
+    <memory> startMemory ( $START:Start ) </memory>
     <bus> .List </bus>
 
 
@@ -692,6 +716,8 @@ module SM83
   rule [set-pair-sp]:
     <k> # setPair ( sp , Value:Int ) => .K ... </k>
     <sp> _ => Value:Int </sp>
+  // KRS foldiboy-sm83/src/boot.rs: Boot
+  rule boot ( Cartridge:Bytes ) => state ( dmgRegisters ( ) , dmgFlags ( ) , bootPc ( ) , bootSp ( ) , false , false , false , false , romRegion ( Cartridge:Bytes ) , cpuStageIo ( ) , 0 , 0 ) [label(sm83--boot--boot)]
   // KRS foldiboy-sm83/src/boot.rs: BootPc
   rule bootPc ( ) => 256 [label(sm83--boot--boot_pc)]
   // KRS foldiboy-sm83/src/boot.rs: BootSp
@@ -1124,6 +1150,30 @@ module SM83
   rule pairValue ( pair ( High:Reg8 , Low:Reg8 ) , Registers:Map , _ , _ ) => pair ( {Registers:Map [ High:Reg8 ]}:>Int , {Registers:Map [ Low:Reg8 ]}:>Int ) [label(sm83--machine--pair_value_registers)]
   // KRS foldiboy-sm83/src/machine.rs: pair_value_sp
   rule pairValue ( sp , _ , _ , Sp:Int ) => Sp:Int [label(sm83--machine--pair_value_sp)]
+  // KRS foldiboy-sm83/src/machine.rs: start_ei_pending
+  rule startEiPending ( state ( _ , _ , _ , _ , _ , EiPending:Bool , _ , _ , _ , _ , _ , _ ) ) => EiPending:Bool [label(sm83--machine--start_ei_pending)]
+  // KRS foldiboy-sm83/src/machine.rs: start_f
+  rule startF ( state ( _ , F:FlagSet , _ , _ , _ , _ , _ , _ , _ , _ , _ , _ ) ) => F:FlagSet [label(sm83--machine--start_f)]
+  // KRS foldiboy-sm83/src/machine.rs: start_halt_bug
+  rule startHaltBug ( state ( _ , _ , _ , _ , _ , _ , _ , HaltBug:Bool , _ , _ , _ , _ ) ) => HaltBug:Bool [label(sm83--machine--start_halt_bug)]
+  // KRS foldiboy-sm83/src/machine.rs: start_halted
+  rule startHalted ( state ( _ , _ , _ , _ , _ , _ , Halted:Bool , _ , _ , _ , _ , _ ) ) => Halted:Bool [label(sm83--machine--start_halted)]
+  // KRS foldiboy-sm83/src/machine.rs: start_ime
+  rule startIme ( state ( _ , _ , _ , _ , Ime:Bool , _ , _ , _ , _ , _ , _ , _ ) ) => Ime:Bool [label(sm83--machine--start_ime)]
+  // KRS foldiboy-sm83/src/machine.rs: start_memory
+  rule startMemory ( state ( _ , _ , _ , _ , _ , _ , _ , _ , _ , Memory:Map , _ , _ ) ) => Memory:Map [label(sm83--machine--start_memory)]
+  // KRS foldiboy-sm83/src/machine.rs: start_pc
+  rule startPc ( state ( _ , _ , Pc:Int , _ , _ , _ , _ , _ , _ , _ , _ , _ ) ) => Pc:Int [label(sm83--machine--start_pc)]
+  // KRS foldiboy-sm83/src/machine.rs: start_regs
+  rule startRegs ( state ( Regs:Map , _ , _ , _ , _ , _ , _ , _ , _ , _ , _ , _ ) ) => Regs:Map [label(sm83--machine--start_regs)]
+  // KRS foldiboy-sm83/src/machine.rs: start_rom
+  rule startRom ( state ( _ , _ , _ , _ , _ , _ , _ , _ , Rom:Bytes , _ , _ , _ ) ) => Rom:Bytes [label(sm83--machine--start_rom)]
+  // KRS foldiboy-sm83/src/machine.rs: start_sp
+  rule startSp ( state ( _ , _ , _ , Sp:Int , _ , _ , _ , _ , _ , _ , _ , _ ) ) => Sp:Int [label(sm83--machine--start_sp)]
+  // KRS foldiboy-sm83/src/machine.rs: start_w
+  rule startW ( state ( _ , _ , _ , _ , _ , _ , _ , _ , _ , _ , W:Int , _ ) ) => W:Int [label(sm83--machine--start_w)]
+  // KRS foldiboy-sm83/src/machine.rs: start_z
+  rule startZ ( state ( _ , _ , _ , _ , _ , _ , _ , _ , _ , _ , _ , Z:Int ) ) => Z:Int [label(sm83--machine--start_z)]
   // KRS foldiboy-sm83/src/well_formed.rs: IsByte (claim helper: only claims apply it)
   rule isByte ( X:Int ) => (0 <=Int X:Int) andThenBool (X:Int <Int 256) [label(sm83--well_formed--is_byte)]
   // KRS foldiboy-sm83/src/well_formed.rs: IsWord (claim helper: only claims apply it)

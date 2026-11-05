@@ -5,7 +5,7 @@ Programs every implementation of the Game Boy CPU runs, and the runner that comp
 
 ## A case
 
-`cases/<id>/case.asm` is a cartridge in RGBDS syntax, and `cases/<id>/case.toml` is the case: a krs case document of the SM83 definition's inputs, the cartridge `build.sh` makes from it (`build/<id>.gb`) and the boot state.
+`cases/<id>/case.asm` is a cartridge in RGBDS syntax, and `cases/<id>/case.toml` is the case: one input, `start = Boot(case.gb)`, the cartridge `build.sh` assembles beside it (`cases/<id>/case.gb`, ignored by git) started as a DMG's boot ROM leaves it.
 `krs run --case`, `krs kink` and the corpus runner all read that one document.
 It starts at `$0100` in the state the DMG boot ROM leaves, jumps to `Start`, and ends by locking the CPU with an unused opcode (`LOCK`, or `DUMP_AND_LOCK`, which first pushes every register and stores `SP` at `$C000`).
 `include/case.inc` holds the entry, the header space and those macros.

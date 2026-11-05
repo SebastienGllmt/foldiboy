@@ -12,6 +12,7 @@ pub use sm83_events::{CpuEvent, Event};
 
 k::sorts! {
     Reg8;
+    Start;
 }
 
 /// The 8-bit registers addressed by instruction encodings.
@@ -66,7 +67,7 @@ pub struct Machine {
     /// same instruction, so its value at a boundary never reaches an event or an
     /// architectural cell. Tested by running SingleStepTests with two different
     /// initial values of `W` and `Z` (every vector starts at a boundary): every
-    /// vector gives the same result (`vectors --wz`).
+    /// vector gives the same result (`WZ=` of run-singlestep-tests.sh).
     #[k::cell(unobservable)]
     pub w: Int,
     /// Internal temporary register, the low byte of `WZ`. Unobservable for the
@@ -94,46 +95,147 @@ pub struct Machine {
     pub bus: List<CpuEvent>,
 }
 
-/// The initial state: an architectural state at an instruction boundary.
+/// Where a run starts: an architectural state at an instruction boundary,
+/// every cell but the bus log, which starts empty.
 ///
-/// Every architectural cell is an input, so any boundary state can start a
-/// run. The unobservable registers `W` and `Z` are inputs too, so a run can
-/// test that their initial value changes no observation; the bus log starts
-/// empty.
+/// A cartridge starts from the state its model's boot ROM leaves (`Boot`,
+/// boot.rs). Any other boundary state can start a run too (SingleStepTests),
+/// and so can any `W` and `Z`, so a run can test that their initial value
+/// changes no observation.
+#[k::constructor(sort = Start, syntax = "state({regs}, {f}, {pc}, {sp}, {ime}, {ei_pending}, {halted}, {halt_bug}, {rom}, {memory}, {w}, {z})")]
+pub struct State {
+    pub regs: Term<Map<Reg8, Int>>,
+    pub f: Term<FlagSet>,
+    pub pc: Term<Int>,
+    pub sp: Term<Int>,
+    pub ime: Term<Bool>,
+    pub ei_pending: Term<Bool>,
+    pub halted: Term<Bool>,
+    pub halt_bug: Term<Bool>,
+    pub rom: Term<Bytes>,
+    pub memory: Term<Map<Int, Int>>,
+    pub w: Term<Int>,
+    pub z: Term<Int>,
+}
+
+/// The initial state: the bus log empty, every other cell as `start` states it.
 impl Machine {
     #[k::init]
-    pub fn init(
-        #[k::config_var(name = "REGS")] regs: Map<Reg8, Int>,
-        #[k::config_var(name = "F")] f: FlagSet,
-        #[k::config_var(name = "PC")] pc: Int,
-        #[k::config_var(name = "SP")] sp: Int,
-        #[k::config_var(name = "IME")] ime: Bool,
-        #[k::config_var(name = "EI_PENDING")] ei_pending: Bool,
-        #[k::config_var(name = "HALTED")] halted: Bool,
-        #[k::config_var(name = "HALT_BUG")] halt_bug: Bool,
-        #[k::config_var(name = "ROM")] rom: Bytes,
-        #[k::config_var(name = "MEMORY")] memory: Map<Int, Int>,
-        #[k::config_var(name = "W")] w: Int,
-        #[k::config_var(name = "Z")] z: Int,
-    ) -> Self {
+    pub fn init(#[k::config_var(name = "START")] start: Start) -> Self {
         Self {
             k: k::k![Step::Boundary],
-            regs,
-            f,
-            pc,
-            sp,
-            ime,
-            ei_pending,
-            halted,
-            halt_bug,
-            w,
-            z,
-            rom_end: bytes::length(rom),
-            rom,
-            memory,
+            regs: self::StartRegs(start),
+            f: self::StartF(start),
+            pc: self::StartPc(start),
+            sp: self::StartSp(start),
+            ime: self::StartIme(start),
+            ei_pending: self::StartEiPending(start),
+            halted: self::StartHalted(start),
+            halt_bug: self::StartHaltBug(start),
+            memory: self::StartMemory(start),
+            w: self::StartW(start),
+            z: self::StartZ(start),
+            rom_end: bytes::length(self::StartRom(start)),
+            rom: self::StartRom(start),
             bus: k::builtin::list::empty(),
         }
     }
+}
+
+#[k::function(total, internal)]
+pub fn StartRegs(start: Term<Start>) -> Term<Map<Reg8, Int>>;
+
+k::equations! {
+    for StartRegs;
+    start_regs: State { regs, .. } => regs;
+}
+
+#[k::function(total, internal)]
+pub fn StartF(start: Term<Start>) -> Term<FlagSet>;
+
+k::equations! {
+    for StartF;
+    start_f: State { f, .. } => f;
+}
+
+#[k::function(total, internal)]
+pub fn StartPc(start: Term<Start>) -> Term<Int>;
+
+k::equations! {
+    for StartPc;
+    start_pc: State { pc, .. } => pc;
+}
+
+#[k::function(total, internal)]
+pub fn StartSp(start: Term<Start>) -> Term<Int>;
+
+k::equations! {
+    for StartSp;
+    start_sp: State { sp, .. } => sp;
+}
+
+#[k::function(total, internal)]
+pub fn StartIme(start: Term<Start>) -> Term<Bool>;
+
+k::equations! {
+    for StartIme;
+    start_ime: State { ime, .. } => ime;
+}
+
+#[k::function(total, internal)]
+pub fn StartEiPending(start: Term<Start>) -> Term<Bool>;
+
+k::equations! {
+    for StartEiPending;
+    start_ei_pending: State { ei_pending, .. } => ei_pending;
+}
+
+#[k::function(total, internal)]
+pub fn StartHalted(start: Term<Start>) -> Term<Bool>;
+
+k::equations! {
+    for StartHalted;
+    start_halted: State { halted, .. } => halted;
+}
+
+#[k::function(total, internal)]
+pub fn StartHaltBug(start: Term<Start>) -> Term<Bool>;
+
+k::equations! {
+    for StartHaltBug;
+    start_halt_bug: State { halt_bug, .. } => halt_bug;
+}
+
+#[k::function(total, internal)]
+pub fn StartRom(start: Term<Start>) -> Term<Bytes>;
+
+k::equations! {
+    for StartRom;
+    start_rom: State { rom, .. } => rom;
+}
+
+#[k::function(total, internal)]
+pub fn StartMemory(start: Term<Start>) -> Term<Map<Int, Int>>;
+
+k::equations! {
+    for StartMemory;
+    start_memory: State { memory, .. } => memory;
+}
+
+#[k::function(total, internal)]
+pub fn StartW(start: Term<Start>) -> Term<Int>;
+
+k::equations! {
+    for StartW;
+    start_w: State { w, .. } => w;
+}
+
+#[k::function(total, internal)]
+pub fn StartZ(start: Term<Start>) -> Term<Int>;
+
+k::equations! {
+    for StartZ;
+    start_z: State { z, .. } => z;
 }
 
 /// Whether `addr` is in the ROM region, 0 up to `rom_end`.

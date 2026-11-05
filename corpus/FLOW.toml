@@ -2,7 +2,7 @@
 # `krs kink <verb>` runs every case against the definition and its mutations (mutations/*.toml,
 # K patches of definition.k anchored by KRS item). kink compares a mutant's end with the
 # definition's on every cell the definition does not declare unobservable (W and Z).
-# run-kink.sh builds the cartridges first; each case document names its build/<id>.gb.
+# run-kink.sh builds the cartridges first; each case document names its case.gb.
 
 [spec]
 krs = { definition = "main" }

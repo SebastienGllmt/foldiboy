@@ -1,18 +1,4 @@
-# Case halt-ime: the cartridge case.asm builds (../../build/halt-ime.gb), run on a DMG after its boot ROM in
-# the CPU stage (draft-personal/corpus-contract D-CASE-ROM, D-INIT, D-MEMORY). A krs case document of
-# the SM83 definition's inputs (krs/sm83/src/machine.rs, init), the one statement of the case that
-# krs run --case, krs kink (../../FLOW.toml) and the corpus runner (../../run.sh) all read.
-# Every input but rom is the same in every case: the specification's own boot state (krs/sm83/src/boot.rs).
+# Case halt-ime: the cartridge case.asm builds (case.gb, beside this file), started as a DMG's boot ROM
+# leaves it in the CPU stage (Boot, krs/sm83/src/boot.rs).
 [inputs]
-rom = { "$call" = { RomRegion = { cartridge = { "$file" = "../../build/halt-ime.gb" } } } }
-regs = { "$call" = { DmgRegisters = [] } }
-f = { "$call" = { DmgFlags = [] } }
-pc = { "$call" = { BootPc = [] } }
-sp = { "$call" = { BootSp = [] } }
-ime = false
-ei_pending = false
-halted = false
-halt_bug = false
-w = 0
-z = 0
-memory = { "$call" = { CpuStageIo = [] } }
+start = { "$call" = { Boot = { cartridge = { "$file" = "case.gb" } } } }

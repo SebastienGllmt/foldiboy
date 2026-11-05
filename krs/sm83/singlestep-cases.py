@@ -46,6 +46,11 @@ def registers(state):
     return {name.upper(): state[name] for name in REGISTERS}
 
 
+def start_registers(state):
+    # A $map with constructor keys: inside a State, krs does not carry the map's key type.
+    return {"$map": [[{name.upper(): []}, state[name]] for name in REGISTERS]}
+
+
 def memory(entries):
     return {"$map": [[address, value] for address, value in sorted(entries.items())]}
 
@@ -71,8 +76,8 @@ def case(vector, wz):
     halt_entered = ram[initial["pc"]] == 0x76
     return {
         "name": vector["name"],
-        "inputs": {
-            "regs": registers(initial),
+        "inputs": {"start": {"State": {
+            "regs": start_registers(initial),
             "f": flags(initial["f"]),
             "pc": initial["pc"],
             "sp": initial["sp"],
@@ -84,7 +89,7 @@ def case(vector, wz):
             "z": wz[1],
             "rom": {"$hex": ""},
             "memory": memory(ram),
-        },
+        }}},
         "expect": {
             "halt": "stopped",
             "rule": BOUNDARY[3] if halt_entered else BOUNDARY[1],
