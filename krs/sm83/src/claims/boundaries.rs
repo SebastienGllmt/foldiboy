@@ -11,66 +11,42 @@ use crate::interrupt::{IE, IF, Step};
 use crate::machine::{Event, Register};
 use crate::well_formed::{IsByte, IsWord};
 use crate::micro::Micro;
-use k::builtin::{Int, kequal};
+use k::builtin::Int;
 
 /// Pan Docs interrupt priority; test requests from bit 0 through bit 4.
-/// Workaround, to undo when k-rust's prover splits on guards (Foldiboy request FB-20):
-/// written as one `kequal::ite` expression instead of the `if` chain it should be, because
-/// the prover does not decide an equality between this and the semantics' own branching
-/// function, and the dispatch claims then end undecided (k-rust OT-17).
 #[k::function(total, internal)]
 pub fn ExpectedInterruptVector(ie: k::Term<Int>, requests: k::Term<Int>) -> k::Term<Int> {
-    kequal::ite(
-        (ie / 1) % 2 == 1 && (requests / 1) % 2 == 1,
-        0x0040,
-        kequal::ite(
-            (ie / 2) % 2 == 1 && (requests / 2) % 2 == 1,
-            0x0048,
-            kequal::ite(
-                (ie / 4) % 2 == 1 && (requests / 4) % 2 == 1,
-                0x0050,
-                kequal::ite(
-                    (ie / 8) % 2 == 1 && (requests / 8) % 2 == 1,
-                    0x0058,
-                    kequal::ite(
-                        (ie / 0x10) % 2 == 1 && (requests / 0x10) % 2 == 1,
-                        0x0060,
-                        0x0000,
-                    ),
-                ),
-            ),
-        ),
-    )
+    if (ie / 1) % 2 == 1 && (requests / 1) % 2 == 1 {
+        0x0040
+    } else if (ie / 2) % 2 == 1 && (requests / 2) % 2 == 1 {
+        0x0048
+    } else if (ie / 4) % 2 == 1 && (requests / 4) % 2 == 1 {
+        0x0050
+    } else if (ie / 8) % 2 == 1 && (requests / 8) % 2 == 1 {
+        0x0058
+    } else if (ie / 0x10) % 2 == 1 && (requests / 0x10) % 2 == 1 {
+        0x0060
+    } else {
+        0x0000
+    }
 }
 
 /// Pan Docs interrupt priority; test requests from bit 0 through bit 4.
-/// Workaround, to undo when k-rust's prover splits on guards (Foldiboy request FB-20):
-/// written as one `kequal::ite` expression instead of the `if` chain it should be, because
-/// the prover does not decide an equality between this and the semantics' own branching
-/// function, and the dispatch claims then end undecided (k-rust OT-17).
 #[k::function(total, internal)]
 pub fn ExpectedInterruptMask(ie: k::Term<Int>, requests: k::Term<Int>) -> k::Term<Int> {
-    kequal::ite(
-        (ie / 1) % 2 == 1 && (requests / 1) % 2 == 1,
-        0b0000_0001,
-        kequal::ite(
-            (ie / 2) % 2 == 1 && (requests / 2) % 2 == 1,
-            0b0000_0010,
-            kequal::ite(
-                (ie / 4) % 2 == 1 && (requests / 4) % 2 == 1,
-                0b0000_0100,
-                kequal::ite(
-                    (ie / 8) % 2 == 1 && (requests / 8) % 2 == 1,
-                    0b0000_1000,
-                    kequal::ite(
-                        (ie / 0x10) % 2 == 1 && (requests / 0x10) % 2 == 1,
-                        0b0001_0000,
-                        0,
-                    ),
-                ),
-            ),
-        ),
-    )
+    if (ie / 1) % 2 == 1 && (requests / 1) % 2 == 1 {
+        0b0000_0001
+    } else if (ie / 2) % 2 == 1 && (requests / 2) % 2 == 1 {
+        0b0000_0010
+    } else if (ie / 4) % 2 == 1 && (requests / 4) % 2 == 1 {
+        0b0000_0100
+    } else if (ie / 8) % 2 == 1 && (requests / 8) % 2 == 1 {
+        0b0000_1000
+    } else if (ie / 0x10) % 2 == 1 && (requests / 0x10) % 2 == 1 {
+        0b0001_0000
+    } else {
+        0
+    }
 }
 
 #[k::spec_module(name = "SM83-BOUNDARIES-SPEC", imports = [crate])]

@@ -254,12 +254,7 @@ The machine's load average exceeded 500 during the run, so the durations are not
 After the perpetual-boundary migration (foldiboy `6693b4d`), `bun run-claims.ts` replayed all 183 contracts with the same krs binary (SHA-256 `e1cffcb3…`).
 180 proved, including the two added contracts (`contract-decode-illegal`, `contract-illegal-locks`) and the restated boundary and decoder-policy contracts; `contract-unary-daa-accumulator` still fails and the two dispatch contracts still exceed 600 seconds, as before the migration.
 
-Before that replay, three contracts remained unqualified:
+At k-rust `b06b9b869` (2026-11-06), `bun run-claims.ts` replayed all 183 contracts in one `krs prove --output jsonl --claim-timeout 600`, each solver query bounded by Z3 4.16.0 resource units (310,000, three doubling retries) rather than the clock: 182 proved in 18 minutes at load 20-40, and `contract-unary-daa-accumulator` still fails.
+`contract-dispatch-running` and `contract-dispatch-wake` prove with `ExpectedInterruptVector` and `ExpectedInterruptMask` written as `if` chains: k-rust now admits those helpers' guards (`x / 2^k` is defined) to the prover's guarded reading (OT-20), so the single-expression workaround is gone.
 
-- `contract-call-taken`
-- `contract-dispatch-running`
-- `contract-dispatch-wake`
-
-Each independently reached the same 90-second external wall limit without a native verdict in our review.
-These are ordinary local execution contracts; a timeout does not identify whether the blocker is missing reasoning, repeated preparation or solver cost.
-They remain under investigation in k-rust.
+Before the 2026-11-02 replay, `contract-call-taken`, `contract-dispatch-running` and `contract-dispatch-wake` each reached a 90-second external wall limit without a native verdict; all three prove at `b06b9b869`.

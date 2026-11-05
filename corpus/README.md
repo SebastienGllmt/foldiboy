@@ -18,29 +18,21 @@ RAM starts empty, and a read of a byte the case never wrote ends the run as stuc
 Every case starts on a DMG after its boot ROM, in the CPU stage: its inputs other than `rom` are the same in every case, applications of the specification's own boot functions (`krs/sm83/src/boot.rs`).
 The Rust CPU starts from the state the definition's initializer builds from the case, read from its configuration, so there is one statement of the boot state.
 
-## Systems and pairs
+## Comparing implementations
 
-`corpus.toml` names the systems and the pairs to compare.
+`run.sh` compares every case's run on another implementation with the definition's run, cell by cell, with `krs compare`.
+An implementation reports a run as a krs end document (`halt`, and every cell of the definition's configuration in the typed case encoding), in `build/ends/<system>/<id>.json`.
 
-| Kind | System | End |
-| --- | --- | --- |
-| `krs` | The SM83 definition through krs-exec | `#locked`; another stuck head is `Stuck`; the step budget is `Bound` |
-| `rust-cpu` | `lib/crates/cpu` over the definition's memory model (`krs/sm83/vectors/src/rust_cpu.rs`) | The adapter locks on an unused opcode and is stuck on `STOP`, as the definition is |
-| `file` | An observation another system recorded: `<dir>/<case>.json` in the comparator's input encoding | As recorded |
+The Rust emulator's CPU is the one other system today: `krs/sm83-rust-cpu` runs `lib/crates/cpu` over the definition's memory model, from the state the definition's initializer builds from the case (so there is one statement of the boot state), and writes its end document.
+The adapter locks on an unused opcode and is stuck on `STOP`, as the definition is.
 
-Each run becomes an observation: the end class, the event log (`read`, `write`, `idle`) and the end state.
-The comparator definition (`krs/sm83-compare`) compares two observations under a tier and normalizations. The normalization `CompressIdle` turns runs of idle events into counts.
-
-Tiers: `Writes` keeps only the writes. `Accesses` keeps the reads and writes in order but drops idles. `Full` keeps every event.
-
-The Rust CPU performs an instruction's accesses at once, with no internal cycles, so it is compared at `Writes` and `Accesses`.
-At `Writes` every case is equal.
-At `Accesses` the five cases that dispatch an interrupt (`interrupt`, `joypad-int`, `halt-ime`, `ie-push-cancel`, `ram-code`) differ, each by one read per dispatch and nothing else:
-the definition's interrupt dispatch begins with a discarded opcode read at `PC`, which the Rust CPU does not perform.
+Every cell is compared; the bus log (`read`, `write`, `idle` events) is compared under a view, a function of the cell's value applied to both sides (`krs/sm83-views`).
+`WritesView` keeps only the writes; `AccessesView` keeps the reads and writes in order and drops idle cycles; no view keeps every event.
+The Rust CPU performs an instruction's accesses at once, with no internal cycles, so its bus is compared under `WritesView` (required equal) and `AccessesView` (reported).
+Under `WritesView` every case is equal.
+Under `AccessesView` the five cases that dispatch an interrupt (`interrupt`, `joypad-int`, `halt-ime`, `ie-push-cancel`, `ram-code`) differ, each first at its first dispatch, where the definition reads the opcode at `PC` and discards it and the Rust CPU pushes at once.
 That bus order follows SameBoy (`krs/sm83/README.md`); Pan Docs gives only the five cycles, so which system matches hardware is open until a hardware run decides it.
 The Rust CPU's interrupt logic accesses `IE` and `IF` without bus cycles (`memory::Bus::read_interrupt_register`), so those accesses are not logged.
-
-The comparator is interim: k-rust request FB-21 asks for the same comparison in k-rust. The observations are its input either way.
 
 ## Running
 
@@ -49,9 +41,7 @@ corpus/run.sh            # every case
 corpus/run.sh loads alu  # some cases
 ```
 
-`run.sh` builds the cases with RGBDS from nixpkgs (`build.sh`), emits both definitions' IR, builds the runner (`krs/sm83/vectors`, binary `sm83-corpus`) and writes:
-- `results/corpus.json`: per case and system, the end class, the event count and the costs (rewrite steps, instructions, M-cycles, wall time). Costs are reported, never compared. Per pair, the verdict.
-- `build/observations/<system>/<case>.json`: each observation.
+`run.sh` builds the cases with RGBDS from nixpkgs (`build.sh`), emits the definition's IR (the Rust CPU's initial state), runs `sm83-rust-cpu`, runs `krs compare` for each system, case and view, and writes `results/corpus.json`: per case and system, the end and each view's verdict, with the first difference; and the Rust CPU's instructions and M-cycles. It fails when a case is not equal under `WritesView`.
 
 ## Cases
 
@@ -84,9 +74,9 @@ corpus/run-kink.sh results        # each case's end and the rules it fires
 corpus/run-kink.sh run --full     # each mutation's killers
 ```
 
-`results/kink-summary.json` is the last full run (`run --full`): each mutation's status and every case that kills it; `results/kink-verdicts.txt` is kink's own rendering of it (`--output verdicts`).
+`results/kink-summary.json` is the last full run (`run --full`): each mutation's status and every case that kills it; `results/kink-verdicts.txt` is kink's own rendering of it (`run-kink.sh report --output verdicts` reprints a stored run).
+Under the Z3 profile kink caches results and outcomes (its solver queries are bounded by Z3 resource units, not the clock), so a rerun on an unchanged definition and corpus reuses them (2026-11-06, under load: 456 s cold, 124 s warm, the same verdicts).
 
-
-At k-rust d0cf74b53, on the 20 cases (Z3 profile, 2026-11-05): kink compares every cell but `w` and `z`; every case is comparable and ends at `#locked`.
-Of 81 mutations, 72 are killed and the 9 `unobservable` controls survive, as they must; none is unknown.
-Every rule and equation of the definition is fired by some case except `decode_stop` (STOP is outside the CPU stage), `WellFormed` and `WellFormedRegisters` (applied by no rule) and the claim helpers, which only claims apply.
+At k-rust b06b9b869, on the 20 cases (Z3 profile, 2026-11-06): kink compares every cell but `w` and `z`; every case is comparable and ends at `#locked`.
+Of 81 mutations, 72 are killed and the 9 `unobservable` controls survive, as they must; none is unknown. The verdicts and killers are those of the first run at d0cf74b53.
+Of the definition's 361 rules and equations, 291 are fired by some case and 67 are claim helpers, which only claims apply; the other three are `decode_stop` (STOP is outside the CPU stage) and `WellFormed` and `WellFormedRegisters`, which nothing applies.

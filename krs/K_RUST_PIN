@@ -1,3 +1,3 @@
-commit = "d0cf74b53"
+commit = "b06b9b869"
 path = "/artifacts/worktrees/k-rust-foldiboy-pin"
-note = "k-rust main 2026-11-05 (CF-14a krs kink, CF-13b K patches by KRS item, CF-17c/CF-18b the authored-edit judge, CF-30 results as KORE patterns, CF-31d emit-k writes the IRs only with --ir)"
+note = "k-rust main 2026-11-05 (CF-24 expectations, krs cases and krs compare with views; CF-21 stop counts; CF-19 program files; CF-33 resource-bounded SMT and kink caches under Z3; OT-19 supervised prove; OT-20 guarded readings; EXIT-1 exit statuses; Z3 4.16.0 linked statically)"

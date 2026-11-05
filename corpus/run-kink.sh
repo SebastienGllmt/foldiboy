@@ -10,8 +10,6 @@ set -euo pipefail
 cd "$(dirname "$0")"
 KRS_ROOT=${KRS_ROOT:-/artifacts/worktrees/k-rust-foldiboy-pin}
 KRS_BIN=${KRS_BIN:-$KRS_ROOT/target/debug/krs}
-Z3_LIB=${Z3_LIB:-/nix/store/bncr69nhmgvphbynb1a3g4a2jb9b8vj0-z3-4.12.5-lib/lib}
-export LD_LIBRARY_PATH="$Z3_LIB${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 ./build.sh >&2
 cd ../krs/sm83
 CARGO_TARGET_DIR="$PWD/target" exec "$KRS_BIN" kink "$@" --manifest-path Cargo.toml --package foldiboy-sm83 \

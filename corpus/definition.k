@@ -226,16 +226,8 @@ module SM83
   // Pan Docs encoding table; independent of the implementation operand tables.
   syntax AddrMode ::= "expectedIndirectAddress" "(" Int ")" [symbol(expectedIndirectAddress), function, total]
   // Pan Docs interrupt priority; test requests from bit 0 through bit 4.
-  // Workaround, to undo when k-rust's prover splits on guards (Foldiboy request FB-20):
-  // written as one `kequal::ite` expression instead of the `if` chain it should be, because
-  // the prover does not decide an equality between this and the semantics' own branching
-  // function, and the dispatch claims then end undecided (k-rust OT-17).
   syntax Int ::= "expectedInterruptMask" "(" Int "," Int ")" [symbol(expectedInterruptMask), function, total]
   // Pan Docs interrupt priority; test requests from bit 0 through bit 4.
-  // Workaround, to undo when k-rust's prover splits on guards (Foldiboy request FB-20):
-  // written as one `kequal::ite` expression instead of the `if` chain it should be, because
-  // the prover does not decide an equality between this and the semantics' own branching
-  // function, and the dispatch claims then end undecided (k-rust OT-17).
   syntax Int ::= "expectedInterruptVector" "(" Int "," Int ")" [symbol(expectedInterruptVector), function, total]
   // Pan Docs encoding table; independent of the implementation operand tables.
   syntax Operand8 ::= "expectedOperand" "(" Int ")" [symbol(expectedOperand), function, total]
@@ -714,10 +706,42 @@ module SM83
   rule dmgRegisters ( ) => .Map [ a <- 1 ] [ b <- 0 ] [ c <- 19 ] [ d <- 0 ] [ e <- 216 ] [ h <- 1 ] [ l <- 77 ] [label(sm83--boot--dmg_registers)]
   // KRS foldiboy-sm83/src/boot.rs: RomRegion
   rule romRegion ( Cartridge:Bytes ) => substrBytes(Cartridge:Bytes, 0, minInt(lengthBytes(Cartridge:Bytes), 32768)) [label(sm83--boot--rom_region)]
-  // KRS foldiboy-sm83/src/claims/boundaries.rs: ExpectedInterruptMask (claim helper: only claims apply it)
-  rule expectedInterruptMask ( Ie:Int , Requests:Int ) => #if ((((Ie:Int /Int 1) %Int 2) ==Int 1) andThenBool (((Requests:Int /Int 1) %Int 2) ==Int 1)) #then 1 #else (#if ((((Ie:Int /Int 2) %Int 2) ==Int 1) andThenBool (((Requests:Int /Int 2) %Int 2) ==Int 1)) #then 2 #else (#if ((((Ie:Int /Int 4) %Int 2) ==Int 1) andThenBool (((Requests:Int /Int 4) %Int 2) ==Int 1)) #then 4 #else (#if ((((Ie:Int /Int 8) %Int 2) ==Int 1) andThenBool (((Requests:Int /Int 8) %Int 2) ==Int 1)) #then 8 #else (#if ((((Ie:Int /Int 16) %Int 2) ==Int 1) andThenBool (((Requests:Int /Int 16) %Int 2) ==Int 1)) #then 16 #else 0 #fi) #fi) #fi) #fi) #fi [label(sm83--claims--boundaries--expected_interrupt_mask)]
-  // KRS foldiboy-sm83/src/claims/boundaries.rs: ExpectedInterruptVector (claim helper: only claims apply it)
-  rule expectedInterruptVector ( Ie:Int , Requests:Int ) => #if ((((Ie:Int /Int 1) %Int 2) ==Int 1) andThenBool (((Requests:Int /Int 1) %Int 2) ==Int 1)) #then 64 #else (#if ((((Ie:Int /Int 2) %Int 2) ==Int 1) andThenBool (((Requests:Int /Int 2) %Int 2) ==Int 1)) #then 72 #else (#if ((((Ie:Int /Int 4) %Int 2) ==Int 1) andThenBool (((Requests:Int /Int 4) %Int 2) ==Int 1)) #then 80 #else (#if ((((Ie:Int /Int 8) %Int 2) ==Int 1) andThenBool (((Requests:Int /Int 8) %Int 2) ==Int 1)) #then 88 #else (#if ((((Ie:Int /Int 16) %Int 2) ==Int 1) andThenBool (((Requests:Int /Int 16) %Int 2) ==Int 1)) #then 96 #else 0 #fi) #fi) #fi) #fi) #fi [label(sm83--claims--boundaries--expected_interrupt_vector)]
+  // KRS foldiboy-sm83/src/claims/boundaries.rs: ExpectedInterruptMask, branch 1 (claim helper: only claims apply it)
+  rule expectedInterruptMask ( Ie:Int , Requests:Int ) => 1
+    requires (((Ie:Int /Int 1) %Int 2) ==Int 1) andThenBool (((Requests:Int /Int 1) %Int 2) ==Int 1) [label(sm83--claims--boundaries--expected_interrupt_mask_1)]
+  // KRS foldiboy-sm83/src/claims/boundaries.rs: ExpectedInterruptMask, branch 2 (claim helper: only claims apply it)
+  rule expectedInterruptMask ( Ie:Int , Requests:Int ) => 2
+    requires ((notBool ((((Ie:Int /Int 1) %Int 2) ==Int 1) andThenBool (((Requests:Int /Int 1) %Int 2) ==Int 1))) andThenBool (((Ie:Int /Int 2) %Int 2) ==Int 1)) andThenBool (((Requests:Int /Int 2) %Int 2) ==Int 1) [label(sm83--claims--boundaries--expected_interrupt_mask_2)]
+  // KRS foldiboy-sm83/src/claims/boundaries.rs: ExpectedInterruptMask, branch 3 (claim helper: only claims apply it)
+  rule expectedInterruptMask ( Ie:Int , Requests:Int ) => 4
+    requires (((notBool ((((Ie:Int /Int 1) %Int 2) ==Int 1) andThenBool (((Requests:Int /Int 1) %Int 2) ==Int 1))) andThenBool (notBool ((((Ie:Int /Int 2) %Int 2) ==Int 1) andThenBool (((Requests:Int /Int 2) %Int 2) ==Int 1)))) andThenBool (((Ie:Int /Int 4) %Int 2) ==Int 1)) andThenBool (((Requests:Int /Int 4) %Int 2) ==Int 1) [label(sm83--claims--boundaries--expected_interrupt_mask_3)]
+  // KRS foldiboy-sm83/src/claims/boundaries.rs: ExpectedInterruptMask, branch 4 (claim helper: only claims apply it)
+  rule expectedInterruptMask ( Ie:Int , Requests:Int ) => 8
+    requires ((((notBool ((((Ie:Int /Int 1) %Int 2) ==Int 1) andThenBool (((Requests:Int /Int 1) %Int 2) ==Int 1))) andThenBool (notBool ((((Ie:Int /Int 2) %Int 2) ==Int 1) andThenBool (((Requests:Int /Int 2) %Int 2) ==Int 1)))) andThenBool (notBool ((((Ie:Int /Int 4) %Int 2) ==Int 1) andThenBool (((Requests:Int /Int 4) %Int 2) ==Int 1)))) andThenBool (((Ie:Int /Int 8) %Int 2) ==Int 1)) andThenBool (((Requests:Int /Int 8) %Int 2) ==Int 1) [label(sm83--claims--boundaries--expected_interrupt_mask_4)]
+  // KRS foldiboy-sm83/src/claims/boundaries.rs: ExpectedInterruptMask, branch 5 (claim helper: only claims apply it)
+  rule expectedInterruptMask ( Ie:Int , Requests:Int ) => 16
+    requires (((((notBool ((((Ie:Int /Int 1) %Int 2) ==Int 1) andThenBool (((Requests:Int /Int 1) %Int 2) ==Int 1))) andThenBool (notBool ((((Ie:Int /Int 2) %Int 2) ==Int 1) andThenBool (((Requests:Int /Int 2) %Int 2) ==Int 1)))) andThenBool (notBool ((((Ie:Int /Int 4) %Int 2) ==Int 1) andThenBool (((Requests:Int /Int 4) %Int 2) ==Int 1)))) andThenBool (notBool ((((Ie:Int /Int 8) %Int 2) ==Int 1) andThenBool (((Requests:Int /Int 8) %Int 2) ==Int 1)))) andThenBool (((Ie:Int /Int 16) %Int 2) ==Int 1)) andThenBool (((Requests:Int /Int 16) %Int 2) ==Int 1) [label(sm83--claims--boundaries--expected_interrupt_mask_5)]
+  // KRS foldiboy-sm83/src/claims/boundaries.rs: ExpectedInterruptMask, branch 6 (claim helper: only claims apply it)
+  rule expectedInterruptMask ( Ie:Int , Requests:Int ) => 0
+    requires ((((notBool ((((Ie:Int /Int 1) %Int 2) ==Int 1) andThenBool (((Requests:Int /Int 1) %Int 2) ==Int 1))) andThenBool (notBool ((((Ie:Int /Int 2) %Int 2) ==Int 1) andThenBool (((Requests:Int /Int 2) %Int 2) ==Int 1)))) andThenBool (notBool ((((Ie:Int /Int 4) %Int 2) ==Int 1) andThenBool (((Requests:Int /Int 4) %Int 2) ==Int 1)))) andThenBool (notBool ((((Ie:Int /Int 8) %Int 2) ==Int 1) andThenBool (((Requests:Int /Int 8) %Int 2) ==Int 1)))) andThenBool (notBool ((((Ie:Int /Int 16) %Int 2) ==Int 1) andThenBool (((Requests:Int /Int 16) %Int 2) ==Int 1))) [label(sm83--claims--boundaries--expected_interrupt_mask_6)]
+  // KRS foldiboy-sm83/src/claims/boundaries.rs: ExpectedInterruptVector, branch 1 (claim helper: only claims apply it)
+  rule expectedInterruptVector ( Ie:Int , Requests:Int ) => 64
+    requires (((Ie:Int /Int 1) %Int 2) ==Int 1) andThenBool (((Requests:Int /Int 1) %Int 2) ==Int 1) [label(sm83--claims--boundaries--expected_interrupt_vector_1)]
+  // KRS foldiboy-sm83/src/claims/boundaries.rs: ExpectedInterruptVector, branch 2 (claim helper: only claims apply it)
+  rule expectedInterruptVector ( Ie:Int , Requests:Int ) => 72
+    requires ((notBool ((((Ie:Int /Int 1) %Int 2) ==Int 1) andThenBool (((Requests:Int /Int 1) %Int 2) ==Int 1))) andThenBool (((Ie:Int /Int 2) %Int 2) ==Int 1)) andThenBool (((Requests:Int /Int 2) %Int 2) ==Int 1) [label(sm83--claims--boundaries--expected_interrupt_vector_2)]
+  // KRS foldiboy-sm83/src/claims/boundaries.rs: ExpectedInterruptVector, branch 3 (claim helper: only claims apply it)
+  rule expectedInterruptVector ( Ie:Int , Requests:Int ) => 80
+    requires (((notBool ((((Ie:Int /Int 1) %Int 2) ==Int 1) andThenBool (((Requests:Int /Int 1) %Int 2) ==Int 1))) andThenBool (notBool ((((Ie:Int /Int 2) %Int 2) ==Int 1) andThenBool (((Requests:Int /Int 2) %Int 2) ==Int 1)))) andThenBool (((Ie:Int /Int 4) %Int 2) ==Int 1)) andThenBool (((Requests:Int /Int 4) %Int 2) ==Int 1) [label(sm83--claims--boundaries--expected_interrupt_vector_3)]
+  // KRS foldiboy-sm83/src/claims/boundaries.rs: ExpectedInterruptVector, branch 4 (claim helper: only claims apply it)
+  rule expectedInterruptVector ( Ie:Int , Requests:Int ) => 88
+    requires ((((notBool ((((Ie:Int /Int 1) %Int 2) ==Int 1) andThenBool (((Requests:Int /Int 1) %Int 2) ==Int 1))) andThenBool (notBool ((((Ie:Int /Int 2) %Int 2) ==Int 1) andThenBool (((Requests:Int /Int 2) %Int 2) ==Int 1)))) andThenBool (notBool ((((Ie:Int /Int 4) %Int 2) ==Int 1) andThenBool (((Requests:Int /Int 4) %Int 2) ==Int 1)))) andThenBool (((Ie:Int /Int 8) %Int 2) ==Int 1)) andThenBool (((Requests:Int /Int 8) %Int 2) ==Int 1) [label(sm83--claims--boundaries--expected_interrupt_vector_4)]
+  // KRS foldiboy-sm83/src/claims/boundaries.rs: ExpectedInterruptVector, branch 5 (claim helper: only claims apply it)
+  rule expectedInterruptVector ( Ie:Int , Requests:Int ) => 96
+    requires (((((notBool ((((Ie:Int /Int 1) %Int 2) ==Int 1) andThenBool (((Requests:Int /Int 1) %Int 2) ==Int 1))) andThenBool (notBool ((((Ie:Int /Int 2) %Int 2) ==Int 1) andThenBool (((Requests:Int /Int 2) %Int 2) ==Int 1)))) andThenBool (notBool ((((Ie:Int /Int 4) %Int 2) ==Int 1) andThenBool (((Requests:Int /Int 4) %Int 2) ==Int 1)))) andThenBool (notBool ((((Ie:Int /Int 8) %Int 2) ==Int 1) andThenBool (((Requests:Int /Int 8) %Int 2) ==Int 1)))) andThenBool (((Ie:Int /Int 16) %Int 2) ==Int 1)) andThenBool (((Requests:Int /Int 16) %Int 2) ==Int 1) [label(sm83--claims--boundaries--expected_interrupt_vector_5)]
+  // KRS foldiboy-sm83/src/claims/boundaries.rs: ExpectedInterruptVector, branch 6 (claim helper: only claims apply it)
+  rule expectedInterruptVector ( Ie:Int , Requests:Int ) => 0
+    requires ((((notBool ((((Ie:Int /Int 1) %Int 2) ==Int 1) andThenBool (((Requests:Int /Int 1) %Int 2) ==Int 1))) andThenBool (notBool ((((Ie:Int /Int 2) %Int 2) ==Int 1) andThenBool (((Requests:Int /Int 2) %Int 2) ==Int 1)))) andThenBool (notBool ((((Ie:Int /Int 4) %Int 2) ==Int 1) andThenBool (((Requests:Int /Int 4) %Int 2) ==Int 1)))) andThenBool (notBool ((((Ie:Int /Int 8) %Int 2) ==Int 1) andThenBool (((Requests:Int /Int 8) %Int 2) ==Int 1)))) andThenBool (notBool ((((Ie:Int /Int 16) %Int 2) ==Int 1) andThenBool (((Requests:Int /Int 16) %Int 2) ==Int 1))) [label(sm83--claims--boundaries--expected_interrupt_vector_6)]
   // KRS foldiboy-sm83/src/claims/decode.rs: ExpectedAccumulatorOp, branch 1 (claim helper: only claims apply it)
   rule expectedAccumulatorOp ( 0 ) => rlca [label(sm83--claims--decode--expected_accumulator_op_1)]
   // KRS foldiboy-sm83/src/claims/decode.rs: ExpectedAccumulatorOp, branch 2 (claim helper: only claims apply it)
