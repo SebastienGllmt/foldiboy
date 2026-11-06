@@ -36,8 +36,6 @@ interface Vector { name: string; initial: State; final: State; cycles: [number, 
 
 const flags = (byte: number) => ({ Flags: { z: !!(byte & 0x80), n: !!(byte & 0x40), h: !!(byte & 0x20), c: !!(byte & 0x10) } });
 const registers = (state: State) => Object.fromEntries(REGISTERS.map((r) => [r.toUpperCase(), state[r as keyof State]]));
-// Inside a State, krs does not carry the register map's key type, so its keys are spelled out.
-const startRegisters = (state: State) => ({ $map: REGISTERS.map((r) => [{ [r.toUpperCase()]: [] }, state[r as keyof State]]) });
 const memory = (bytes: Map<number, number>) => ({ $map: [...bytes].sort(([a], [b]) => a - b) });
 
 function event([addr, value, kind]: [number, number, string]) {
@@ -58,7 +56,7 @@ function toCase(vector: Vector, wz: [number, number]) {
     inputs: {
       start: {
         State: {
-          regs: startRegisters(initial), f: flags(initial.f), pc: initial.pc, sp: initial.sp, ime: initial.ime !== 0,
+          regs: registers(initial), f: flags(initial.f), pc: initial.pc, sp: initial.sp, ime: initial.ime !== 0,
           ei_pending: false, halted: false, halt_bug: false, w: wz[0], z: wz[1], rom: { $hex: "" }, memory: memory(ram),
         },
       },

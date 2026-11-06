@@ -1,15 +1,14 @@
 //! Runs the Rust emulator's CPU (`lib/crates/cpu`) on corpus cases and writes each run's end as a
 //! krs end document, which `krs compare` compares with the SM83 definition's run of the case.
 //!
-//!     sm83-rust-cpu --definition-ir PATH --out DIR [--budget N] CASE.toml...
+//!     sm83-rust-cpu --out DIR [--budget N] START.json...
 //!
-//! writes `DIR/<id>.json` for each `cases/<id>/case.toml`, and prints the end class and the cost
-//! of each run.
+//! writes `DIR/<id>.json` for each `<id>.json`, and prints the end class and the cost of each run.
 //!
-//! The CPU starts from the state the definition's initializer builds from the case (the case's
-//! inputs call the specification's boot functions), read as the definition's end document after
-//! no step; krs-exec is linked for that alone. The end document is that document with the cells
-//! the CPU changes written over it, so every cell is in the encoding `krs compare` reads.
+//! A START is the case's initial state as the definition builds it, the end document of
+//! `krs run --case CASE --depth 0 --output end` (the case's inputs call the specification's boot
+//! functions, which krs evaluates). The end document written is that document with the cells the
+//! CPU changes written over it, so every cell is in the encoding `krs compare` reads.
 //!
 //! The CPU runs over the CPU stage's memory model, the one the definition states, so a
 //! comparison is between the two CPUs and not between two memory maps: the ROM region is
@@ -30,14 +29,10 @@
 //! write view (`foldiboy-sm83-views`).
 
 use std::collections::BTreeMap;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::{env, fs};
 
 use cpu::GbCpu;
-use krs_exec::inputs::{Case, InputFiles};
-use krs_exec::{RunOptions, Semantics};
-use krs_ir::measure::Timings;
-use krs_ir_levels::DefinitionIr;
 use memory::Bus;
 use serde_json::{Value as Json, json};
 
@@ -47,39 +42,8 @@ const STOP: u8 = 0x10;
 const REGISTERS: [&str; 7] = ["A", "B", "C", "D", "E", "H", "L"];
 
 fn usage() -> ! {
-    eprintln!("usage: sm83-rust-cpu --definition-ir PATH --out DIR [--budget INSTRUCTIONS] CASE.toml...");
+    eprintln!("usage: sm83-rust-cpu --out DIR [--budget INSTRUCTIONS] START.json...");
     std::process::exit(2)
-}
-
-/// Reads the files a case document names, relative to the document that names them.
-struct Files {
-    base: PathBuf,
-}
-
-impl InputFiles for Files {
-    fn read(&mut self, from: Option<&str>, path: &str) -> Result<(String, Vec<u8>), String> {
-        let dir = from.map_or_else(|| self.base.clone(), |from| Path::new(from).parent().unwrap_or(Path::new("")).to_owned());
-        let resolved = dir.join(path);
-        let bytes = fs::read(&resolved).map_err(|error| format!("{}: {error}", resolved.display()))?;
-        Ok((resolved.to_string_lossy().into_owned(), bytes))
-    }
-}
-
-/// The definition's end document of the case's initial state: its run after no step.
-fn initial_document(semantics: &mut Semantics, path: &Path) -> Result<Json, String> {
-    let text = fs::read_to_string(path).map_err(|error| format!("{}: {error}", path.display()))?;
-    let case = Case::from_toml(&text).map_err(|error| format!("{error:?}"))?;
-    let mut files = Files { base: path.parent().unwrap_or(Path::new(".")).to_owned() };
-    let inputs = semantics.case_inputs(&case, None, &mut files).map_err(|error| error.to_string())?;
-    let state = semantics.configure(&inputs).map_err(|error| format!("configure: {error}"))?;
-    let report = semantics
-        .run(&state, RunOptions { depth: Some(0), ..RunOptions::default() })
-        .map_err(|error| error.to_string())?;
-    let ends = semantics.end_of(&report).map_err(|error| error.to_string())?;
-    let [end] = ends.ends.as_slice() else {
-        return Err(format!("the initial state is not one end: {:?}", ends.incomplete));
-    };
-    semantics.end_document(end).map_err(|error| error.to_string())
 }
 
 /// The CPU stage's memory, recording each bus access as an event.
@@ -244,27 +208,24 @@ fn run(initial: &Json, budget: u64) -> Result<(Json, Outcome), String> {
 
 fn main() {
     let mut args = env::args().skip(1);
-    let (mut ir, mut out, mut budget, mut cases) = (None, None, 1_000_000, Vec::new());
+    let (mut out, mut budget, mut starts) = (None, 1_000_000, Vec::new());
     while let Some(arg) = args.next() {
         match arg.as_str() {
-            "--definition-ir" => ir = Some(PathBuf::from(args.next().unwrap_or_else(|| usage()))),
             "--out" => out = Some(PathBuf::from(args.next().unwrap_or_else(|| usage()))),
             "--budget" => budget = args.next().and_then(|n| n.parse().ok()).unwrap_or_else(|| usage()),
             _ if arg.starts_with("--") => usage(),
-            _ => cases.push(PathBuf::from(arg)),
+            _ => starts.push(PathBuf::from(arg)),
         }
     }
-    let (Some(ir), Some(out)) = (ir, out) else { usage() };
-    let definition: DefinitionIr =
-        krs_ir::json::from_slice(&fs::read(&ir).expect("definition IR")).expect("definition IR JSON");
-    let stage = krs_exec::CompiledStage::compile(&definition, &mut Timings::disabled()).expect("compile");
-    let mut semantics =
-        Semantics::from_stage(&definition, stage, None, &mut Timings::disabled()).expect("load stage");
+    let Some(out) = out else { usage() };
     fs::create_dir_all(&out).expect("output directory");
     let mut failed = false;
-    for path in &cases {
-        let id = path.parent().and_then(Path::file_name).map_or_else(|| path.display().to_string(), |id| id.to_string_lossy().into_owned());
-        let result = initial_document(&mut semantics, path).and_then(|initial| run(&initial, budget));
+    for path in &starts {
+        let id = path.file_stem().map_or_else(|| path.display().to_string(), |id| id.to_string_lossy().into_owned());
+        let result = fs::read_to_string(path)
+            .map_err(|error| format!("{}: {error}", path.display()))
+            .and_then(|text| serde_json::from_str(&text).map_err(|error| format!("{}: {error}", path.display())))
+            .and_then(|initial| run(&initial, budget));
         match result {
             Ok((end, outcome)) => {
                 let text = serde_json::to_string_pretty(&end).expect("end document") + "\n";

@@ -2,9 +2,12 @@
 //
 //   bun scripts/compare.ts
 //
-// krs/sm83-rust-cpu runs the emulator's CPU from each case's start and writes its end as a krs
-// end document (corpus/build/ends/). `krs compare` then runs the case on the definition and
-// compares the two ends on every cell, the bus log under each view of krs/sm83-views:
+// 1. `krs run --depth 0 --output end` writes each case's start as the definition builds it
+//    (corpus/build/starts/).
+// 2. krs/sm83-rust-cpu runs the emulator's CPU from each start and writes its end as a krs end
+//    document (corpus/build/ends/).
+// 3. One `krs compare --pairs` runs each case on the definition and compares the two ends on
+//    every cell, the bus log under each view of krs/sm83-views:
 //
 //   WritesView    the writes, in order. Required equal.
 //   AccessesView  the reads and writes, in order. Reported only: the emulator performs an
@@ -16,7 +19,7 @@
 import { readdir, rm } from "node:fs/promises";
 import { resolve } from "node:path";
 import { $ } from "bun";
-import { krs, root } from "./krs";
+import { krs, printSummary, root } from "./krs";
 
 const VIEWS = ["WritesView", "AccessesView"];
 const REQUIRED = "WritesView";
@@ -25,33 +28,39 @@ const JOBS = 4;
 const build = resolve(root, "corpus/build");
 const ids = (await readdir(resolve(root, "corpus/cases"))).sort();
 const caseFile = (id: string) => resolve(root, "corpus/cases", id, "case.toml");
-
-// The emulator's ends. sm83-rust-cpu reads the definition's IR to evaluate a case's start.
 await rm(build, { recursive: true, force: true });
-await krs("emit-k", ["--ir", "--output", `${build}/ir`], "corpus/build/emit-k.log");
-await $`cargo build --release --offline --quiet`.cwd(resolve(root, "krs/sm83-rust-cpu"));
-await $`${root}/krs/sm83-rust-cpu/target/release/sm83-rust-cpu --definition-ir ${build}/ir/definition-ir.json --out ${build}/ends ${ids.map(caseFile)}`;
 
-// One `krs compare` per case and view, JOBS at a time, each saved to corpus/build/compare/.
-async function compare(id: string, view: string) {
-  const args = [caseFile(id), `${build}/ends/${id}.json`, "--view", `bus=${view}`, "--observer", "foldiboy-sm83-views:views", "--output", "json"];
-  const saved = `corpus/build/compare/${id}-${view}.json`;
-  await krs("compare", args, saved);
-  const output = await Bun.file(resolve(root, saved)).text();
-  const result = output.trim() ? JSON.parse(output) : { verdict: "error" };
-  const at = result.difference?.path ? ` at ${result.difference.path}` : "";
-  console.log(`${id} ${view}: ${result.verdict}${at}`);
-  return result.verdict as string;
-}
-const work = ids.flatMap((id) => VIEWS.map((view) => ({ id, view })));
-const failed: string[] = [];
-async function worker() {
-  for (let next = work.shift(); next; next = work.shift()) {
-    const verdict = await compare(next.id, next.view);
-    if (next.view === REQUIRED && verdict !== "equal") failed.push(next.id);
+// 1. The starts, JOBS at a time.
+const queue = [...ids];
+async function starts() {
+  for (let id = queue.shift(); id; id = queue.shift()) {
+    const status = await krs("run", ["--case", caseFile(id), "--depth", "0", "--output", "end"], `corpus/build/starts/${id}.json`);
+    if (status !== 0) throw new Error(`${id}: krs run exited ${status}`);
   }
 }
-await Promise.all(Array.from({ length: JOBS }, worker));
+await Promise.all(Array.from({ length: JOBS }, starts));
+
+// 2. The emulator's ends.
+await $`cargo build --release --offline --quiet`.cwd(resolve(root, "krs/sm83-rust-cpu"));
+await $`${root}/krs/sm83-rust-cpu/target/release/sm83-rust-cpu --out ${build}/ends ${ids.map((id) => `${build}/starts/${id}.json`)}`;
+
+// 3. Every case under every view, in one batch.
+const pairs = ids.flatMap((id) =>
+  VIEWS.map((view) => ({ left: `../cases/${id}/case.toml`, right: `ends/${id}.json`, views: { bus: view }, observer: "foldiboy-sm83-views:views" })),
+);
+await Bun.write(`${build}/pairs.json`, JSON.stringify({ pair: pairs }, null, 2));
+await krs("compare", ["--pairs", `${build}/pairs.json`, "--jobs", String(JOBS), "--output", "json"], "corpus/build/compare.jsonl");
+
+const records = (await Bun.file(`${build}/compare.jsonl`).text()).trim().split("\n").map((line) => JSON.parse(line));
+const failed: string[] = [];
+pairs.forEach((pair, index) => {
+  const id = ids[Math.floor(index / VIEWS.length)]!;
+  const result = records.find((record) => record.pair?.number === index + 1) ?? { verdict: "missing" };
+  const at = result.difference?.path ? ` at ${result.difference.path}` : "";
+  console.log(`${id} ${pair.views.bus}: ${result.verdict}${at}`);
+  if (pair.views.bus === REQUIRED && result.verdict !== "equal") failed.push(id);
+});
+await printSummary("corpus/build/compare.jsonl");
 if (failed.length) {
   console.log(`not equal under ${REQUIRED}: ${failed.join(", ")}`);
   process.exit(1);

@@ -2,25 +2,30 @@
 # `bun run mooneye` builds the ROMs beside this file (scripts/roms.ts) and runs these cases with krs cases.
 #
 # Each case starts from its cartridge as the boot ROM leaves it (Boot, src/boot.rs). A mooneye
-# test ends by setting B C D E H L and looping on itself (`jr` to itself): 3 5 8 13 21 34 is a pass,
-# all $42 a failure. No rule marks that end and the machine never stops, so a run is bounded by its
-# rewrite steps, a count past the point where every ROM here reaches its loop, and the expectation
-# states that end (`depth-bound`). The expectation compares only the registers, under the view that
-# keeps B C D E H L (krs/sm83-views); A is stated as 0 and never compared.
+# test ends in its quit routine: it sets B C D E H L (3 5 8 13 21 34 is a pass, all $42 a failure)
+# and executes `LD B,B`, mooneye's breakpoint, then sends the registers over serial and loops.
+# No rule marks that end, so a run stops at an instruction boundary count past every ROM's
+# breakpoint (stop before a boundary rule, `stop_count`), and the expectation compares only the
+# registers there, under the view that keeps B C D E H L (krs/sm83-views); A is stated as 0 and
+# never compared.
 #
-# Counting instruction boundaries instead (stop before a boundary rule, `stop_count`) would state
-# the end better, but at k-rust 2026-11-05 it costs time quadratic in the count (Foldiboy request
-# FB-25).
+# The boundary count at the breakpoint, measured at k-rust ec5f5ec1f: ei_sequence 1620,
+# ei_timing 1617, rapid_di_ei 1706, reti_intr_timing 1649, ie_push 165, if_ie_registers 1926 (with
+# the failure values). A count too small leaves the test's working values in the registers, so
+# the case is unmet, never met by mistake.
 
 [run]
-depth = 100000
+stop_before = ["crate::interrupt::boundary_dispatch", "crate::interrupt::boundary_fetch", "crate::interrupt::boundary_wake", "crate::interrupt::boundary_halted"]
+stop_count = 2500
+depth = 10000000
 
 [[case]]
 name = "ei_sequence"
 [case.inputs]
 start = { "$call" = { Boot = { cartridge = { "$file" = "ei_sequence.gb" } } } }
 [case.expect]
-halt = "depth-bound"
+halt = "stopped"
+rule = "crate::interrupt::boundary_fetch"
 compare = ["regs"]
 views = { regs = "MooneyeResult" }
 observer = "foldiboy-sm83-views:views"
@@ -31,7 +36,8 @@ name = "ei_timing"
 [case.inputs]
 start = { "$call" = { Boot = { cartridge = { "$file" = "ei_timing.gb" } } } }
 [case.expect]
-halt = "depth-bound"
+halt = "stopped"
+rule = "crate::interrupt::boundary_fetch"
 compare = ["regs"]
 views = { regs = "MooneyeResult" }
 observer = "foldiboy-sm83-views:views"
@@ -42,7 +48,8 @@ name = "rapid_di_ei"
 [case.inputs]
 start = { "$call" = { Boot = { cartridge = { "$file" = "rapid_di_ei.gb" } } } }
 [case.expect]
-halt = "depth-bound"
+halt = "stopped"
+rule = "crate::interrupt::boundary_fetch"
 compare = ["regs"]
 views = { regs = "MooneyeResult" }
 observer = "foldiboy-sm83-views:views"
@@ -53,7 +60,8 @@ name = "reti_intr_timing"
 [case.inputs]
 start = { "$call" = { Boot = { cartridge = { "$file" = "reti_intr_timing.gb" } } } }
 [case.expect]
-halt = "depth-bound"
+halt = "stopped"
+rule = "crate::interrupt::boundary_fetch"
 compare = ["regs"]
 views = { regs = "MooneyeResult" }
 observer = "foldiboy-sm83-views:views"
@@ -64,7 +72,8 @@ name = "ie_push"
 [case.inputs]
 start = { "$call" = { Boot = { cartridge = { "$file" = "ie_push.gb" } } } }
 [case.expect]
-halt = "depth-bound"
+halt = "stopped"
+rule = "crate::interrupt::boundary_fetch"
 compare = ["regs"]
 views = { regs = "MooneyeResult" }
 observer = "foldiboy-sm83-views:views"
@@ -75,7 +84,8 @@ name = "if_ie_registers"
 [case.inputs]
 start = { "$call" = { Boot = { cartridge = { "$file" = "if_ie_registers.gb" } } } }
 [case.expect]
-halt = "depth-bound"
+halt = "stopped"
+rule = "crate::interrupt::boundary_fetch"
 compare = ["regs"]
 views = { regs = "MooneyeResult" }
 observer = "foldiboy-sm83-views:views"

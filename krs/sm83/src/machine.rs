@@ -119,123 +119,29 @@ pub struct State {
 }
 
 /// The initial state: the bus log empty, every other cell as `start` states it.
+/// Each cell takes its field of `start` apart with a `let` (no projection
+/// function, so no rule of its own for kink to mutate or count).
 impl Machine {
     #[k::init]
     pub fn init(#[k::config_var(name = "START")] start: Start) -> Self {
         Self {
             k: k::k![Step::Boundary],
-            regs: self::StartRegs(start),
-            f: self::StartF(start),
-            pc: self::StartPc(start),
-            sp: self::StartSp(start),
-            ime: self::StartIme(start),
-            ei_pending: self::StartEiPending(start),
-            halted: self::StartHalted(start),
-            halt_bug: self::StartHaltBug(start),
-            memory: self::StartMemory(start),
-            w: self::StartW(start),
-            z: self::StartZ(start),
-            rom_end: bytes::length(self::StartRom(start)),
-            rom: self::StartRom(start),
+            regs: { let State { regs, .. } = start; regs },
+            f: { let State { f, .. } = start; f },
+            pc: { let State { pc, .. } = start; pc },
+            sp: { let State { sp, .. } = start; sp },
+            ime: { let State { ime, .. } = start; ime },
+            ei_pending: { let State { ei_pending, .. } = start; ei_pending },
+            halted: { let State { halted, .. } = start; halted },
+            halt_bug: { let State { halt_bug, .. } = start; halt_bug },
+            memory: { let State { memory, .. } = start; memory },
+            w: { let State { w, .. } = start; w },
+            z: { let State { z, .. } = start; z },
+            rom_end: bytes::length({ let State { rom, .. } = start; rom }),
+            rom: { let State { rom, .. } = start; rom },
             bus: k::builtin::list::empty(),
         }
     }
-}
-
-#[k::function(total, internal)]
-pub fn StartRegs(start: Term<Start>) -> Term<Map<Reg8, Int>>;
-
-k::equations! {
-    for StartRegs;
-    start_regs: State { regs, .. } => regs;
-}
-
-#[k::function(total, internal)]
-pub fn StartF(start: Term<Start>) -> Term<FlagSet>;
-
-k::equations! {
-    for StartF;
-    start_f: State { f, .. } => f;
-}
-
-#[k::function(total, internal)]
-pub fn StartPc(start: Term<Start>) -> Term<Int>;
-
-k::equations! {
-    for StartPc;
-    start_pc: State { pc, .. } => pc;
-}
-
-#[k::function(total, internal)]
-pub fn StartSp(start: Term<Start>) -> Term<Int>;
-
-k::equations! {
-    for StartSp;
-    start_sp: State { sp, .. } => sp;
-}
-
-#[k::function(total, internal)]
-pub fn StartIme(start: Term<Start>) -> Term<Bool>;
-
-k::equations! {
-    for StartIme;
-    start_ime: State { ime, .. } => ime;
-}
-
-#[k::function(total, internal)]
-pub fn StartEiPending(start: Term<Start>) -> Term<Bool>;
-
-k::equations! {
-    for StartEiPending;
-    start_ei_pending: State { ei_pending, .. } => ei_pending;
-}
-
-#[k::function(total, internal)]
-pub fn StartHalted(start: Term<Start>) -> Term<Bool>;
-
-k::equations! {
-    for StartHalted;
-    start_halted: State { halted, .. } => halted;
-}
-
-#[k::function(total, internal)]
-pub fn StartHaltBug(start: Term<Start>) -> Term<Bool>;
-
-k::equations! {
-    for StartHaltBug;
-    start_halt_bug: State { halt_bug, .. } => halt_bug;
-}
-
-#[k::function(total, internal)]
-pub fn StartRom(start: Term<Start>) -> Term<Bytes>;
-
-k::equations! {
-    for StartRom;
-    start_rom: State { rom, .. } => rom;
-}
-
-#[k::function(total, internal)]
-pub fn StartMemory(start: Term<Start>) -> Term<Map<Int, Int>>;
-
-k::equations! {
-    for StartMemory;
-    start_memory: State { memory, .. } => memory;
-}
-
-#[k::function(total, internal)]
-pub fn StartW(start: Term<Start>) -> Term<Int>;
-
-k::equations! {
-    for StartW;
-    start_w: State { w, .. } => w;
-}
-
-#[k::function(total, internal)]
-pub fn StartZ(start: Term<Start>) -> Term<Int>;
-
-k::equations! {
-    for StartZ;
-    start_z: State { z, .. } => z;
 }
 
 /// Whether `addr` is in the ROM region, 0 up to `rom_end`.

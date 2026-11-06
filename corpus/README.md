@@ -23,7 +23,7 @@ The Rust CPU starts from the state the definition's initializer builds from the 
 `bun run compare` (`scripts/compare.ts`) compares every case's run on another implementation with the definition's run, cell by cell, with `krs compare`.
 An implementation reports a run as a krs end document (`halt`, and every cell of the definition's configuration in the typed case encoding), in `build/ends/<id>.json`.
 
-The Rust emulator's CPU is the one other system today: `krs/sm83-rust-cpu` runs `lib/crates/cpu` over the definition's memory model, from the state the definition's initializer builds from the case (so there is one statement of the boot state), and writes its end document.
+The Rust emulator's CPU is the one other system today: `krs/sm83-rust-cpu` runs `lib/crates/cpu` over the definition's memory model, from the state the definition's initializer builds from the case (`krs run --depth 0 --output end`, so there is one statement of the boot state), and writes its end document.
 The adapter locks on an unused opcode and is stuck on `STOP`, as the definition is.
 
 Every cell is compared; the bus log (`read`, `write`, `idle` events) is compared under a view, a function of the cell's value applied to both sides (`krs/sm83-views`).
@@ -40,7 +40,7 @@ The Rust CPU's interrupt logic accesses `IE` and `IF` without bus cycles (`memor
 bun run compare
 ```
 
-It builds the cases' ROMs, emits the definition's IR (from which the Rust CPU evaluates a case's start), runs `sm83-rust-cpu`, and runs `krs compare` for each case and view, printing each verdict and the first difference. It fails when a case is not equal under `WritesView`.
+It builds the cases' ROMs, writes each case's start with `krs run`, runs `sm83-rust-cpu` from those starts, and runs every case and view as one `krs compare --pairs` batch, printing each verdict and the first difference. It fails when a case is not equal under `WritesView`.
 
 ## Cases
 
@@ -77,6 +77,6 @@ bun run kink report --output verdicts > corpus/results/kink-verdicts.txt
 `results/kink-verdicts.txt` is the last full run (`run --full`) in kink's own rendering: each mutation's status and every case that kills it.
 Under the Z3 profile kink caches results and outcomes (its solver queries are bounded by Z3 resource units, not the clock), so a rerun on an unchanged definition and corpus reuses them (2026-11-06, under load: 456 s cold, 124 s warm, the same verdicts).
 
-At k-rust b06b9b869, on the 20 cases (Z3 profile, 2026-11-06): kink compares every cell but `w` and `z`; every case is comparable and ends at `#locked`.
+At k-rust ec5f5ec1f, on the 20 cases (Z3 profile, 2026-11-07): kink compares every cell but `w` and `z`; every case is comparable and ends at `#locked`.
 Of 81 mutations, 72 are killed and the 9 `unobservable` controls survive, as they must; none is unknown. The verdicts and killers are those of the first run at d0cf74b53.
-Of the definition's 374 rules and equations, 304 are fired by some case (13 of them `Boot` and the accessors of the start, `start_*`) and 67 are claim helpers, which only claims apply; the other three are `decode_stop` (STOP is outside the CPU stage) and `WellFormed` and `WellFormedRegisters`, which nothing applies.
+Of the definition's 362 rules and equations, 292 are fired by some case (one of them `Boot`; the initializer takes the start apart with `let`, which is no rule) and 67 are claim helpers, which only claims apply; the other three are `decode_stop` (STOP is outside the CPU stage) and `WellFormed` and `WellFormedRegisters`, which nothing applies.

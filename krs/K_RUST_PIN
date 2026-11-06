@@ -1,3 +1,3 @@
-commit = "b06b9b869"
+commit = "ec5f5ec1f"
 path = "/artifacts/worktrees/k-rust-foldiboy-pin"
-note = "k-rust main 2026-11-05 (CF-24 expectations, krs cases and krs compare with views; CF-21 stop counts; CF-19 program files; CF-33 resource-bounded SMT and kink caches under Z3; OT-19 supervised prove; OT-20 guarded readings; EXIT-1 exit statuses; Z3 4.16.0 linked statically)"
+note = "k-rust main 2026-11-06 (FB-25 stop counts in the backend; FB-26 krs run --output end; FB-27 depth-bound expectations refused; FB-28 krs compare --pairs; FB-29 let in cell values; FB-30 declared field types type documents; krs_ir 80; Z3 4.16.0 linked statically)"
