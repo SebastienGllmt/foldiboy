@@ -5,6 +5,7 @@ use k::builtin::{Bool, Bytes, Int, KSequence, List, Map, bytes};
 
 use crate::alu::{FlagByte, FlagSet, Flags};
 use crate::arith::Pair;
+use crate::boot::{BootPc, BootSp, CpuStageIo, DmgFlags, DmgRegisters, RomRegion};
 use crate::decode::{Cond, Condition, Pair16, RegPair};
 use crate::interrupt::Step;
 
@@ -12,7 +13,6 @@ pub use sm83_events::{CpuEvent, Event};
 
 k::sorts! {
     Reg8;
-    Start;
 }
 
 /// The 8-bit registers addressed by instruction encodings.
@@ -95,50 +95,52 @@ pub struct Machine {
     pub bus: List<CpuEvent>,
 }
 
-/// Where a run starts: an architectural state at an instruction boundary,
-/// every cell but the bus log, which starts empty.
-///
-/// A cartridge starts from the state its model's boot ROM leaves (`Boot`,
-/// boot.rs). Any other boundary state can start a run too (SingleStepTests),
-/// and so can any `W` and `Z`, so a run can test that their initial value
-/// changes no observation.
-#[k::constructor(sort = Start, syntax = "state({regs}, {f}, {pc}, {sp}, {ime}, {ei_pending}, {halted}, {halt_bug}, {rom}, {memory}, {w}, {z})")]
-pub struct State {
-    pub regs: Term<Map<Reg8, Int>>,
-    pub f: Term<FlagSet>,
-    pub pc: Term<Int>,
-    pub sp: Term<Int>,
-    pub ime: Term<Bool>,
-    pub ei_pending: Term<Bool>,
-    pub halted: Term<Bool>,
-    pub halt_bug: Term<Bool>,
-    pub rom: Term<Bytes>,
-    pub memory: Term<Map<Int, Int>>,
-    pub w: Term<Int>,
-    pub z: Term<Int>,
-}
-
-/// The initial state: the bus log empty, every other cell as `start` states it.
-/// Each cell takes its field of `start` apart with a `let` (no projection
-/// function, so no rule of its own for kink to mutate or count).
+/// The initial state of a cartridge: the state a DMG's boot ROM leaves in the CPU stage (boot.rs).
 impl Machine {
+    #[cfg(not(whole_state))]
     #[k::init]
-    pub fn init(#[k::config_var(name = "START")] start: Start) -> Self {
+    pub fn init(#[k::config_var(name = "CARTRIDGE", main)] cartridge: Bytes) -> Self {
         Self {
             k: k::k![Step::Boundary],
-            regs: { let State { regs, .. } = start; regs },
-            f: { let State { f, .. } = start; f },
-            pc: { let State { pc, .. } = start; pc },
-            sp: { let State { sp, .. } = start; sp },
-            ime: { let State { ime, .. } = start; ime },
-            ei_pending: { let State { ei_pending, .. } = start; ei_pending },
-            halted: { let State { halted, .. } = start; halted },
-            halt_bug: { let State { halt_bug, .. } = start; halt_bug },
-            memory: { let State { memory, .. } = start; memory },
-            w: { let State { w, .. } = start; w },
-            z: { let State { z, .. } = start; z },
-            rom_end: bytes::length({ let State { rom, .. } = start; rom }),
-            rom: { let State { rom, .. } = start; rom },
+            regs: DmgRegisters(),
+            f: DmgFlags(),
+            pc: BootPc(),
+            sp: BootSp(),
+            ime: false,
+            ei_pending: false,
+            halted: false,
+            halt_bug: false,
+            memory: CpuStageIo(),
+            w: 0,
+            z: 0,
+            rom_end: bytes::length(RomRegion(cartridge)),
+            rom: RomRegion(cartridge),
+            bus: k::builtin::list::empty(),
+        }
+    }
+
+    /// With `--cfg whole_state`, any boundary state starts a run: SingleStepTests' vectors.
+    #[cfg(whole_state)]
+    #[k::init]
+    pub fn init(
+        #[k::config_var(name = "REGS")] regs: Map<Reg8, Int>,
+        #[k::config_var(name = "F")] f: FlagSet,
+        #[k::config_var(name = "PC")] pc: Int,
+        #[k::config_var(name = "SP")] sp: Int,
+        #[k::config_var(name = "IME")] ime: Bool,
+        #[k::config_var(name = "EI_PENDING")] ei_pending: Bool,
+        #[k::config_var(name = "HALTED")] halted: Bool,
+        #[k::config_var(name = "HALT_BUG")] halt_bug: Bool,
+        #[k::config_var(name = "ROM")] rom: Bytes,
+        #[k::config_var(name = "MEMORY")] memory: Map<Int, Int>,
+        #[k::config_var(name = "W")] w: Int,
+        #[k::config_var(name = "Z")] z: Int,
+    ) -> Self {
+        Self {
+            k: k::k![Step::Boundary],
+            regs, f, pc, sp, ime, ei_pending, halted, halt_bug, memory, w, z,
+            rom_end: bytes::length(rom),
+            rom,
             bus: k::builtin::list::empty(),
         }
     }

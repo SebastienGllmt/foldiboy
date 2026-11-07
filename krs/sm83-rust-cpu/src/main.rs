@@ -6,8 +6,8 @@
 //! writes `DIR/<id>.json` for each `<id>.json`, and prints the end class and the cost of each run.
 //!
 //! A START is the case's initial state as the definition builds it, the end document of
-//! `krs run --case CASE --depth 0 --output end` (the case's inputs call the specification's boot
-//! functions, which krs evaluates). The end document written is that document with the cells the
+//! `krs run CARTRIDGE --depth 0 --output end` (the definition's initializer calls the
+//! specification's boot functions, which krs evaluates). The end document written is that document with the cells the
 //! CPU changes written over it, so every cell is in the encoding `krs compare` reads.
 //!
 //! The CPU runs over the CPU stage's memory model, the one the definition states, so a

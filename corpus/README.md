@@ -5,8 +5,8 @@ Programs every implementation of the Game Boy CPU runs, and the runner that comp
 
 ## A case
 
-`cases/<id>/case.asm` is a cartridge in RGBDS syntax, and `cases/<id>/case.toml` is the case: one input, `start = Boot(case.gb)`, the cartridge `bun run roms` assembles beside it (`cases/<id>/case.gb`, ignored by git) started as a DMG's boot ROM leaves it.
-`krs run --case`, `bun run kink` and `bun run compare` all read that one document.
+`cases/<id>/case.asm` is a cartridge in RGBDS syntax, and the case is the cartridge itself: `case.gb`, which `bun run roms` assembles beside it (ignored by git).
+`krs run cases/<id>/case.gb`, `bun run kink` and `bun run compare` all start from that file.
 It starts at `$0100` in the state the DMG boot ROM leaves, jumps to `Start`, and ends by locking the CPU with an unused opcode (`LOCK`, or `DUMP_AND_LOCK`, which first pushes every register and stores `SP` at `$C000`).
 `include/case.inc` holds the entry, the header space and those macros.
 
@@ -15,7 +15,7 @@ RAM starts empty, and a read of a byte the case never wrote ends the run as stuc
 
 ## The machine
 
-Every case starts on a DMG after its boot ROM, in the CPU stage: `Boot` builds that state from the cartridge with the specification's own boot functions (`krs/sm83/src/boot.rs`).
+Every case starts on a DMG after its boot ROM, in the CPU stage: the definition's initializer builds that state from the cartridge with the specification's own boot functions (`krs/sm83/src/boot.rs`).
 The Rust CPU starts from the state the definition's initializer builds from the case, read from its configuration, so there is one statement of the boot state.
 
 ## Comparing implementations
@@ -54,7 +54,7 @@ Three more cover what the first `krs kink results` showed no case reaching: `ram
 
 ## Mutation testing
 
-The corpus is also kink's corpus for the SM83 definition: `FLOW.toml` names the definition (`krs = { definition = "main" }`) and takes every `cases/*/case.toml` as a program.
+The corpus is also kink's corpus for the SM83 definition: `FLOW.toml` names the definition (`krs = { definition = "main" }`) and takes every `cases/*/case.gb` as a program.
 `mutations/<topic>.toml` holds K patches of `definition.k`, each a misunderstanding a definition's author could have, anchored by the label of the rule or equation it edits, which is the KRS item's.
 kink runs each case on the definition and on each mutant and compares their ends on every cell except `w` and `z`, which the definition declares unobservable.
 
@@ -70,13 +70,15 @@ kink runs each case on the definition and on each mutant and compares their ends
 ```sh
 bun run kink check          # admit the definition and the cases, resolve every mutation
 bun run kink results        # each case's end and the rules it fires
-bun run kink run --full     # each mutation's killers
+bun run kink run            # each mutation's status: stops at its first killer
 bun run kink report --output verdicts > corpus/results/kink-verdicts.txt
+bun run kink run --full     # every case against every mutation: which cases are redundant
 ```
 
-`results/kink-verdicts.txt` is the last full run (`run --full`) in kink's own rendering: each mutation's status and every case that kills it.
-Under the Z3 profile kink caches results and outcomes (its solver queries are bounded by Z3 resource units, not the clock), so a rerun on an unchanged definition and corpus reuses them (2026-11-06, under load: 456 s cold, 124 s warm, the same verdicts).
+`results/kink-verdicts.txt` is the last run in kink's own rendering: each mutation's status.
+A mutation stops at the first case that kills it, so adding a case runs only the mutations that survive; kink leaves the killer out of this rendering because which case kills first depends on the order and the cache (`run` prints it). `run --full` names every killer and costs every case on every mutation, so it is for occasional corpus pruning, not routine runs.
+Under the Z3 profile kink caches results and outcomes (its solver queries are bounded by Z3 resource units, not the clock), so a rerun on an unchanged definition and corpus reuses them (2026-11-07, under load: 252 s cold, 116 s warm, the same verdicts).
 
 At k-rust ec5f5ec1f, on the 20 cases (Z3 profile, 2026-11-07): kink compares every cell but `w` and `z`; every case is comparable and ends at `#locked`.
-Of 81 mutations, 72 are killed and the 9 `unobservable` controls survive, as they must; none is unknown. The verdicts and killers are those of the first run at d0cf74b53.
-Of the definition's 362 rules and equations, 292 are fired by some case (one of them `Boot`; the initializer takes the start apart with `let`, which is no rule) and 67 are claim helpers, which only claims apply; the other three are `decode_stop` (STOP is outside the CPU stage) and `WellFormed` and `WellFormedRegisters`, which nothing applies.
+Of 81 mutations, 72 are killed and the 9 `unobservable` controls survive, as they must; none is unknown. The statuses are those of the first run at d0cf74b53.
+Of the definition's 361 rules and equations, 291 are covered by some case and 67 are claim helpers, which only claims apply. Of the 291, 283 fire and 8 are only matched, so no case takes them: `halt`, `boundary_halted` and `boundary_wake` (no case enters `HALT` mode), `interrupt_vector_2`, `interrupt_vector_4`, `lowest_request_2` and `lowest_request_4` (no case requests those interrupts) and `write_byte_rom`. The other three rules are `decode_stop` (STOP is outside the CPU stage) and `WellFormed` and `WellFormedRegisters`, which nothing applies.

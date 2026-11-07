@@ -1,7 +1,7 @@
 schema = "kink-flow-verdicts"
 version = 4
 document = "run"
-schedule = "full"
+schedule = "first-kill"
 profile = "z3"
 krs_annotation = 2
 
@@ -11,362 +11,290 @@ outcome = "admitted"
 [[mutation]]
 id = "boot/boot-a-cgb"
 status = "killed"
-killed_by = ["cases/hl-flags/case.toml", "cases/word16/case.toml"]
 
 [[mutation]]
 id = "boot/boot-sp-fffc"
 status = "killed"
-killed_by = ["cases/alu-flags/case.toml", "cases/alu/case.toml", "cases/calls/case.toml", "cases/cb-flags/case.toml", "cases/cb/case.toml", "cases/daa-flags/case.toml", "cases/daa/case.toml", "cases/halt-bug/case.toml", "cases/halt-ime/case.toml", "cases/hl-flags/case.toml", "cases/incdec/case.toml", "cases/indirect/case.toml", "cases/interrupt/case.toml", "cases/joypad-int/case.toml", "cases/jumps/case.toml", "cases/loads/case.toml", "cases/ram-code/case.toml", "cases/stack/case.toml", "cases/word16/case.toml"]
 
 [[mutation]]
 id = "boot/rom-region-16k"
 status = "killed"
-killed_by = ["cases/alu-flags/case.toml", "cases/alu/case.toml", "cases/calls/case.toml", "cases/cb-flags/case.toml", "cases/cb/case.toml", "cases/daa-flags/case.toml", "cases/daa/case.toml", "cases/halt-bug/case.toml", "cases/halt-ime/case.toml", "cases/hl-flags/case.toml", "cases/ie-push-cancel/case.toml", "cases/incdec/case.toml", "cases/indirect/case.toml", "cases/interrupt/case.toml", "cases/joypad-int/case.toml", "cases/jumps/case.toml", "cases/loads/case.toml", "cases/ram-code/case.toml", "cases/stack/case.toml", "cases/word16/case.toml"]
 
 [[mutation]]
 id = "functions/add-h-ge"
 status = "killed"
-killed_by = ["cases/alu-flags/case.toml"]
 
 [[mutation]]
 id = "functions/add-c-ge"
 status = "killed"
-killed_by = ["cases/alu-flags/case.toml"]
 
 [[mutation]]
 id = "functions/sub-reversed"
 status = "killed"
-killed_by = ["cases/alu-flags/case.toml", "cases/alu/case.toml"]
 
 [[mutation]]
 id = "functions/sbc-adds-carry"
 status = "killed"
-killed_by = ["cases/alu-flags/case.toml"]
 
 [[mutation]]
 id = "functions/sub-n-clear"
 status = "killed"
-killed_by = ["cases/alu-flags/case.toml"]
 
 [[mutation]]
 id = "functions/adc-subs-carry"
 status = "killed"
-killed_by = ["cases/alu/case.toml"]
 
 [[mutation]]
 id = "functions/and-h-clear"
 status = "killed"
-killed_by = ["cases/alu-flags/case.toml"]
 
 [[mutation]]
 id = "functions/xor-is-or"
 status = "killed"
-killed_by = ["cases/alu/case.toml", "cases/calls/case.toml", "cases/jumps/case.toml"]
 
 [[mutation]]
 id = "functions/or-is-xor"
 status = "killed"
-killed_by = ["cases/alu/case.toml"]
 
 [[mutation]]
 id = "functions/cp-flags-swapped"
 status = "killed"
-killed_by = ["cases/alu-flags/case.toml"]
 
 [[mutation]]
 id = "functions/inc-h-wrong"
 status = "killed"
-killed_by = ["cases/calls/case.toml", "cases/incdec/case.toml", "cases/interrupt/case.toml", "cases/ram-code/case.toml"]
 
 [[mutation]]
 id = "functions/dec-z-off-by-one"
 status = "killed"
-killed_by = ["cases/jumps/case.toml", "cases/ram-code/case.toml"]
 
 [[mutation]]
 id = "functions/daa-low-ge"
 status = "killed"
-killed_by = ["cases/daa-flags/case.toml"]
 
 [[mutation]]
 id = "functions/daa-high-ge"
 status = "killed"
-killed_by = ["cases/daa-flags/case.toml"]
 
 [[mutation]]
 id = "functions/daa-high-16"
 status = "killed"
-killed_by = ["cases/daa-flags/case.toml"]
 
 [[mutation]]
 id = "functions/daa-h-kept"
 status = "killed"
-killed_by = ["cases/daa-flags/case.toml"]
 
 [[mutation]]
 id = "functions/swap-shift-3"
 status = "killed"
-killed_by = ["cases/cb/case.toml"]
 
 [[mutation]]
 id = "functions/rlc-no-wrap"
 status = "killed"
-killed_by = ["cases/cb/case.toml", "cases/ram-code/case.toml"]
 
 [[mutation]]
 id = "functions/rr-is-rrc"
 status = "killed"
-killed_by = ["cases/cb-flags/case.toml"]
 
 [[mutation]]
 id = "functions/sra-no-sign"
 status = "killed"
-killed_by = ["cases/cb/case.toml"]
 
 [[mutation]]
 id = "functions/sla-carry-bit0"
 status = "killed"
-killed_by = ["cases/cb-flags/case.toml"]
 
 [[mutation]]
 id = "functions/shift-z-never"
 status = "killed"
-killed_by = ["cases/cb-flags/case.toml"]
 
 [[mutation]]
 id = "functions/bit-z-inverted"
 status = "killed"
-killed_by = ["cases/cb-flags/case.toml"]
 
 [[mutation]]
 id = "functions/set-bit-off-by-one"
 status = "killed"
-killed_by = ["cases/cb/case.toml"]
 
 [[mutation]]
 id = "functions/cpl-n-clear"
 status = "killed"
-killed_by = ["cases/daa-flags/case.toml"]
 
 [[mutation]]
 id = "functions/ccf-is-scf"
 status = "killed"
-killed_by = ["cases/daa-flags/case.toml"]
 
 [[mutation]]
 id = "functions/add-hl-h-bit7"
 status = "killed"
-killed_by = ["cases/hl-flags/case.toml"]
 
 [[mutation]]
 id = "functions/signed-off-by-one"
 status = "killed"
-killed_by = ["cases/ram-code/case.toml", "cases/word16/case.toml"]
 
 [[mutation]]
 id = "functions/holds-nz-inverted"
 status = "killed"
-killed_by = ["cases/calls/case.toml", "cases/jumps/case.toml", "cases/ram-code/case.toml"]
 
 [[mutation]]
 id = "functions/carry-reads-h"
 status = "killed"
-killed_by = ["cases/alu-flags/case.toml", "cases/calls/case.toml", "cases/cb-flags/case.toml", "cases/cb/case.toml", "cases/daa-flags/case.toml", "cases/daa/case.toml", "cases/halt-bug/case.toml", "cases/incdec/case.toml", "cases/interrupt/case.toml", "cases/ram-code/case.toml"]
 
 [[mutation]]
 id = "functions/vblank-vector"
 status = "killed"
-killed_by = ["cases/interrupt/case.toml"]
 
 [[mutation]]
 id = "functions/requested-mask-15"
 status = "killed"
-killed_by = ["cases/joypad-int/case.toml"]
 
 [[mutation]]
 id = "functions/dispatch-ignores-ime"
 status = "killed"
-killed_by = ["cases/halt-bug/case.toml", "cases/halt-ime/case.toml", "cases/ie-push-cancel/case.toml", "cases/interrupt/case.toml", "cases/joypad-int/case.toml"]
 
 [[mutation]]
 id = "functions/decode-jr-nz"
 status = "killed"
-killed_by = ["cases/jumps/case.toml"]
 
 [[mutation]]
 id = "functions/pair-af-swapped"
 status = "killed"
-killed_by = ["cases/alu-flags/case.toml", "cases/alu/case.toml", "cases/calls/case.toml", "cases/cb-flags/case.toml", "cases/cb/case.toml", "cases/daa-flags/case.toml", "cases/daa/case.toml", "cases/halt-bug/case.toml", "cases/halt-ime/case.toml", "cases/hl-flags/case.toml", "cases/ie-push-cancel/case.toml", "cases/incdec/case.toml", "cases/indirect/case.toml", "cases/interrupt/case.toml", "cases/joypad-int/case.toml", "cases/jumps/case.toml", "cases/loads/case.toml", "cases/ram-code/case.toml", "cases/stack/case.toml", "cases/word16/case.toml"]
 
 [[mutation]]
 id = "instructions/add-hl-sub"
 status = "killed"
-killed_by = ["cases/hl-flags/case.toml"]
 
 [[mutation]]
 id = "instructions/add-sp-unsigned"
 status = "killed"
-killed_by = ["cases/word16/case.toml"]
 
 [[mutation]]
 id = "instructions/alu-a-wrong-reg"
 status = "killed"
-killed_by = ["cases/alu-flags/case.toml", "cases/alu/case.toml", "cases/calls/case.toml", "cases/daa-flags/case.toml", "cases/daa/case.toml", "cases/jumps/case.toml", "cases/ram-code/case.toml"]
 
 [[mutation]]
 id = "instructions/ei-never-enables"
 status = "killed"
-killed_by = ["cases/halt-ime/case.toml", "cases/ie-push-cancel/case.toml", "cases/interrupt/case.toml", "cases/joypad-int/case.toml", "cases/ram-code/case.toml"]
 
 [[mutation]]
 id = "instructions/call-swap-bytes"
 status = "killed"
-killed_by = ["cases/calls/case.toml", "cases/ram-code/case.toml"]
 
 [[mutation]]
 id = "instructions/call-no-idle"
 status = "killed"
-killed_by = ["cases/calls/case.toml", "cases/ram-code/case.toml"]
 
 [[mutation]]
 id = "instructions/call-sp-off-by-one"
 status = "killed"
-killed_by = ["cases/calls/case.toml", "cases/ram-code/case.toml"]
 
 [[mutation]]
 id = "instructions/dec16-by-two"
 status = "killed"
-killed_by = ["cases/word16/case.toml"]
 
 [[mutation]]
 id = "instructions/dispatch-one-idle"
 status = "killed"
-killed_by = ["cases/halt-ime/case.toml", "cases/ie-push-cancel/case.toml", "cases/interrupt/case.toml", "cases/joypad-int/case.toml", "cases/ram-code/case.toml"]
 
 [[mutation]]
 id = "instructions/discard-fetch-idle"
 status = "killed"
-killed_by = ["cases/halt-ime/case.toml", "cases/ie-push-cancel/case.toml", "cases/interrupt/case.toml", "cases/joypad-int/case.toml"]
 
 [[mutation]]
 id = "instructions/ei-sets-false"
 status = "killed"
-killed_by = ["cases/halt-ime/case.toml", "cases/ie-push-cancel/case.toml", "cases/interrupt/case.toml", "cases/joypad-int/case.toml", "cases/ram-code/case.toml"]
 
 [[mutation]]
 id = "instructions/idle-no-log"
 status = "killed"
-killed_by = ["cases/alu-flags/case.toml", "cases/alu/case.toml", "cases/calls/case.toml", "cases/cb-flags/case.toml", "cases/cb/case.toml", "cases/daa-flags/case.toml", "cases/daa/case.toml", "cases/halt-bug/case.toml", "cases/halt-ime/case.toml", "cases/hl-flags/case.toml", "cases/ie-push-cancel/case.toml", "cases/incdec/case.toml", "cases/indirect/case.toml", "cases/interrupt/case.toml", "cases/joypad-int/case.toml", "cases/jumps/case.toml", "cases/loads/case.toml", "cases/ram-code/case.toml", "cases/stack/case.toml", "cases/word16/case.toml"]
 
 [[mutation]]
 id = "instructions/jump-hl-plus-one"
 status = "killed"
-killed_by = ["cases/jumps/case.toml"]
 
 [[mutation]]
 id = "instructions/jr-taken-no-idle"
 status = "killed"
-killed_by = ["cases/jumps/case.toml", "cases/ram-code/case.toml"]
 
 [[mutation]]
 id = "instructions/jr-backwards"
 status = "killed"
-killed_by = ["cases/ram-code/case.toml"]
 
 [[mutation]]
 id = "instructions/jp-swap-bytes"
 status = "killed"
-killed_by = ["cases/alu-flags/case.toml", "cases/alu/case.toml", "cases/calls/case.toml", "cases/cb-flags/case.toml", "cases/cb/case.toml", "cases/daa-flags/case.toml", "cases/daa/case.toml", "cases/halt-bug/case.toml", "cases/halt-ime/case.toml", "cases/hl-flags/case.toml", "cases/ie-push-cancel/case.toml", "cases/incdec/case.toml", "cases/indirect/case.toml", "cases/interrupt/case.toml", "cases/joypad-int/case.toml", "cases/jumps/case.toml", "cases/loads/case.toml", "cases/ram-code/case.toml", "cases/stack/case.toml", "cases/word16/case.toml"]
 
 [[mutation]]
 id = "instructions/pop-high-off"
 status = "killed"
-killed_by = ["cases/halt-ime/case.toml", "cases/stack/case.toml"]
 
 [[mutation]]
 id = "instructions/ret-sp-off-by-one"
 status = "killed"
-killed_by = ["cases/calls/case.toml", "cases/interrupt/case.toml", "cases/joypad-int/case.toml", "cases/ram-code/case.toml"]
 
 [[mutation]]
 id = "instructions/push-swap-bytes"
 status = "killed"
-killed_by = ["cases/alu-flags/case.toml", "cases/alu/case.toml", "cases/calls/case.toml", "cases/cb-flags/case.toml", "cases/cb/case.toml", "cases/daa-flags/case.toml", "cases/daa/case.toml", "cases/halt-bug/case.toml", "cases/halt-ime/case.toml", "cases/hl-flags/case.toml", "cases/ie-push-cancel/case.toml", "cases/incdec/case.toml", "cases/indirect/case.toml", "cases/interrupt/case.toml", "cases/joypad-int/case.toml", "cases/jumps/case.toml", "cases/loads/case.toml", "cases/ram-code/case.toml", "cases/stack/case.toml", "cases/word16/case.toml"]
 
 [[mutation]]
 id = "instructions/push-no-idle"
 status = "killed"
-killed_by = ["cases/alu-flags/case.toml", "cases/alu/case.toml", "cases/calls/case.toml", "cases/cb-flags/case.toml", "cases/cb/case.toml", "cases/daa-flags/case.toml", "cases/daa/case.toml", "cases/halt-bug/case.toml", "cases/halt-ime/case.toml", "cases/hl-flags/case.toml", "cases/ie-push-cancel/case.toml", "cases/incdec/case.toml", "cases/indirect/case.toml", "cases/interrupt/case.toml", "cases/joypad-int/case.toml", "cases/jumps/case.toml", "cases/loads/case.toml", "cases/ram-code/case.toml", "cases/stack/case.toml", "cases/word16/case.toml"]
 
 [[mutation]]
 id = "instructions/read-z-logs-zero"
 status = "killed"
-killed_by = ["cases/calls/case.toml", "cases/cb/case.toml", "cases/halt-ime/case.toml", "cases/ie-push-cancel/case.toml", "cases/incdec/case.toml", "cases/indirect/case.toml", "cases/interrupt/case.toml", "cases/joypad-int/case.toml", "cases/loads/case.toml", "cases/ram-code/case.toml", "cases/stack/case.toml"]
 
 [[mutation]]
 id = "instructions/hl-step-reversed"
 status = "killed"
-killed_by = ["cases/loads/case.toml", "cases/ram-code/case.toml"]
 
 [[mutation]]
 id = "instructions/rst-off-by-one"
 status = "killed"
-killed_by = ["cases/calls/case.toml"]
 
 [[mutation]]
 id = "instructions/reti-no-ime"
 status = "killed"
-killed_by = ["cases/interrupt/case.toml", "cases/ram-code/case.toml"]
 
 [[mutation]]
 id = "instructions/dispatch-keeps-ime"
 status = "killed"
-killed_by = ["cases/halt-ime/case.toml", "cases/ie-push-cancel/case.toml", "cases/interrupt/case.toml"]
 
 [[mutation]]
 id = "instructions/if-ack-adds"
 status = "killed"
-killed_by = ["cases/halt-ime/case.toml", "cases/interrupt/case.toml", "cases/joypad-int/case.toml", "cases/ram-code/case.toml"]
 
 [[mutation]]
 id = "instructions/pop-af-swapped"
 status = "killed"
-killed_by = ["cases/stack/case.toml"]
 
 [[mutation]]
 id = "instructions/set-pair-swap"
 status = "killed"
-killed_by = ["cases/cb/case.toml", "cases/halt-ime/case.toml", "cases/hl-flags/case.toml", "cases/incdec/case.toml", "cases/indirect/case.toml", "cases/jumps/case.toml", "cases/loads/case.toml", "cases/ram-code/case.toml", "cases/stack/case.toml", "cases/word16/case.toml"]
 
 [[mutation]]
 id = "instructions/store-sp-swap"
 status = "killed"
-killed_by = ["cases/alu-flags/case.toml", "cases/alu/case.toml", "cases/calls/case.toml", "cases/cb-flags/case.toml", "cases/cb/case.toml", "cases/daa-flags/case.toml", "cases/daa/case.toml", "cases/halt-bug/case.toml", "cases/halt-ime/case.toml", "cases/hl-flags/case.toml", "cases/ie-push-cancel/case.toml", "cases/incdec/case.toml", "cases/indirect/case.toml", "cases/interrupt/case.toml", "cases/joypad-int/case.toml", "cases/jumps/case.toml", "cases/loads/case.toml", "cases/ram-code/case.toml", "cases/stack/case.toml", "cases/word16/case.toml"]
 
 [[mutation]]
 id = "instructions/write-a-swap-wz"
 status = "killed"
-killed_by = ["cases/cb/case.toml", "cases/ie-push-cancel/case.toml", "cases/incdec/case.toml", "cases/indirect/case.toml", "cases/interrupt/case.toml", "cases/joypad-int/case.toml", "cases/loads/case.toml", "cases/ram-code/case.toml"]
 
 [[mutation]]
 id = "instructions/write-memory-plus-one"
 status = "killed"
-killed_by = ["cases/alu-flags/case.toml", "cases/alu/case.toml", "cases/calls/case.toml", "cases/cb-flags/case.toml", "cases/cb/case.toml", "cases/daa-flags/case.toml", "cases/daa/case.toml", "cases/halt-bug/case.toml", "cases/halt-ime/case.toml", "cases/hl-flags/case.toml", "cases/ie-push-cancel/case.toml", "cases/incdec/case.toml", "cases/indirect/case.toml", "cases/interrupt/case.toml", "cases/joypad-int/case.toml", "cases/jumps/case.toml", "cases/loads/case.toml", "cases/ram-code/case.toml", "cases/stack/case.toml", "cases/word16/case.toml"]
 
 [[mutation]]
 id = "instructions/halt-bug-not-set"
 status = "killed"
-killed_by = ["cases/halt-bug/case.toml", "cases/ram-code/case.toml"]
 
 [[mutation]]
 id = "instructions/halt-dispatching-keeps-pc"
 status = "killed"
-killed_by = ["cases/halt-ime/case.toml"]
 
 [[mutation]]
 id = "instructions/update-z-identity"
 status = "killed"
-killed_by = ["cases/calls/case.toml", "cases/cb-flags/case.toml", "cases/cb/case.toml", "cases/daa-flags/case.toml", "cases/daa/case.toml", "cases/halt-bug/case.toml", "cases/incdec/case.toml", "cases/interrupt/case.toml"]
 
 [[mutation]]
 id = "unobservable/wz-jp-clears-w"

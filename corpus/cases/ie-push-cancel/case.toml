@@ -1,4 +1,0 @@
-# Case ie-push-cancel: the cartridge case.asm builds (case.gb, beside this file), started as a DMG's boot ROM
-# leaves it in the CPU stage (Boot, krs/sm83/src/boot.rs).
-[inputs]
-start = { "$call" = { Boot = { cartridge = { "$file" = "case.gb" } } } }

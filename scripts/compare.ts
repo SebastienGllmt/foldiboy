@@ -2,7 +2,7 @@
 //
 //   bun scripts/compare.ts
 //
-// 1. `krs run --depth 0 --output end` writes each case's start as the definition builds it
+// 1. `krs run CARTRIDGE --depth 0 --output end` writes each case's start as the definition builds it
 //    (corpus/build/starts/).
 // 2. krs/sm83-rust-cpu runs the emulator's CPU from each start and writes its end as a krs end
 //    document (corpus/build/ends/).
@@ -27,14 +27,14 @@ const JOBS = 4;
 
 const build = resolve(root, "corpus/build");
 const ids = (await readdir(resolve(root, "corpus/cases"))).sort();
-const caseFile = (id: string) => resolve(root, "corpus/cases", id, "case.toml");
+const cartridge = (id: string) => resolve(root, "corpus/cases", id, "case.gb");
 await rm(build, { recursive: true, force: true });
 
 // 1. The starts, JOBS at a time.
 const queue = [...ids];
 async function starts() {
   for (let id = queue.shift(); id; id = queue.shift()) {
-    const status = await krs("run", ["--case", caseFile(id), "--depth", "0", "--output", "end"], `corpus/build/starts/${id}.json`);
+    const status = await krs("run", [cartridge(id), "--depth", "0", "--output", "end"], `corpus/build/starts/${id}.json`);
     if (status !== 0) throw new Error(`${id}: krs run exited ${status}`);
   }
 }
@@ -45,8 +45,10 @@ await $`cargo build --release --offline --quiet`.cwd(resolve(root, "krs/sm83-rus
 await $`${root}/krs/sm83-rust-cpu/target/release/sm83-rust-cpu --out ${build}/ends ${ids.map((id) => `${build}/starts/${id}.json`)}`;
 
 // 3. Every case under every view, in one batch.
+const cases = ids.map((id) => ({ name: id, inputs: { cartridge: { $file: cartridge(id) } } }));
+await Bun.write(`${build}/cases.json`, JSON.stringify({ case: cases }));
 const pairs = ids.flatMap((id) =>
-  VIEWS.map((view) => ({ left: `../cases/${id}/case.toml`, right: `ends/${id}.json`, views: { bus: view }, observer: "foldiboy-sm83-views:views" })),
+  VIEWS.map((view) => ({ left: `cases.json#${id}`, right: `ends/${id}.json`, views: { bus: view }, observer: "foldiboy-sm83-views:views" })),
 );
 await Bun.write(`${build}/pairs.json`, JSON.stringify({ pair: pairs }, null, 2));
 await krs("compare", ["--pairs", `${build}/pairs.json`, "--jobs", String(JOBS), "--output", "json"], "corpus/build/compare.jsonl");

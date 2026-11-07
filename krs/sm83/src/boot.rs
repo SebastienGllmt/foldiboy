@@ -1,7 +1,6 @@
 //! Boot states: the architectural state a hardware model leaves when its boot
 //! ROM hands over to the cartridge at `$0100`, stated once for every run that
-//! starts from a cartridge: `Boot(cartridge)` is the start of a corpus case and
-//! of a mooneye case (`start = { "$call" = { Boot = .. } }`).
+//! starts from a cartridge (`Machine::init`).
 //!
 //! A ROM case's initial state is a pure function of the cartridge and the
 //! model: these values, the cartridge's first 32 KiB as the ROM region
@@ -12,7 +11,7 @@ use k::builtin::{Bytes, Int, Map, bytes, int};
 
 use crate::alu::{FlagSet, Flags};
 use crate::interrupt::{IE, IF};
-use crate::machine::{Reg8, Register, Start, State};
+use crate::machine::{Reg8, Register};
 
 /// The ROM region of a cartridge: its first 32 KiB, or all of a smaller one.
 /// Above `$8000` the address space is RAM and I/O.
@@ -67,24 +66,4 @@ pub fn DmgIo() -> Term<Map<Int, Int>> {
 #[k::function(total, internal)]
 pub fn CpuStageIo() -> Term<Map<Int, Int>> {
     k::map![0xFF40 -> 0x00, 0xFF44 -> 0xFF, ..DmgIo()]
-}
-
-/// A cartridge's start on a DMG in the CPU stage: the state the boot ROM
-/// leaves, with `W` and `Z` zero.
-#[k::function(total, internal)]
-pub fn Boot(cartridge: Term<Bytes>) -> Term<Start> {
-    State {
-        regs: DmgRegisters(),
-        f: DmgFlags(),
-        pc: BootPc(),
-        sp: BootSp(),
-        ime: false,
-        ei_pending: false,
-        halted: false,
-        halt_bug: false,
-        rom: RomRegion(cartridge),
-        memory: CpuStageIo(),
-        w: 0,
-        z: 0,
-    }
 }

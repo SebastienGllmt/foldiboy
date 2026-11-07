@@ -13,10 +13,9 @@ A step is a sequence of micro-operations.
 An unused opcode locks the CPU: its step ends at `#locked`, after which nothing happens.
 `STOP` decodes to `stop`, which no rule executes: the model does not support it.
 
-A cartridge starts from the state a hardware model's boot ROM hands over, which `src/boot.rs` states once (`DmgRegisters`, `DmgFlags`, `BootPc`, `BootSp`, `DmgIo`, and `CpuStageIo` with the CPU stage's two display stand-ins), the cartridge's first 32 KiB as the ROM (`RomRegion`), and RAM that holds no byte until the program writes one. `Boot(cartridge)` puts these together as the definition's one input, `start` (a `State`, `src/machine.rs`); SingleStepTests states a `State` field by field instead.
-A cartridge's case file gives `start` as `Boot` applied with `{"$call": ..}` (`mooneye/mooneye.toml`, `../../corpus/cases/`).
+A cartridge starts from the state a hardware model's boot ROM hands over, which `src/boot.rs` states once (`DmgRegisters`, `DmgFlags`, `BootPc`, `BootSp`, `DmgIo`, and `CpuStageIo` with the CPU stage's two display stand-ins), the cartridge's first 32 KiB as the ROM (`RomRegion`), and RAM that holds no byte until the program writes one. The initializer (`src/machine.rs`) puts these together from the definition's one input, the cartridge: `krs run FILE` binds it to the file's bytes, and `mooneye/mooneye.toml` names each ROM with `{"$file": ..}`.
 
-The initializer takes the whole architectural state at a boundary: `REGS`, `F`, `PC`, `SP`, `IME`, `EI_PENDING`, `HALTED`, `HALT_BUG` and `MEMORY`; and the unobservable registers `W` and `Z` (the harnesses pass 0), so a run can test that their initial value changes nothing observed.
+SingleStepTests starts from any boundary state, so it builds the definition with `--cfg whole_state`, which swaps in a second initializer. That one takes the whole architectural state at a boundary: `REGS`, `F`, `PC`, `SP`, `IME`, `EI_PENDING`, `HALTED`, `HALT_BUG` and `MEMORY`; and the unobservable registers `W` and `Z` (the harnesses pass 0), so a run can test that their initial value changes nothing observed.
 The bus log starts empty.
 Each machine cycle of the instruction is one bus micro-operation, which appends one event to the `bus` cell:
 `read(addr, value)`, `write(addr, value)`, or `idle` (a cycle with no bus access).
@@ -122,7 +121,8 @@ Claims specify properties to check; they do not define additional CPU behavior.
 | KRS configuration, functions and `k::rules!` | Define the machine state and SM83 transitions. |
 | `krs check` | Check that the composed definition is well formed before executing or proving it. This does not establish SM83 correctness. |
 | `krs emit-k` | Generate K and definition IR from the semantics. |
-| `krs cases`, `krs run --case` | Run case documents and check each against its expectation: the upstream suites' cases and `mooneye/mooneye.toml`. `krs run --output end` also writes a case's start for the Rust CPU adapter (`../sm83-rust-cpu`). |
+| `krs cases` | Run case documents and check each against its expectation: the upstream suites' cases and `mooneye/mooneye.toml`. |
+| `krs run` | Run a cartridge. `krs run FILE --depth 0 --output end` also writes its start for the Rust CPU adapter (`../sm83-rust-cpu`). |
 | `bun run sst` | Run the upstream SingleStepTests SM83 corpus against the semantics. |
 | `bun run mooneye` | Run upstream mooneye acceptance ROMs against the semantics. |
 | `k::claims!` in [src/claims.rs](src/claims.rs) and [src/claims/](src/claims/README.md) | Specify CPU behavior as symbolic execution contracts over the KRS machine, so the native prover can check the instruction rules against them. |
@@ -186,7 +186,7 @@ Changes should be limited to maintaining the suite integration as the build syst
 Keep project-authored verification separate, such as the symbolic contracts in `src/claims.rs`.
 
 `bun run sst` converts every vector of the [SingleStepTests sm83](https://github.com/SingleStepTests/sm83) corpus into a case document (`scripts/singlestep.ts`, which states the mapping), runs them with `krs cases`, and saves krs's records to `results/singlestep.jsonl`.
-Each vector becomes a named case: its `start` is the vector's initial state, a `State`, and its expectation the final registers, flags, `PC`, `SP`, `IME`, `EI`'s pending state, memory and bus log, compared by `krs cases` cell by cell.
+Each vector becomes a named case: its inputs are the vector's initial state, for the `--cfg whole_state` initializer, and its expectation the final registers, flags, `PC`, `SP`, `IME`, `EI`'s pending state, memory and bus log, compared by `krs cases` cell by cell.
 A case runs from its boundary to the next boundary rule: it stops before a boundary rule, at the second stop (the first is the initial state).
 `IE` and `IF` read as zero when a vector does not list them (no vector lists both), so no interrupt is requested: the corpus does not model interrupts.
 `F` is a `Flags` value built from the vector's byte.
@@ -195,7 +195,7 @@ An idle cycle is compared by kind only, because the corpus records the address a
 The corpus is generated by an emulator; it is conformance evidence, not hardware or proof evidence.
 
 `bun run mooneye` builds the mooneye acceptance ROMs that need only the CPU, RAM, `IE` and `IF` (`scripts/roms.ts`, with WLA-DX from nixpkgs) beside `mooneye/mooneye.toml`, and runs its cases with `krs cases`.
-Each case starts from the ROM's cartridge as the boot ROM leaves it (`Boot`) (the CPU stage's `LY` reads `$FF`, so the mooneye harness skips its display code), and expects mooneye's pass registers, `B C D E H L` = 3 5 8 13 21 34, compared under the view `MooneyeResult` (`../sm83-views`).
+Each case starts from the ROM's cartridge as the boot ROM leaves it (the CPU stage's `LY` reads `$FF`, so the mooneye harness skips its display code), and expects mooneye's pass registers, `B C D E H L` = 3 5 8 13 21 34, compared under the view `MooneyeResult` (`../sm83-views`).
 The tests' authors verified their expected results on hardware (the `Verified results` header of each mooneye source), so they are hardware evidence.
 A mooneye test ends at its breakpoint (`LD B,B`) after setting the result registers, and then loops; no rule marks that end, so each run stops at the 2500th instruction boundary, past every ROM's breakpoint (the measured counts are in `mooneye/mooneye.toml`); `results/mooneye.jsonl` holds krs's record of each case (`krs-cases/2`).
 
@@ -209,7 +209,7 @@ Status at the last run:
   The corpus records `HALT` as a fetch plus two internal cycles with `PC + 1`, its generator's convention, which the model does not follow.
 - mooneye: `ei_sequence`, `ei_timing`, `rapid_di_ei`, `reti_intr_timing` and `interrupts/ie_push` pass.
   `if_ie_registers` fails: it expects `IF` bits 7 to 5 to read as 1, an I/O register rule for the memory-map stage.
-- SameSuite `interrupt/ei_delay_halt` (last checked with the removed `sm83-rom` harness's `SM83_DUMP=c000:24`; not rerun since; `krs run --case` prints the memory to recheck it): the VBlank and STAT entries match the hardware results (both return into the `HALT`); the third entry needs the timer.
+- SameSuite `interrupt/ei_delay_halt` (last checked with the removed `sm83-rom` harness's `SM83_DUMP=c000:24`; not rerun since; `krs run` prints the memory to recheck it): the VBlank and STAT entries match the hardware results (both return into the `HALT`); the third entry needs the timer.
 
 | Group | Opcodes | Status |
 | --- | --- | --- |

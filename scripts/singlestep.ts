@@ -6,7 +6,8 @@
 // them with `krs cases`, and saves its records to krs/sm83/results/singlestep.jsonl.
 //
 // Each vector is one instruction from a boundary state: a case that starts from the vector's
-// initial state and expects its final state and bus cycles. What the suite does not state:
+// initial state (`--cfg whole_state`, the definition's second initializer) and expects its final
+// state and bus cycles. What the suite does not state:
 // - The suite treats all 64 KiB as RAM, so the ROM is empty and `memory` holds the listed
 //   bytes. `IE` ($FFFF) and `IF` ($FF0F), which every boundary reads, are zero where a vector
 //   does not list them: no interrupt is requested.
@@ -54,12 +55,8 @@ function toCase(vector: Vector, wz: [number, number]) {
   return {
     name: vector.name,
     inputs: {
-      start: {
-        State: {
-          regs: registers(initial), f: flags(initial.f), pc: initial.pc, sp: initial.sp, ime: initial.ime !== 0,
-          ei_pending: false, halted: false, halt_bug: false, w: wz[0], z: wz[1], rom: { $hex: "" }, memory: memory(ram),
-        },
-      },
+      regs: registers(initial), f: flags(initial.f), pc: initial.pc, sp: initial.sp, ime: initial.ime !== 0,
+      ei_pending: false, halted: false, halt_bug: false, w: wz[0], z: wz[1], rom: { $hex: "" }, memory: memory(ram),
     },
     expect: {
       halt: "stopped",
@@ -95,6 +92,6 @@ console.error(`converted ${files.length} suite files (W,Z = ${wz.join(",")})`);
 
 const documents = files.map((file) => `${out}/${file}.json`);
 const records = "krs/sm83/results/singlestep.jsonl";
-const status = await krs("cases", [...documents, "--jobs", jobs, "--output", "json"], records);
+const status = await krs("cases", [...documents, "--cfg", "whole_state", "--jobs", jobs, "--output", "json"], records);
 await printSummary(records);
 process.exit(status);
