@@ -19,6 +19,21 @@ RAM starts empty, and a read of a byte the case never wrote ends the run as stuc
 Every case starts on a DMG after its boot ROM, in the CPU stage: the definition's initializer builds that state from the cartridge with the specification's own boot functions (`krs/sm83/src/boot.rs`).
 The Rust CPU starts from the state the definition's initializer builds from the case, read from its configuration, so there is one statement of the boot state.
 
+## The corpus and external test suites
+
+kink makes the corpus robust for the specification.
+Each case is there to close something kink computes from the definition, and kink reports when a case stops being needed: a rule to fire, a guard outcome to show, an encoding to execute, a mutation to kill.
+Like any formal method, kink cannot tell whether the specification says what the hardware does.
+That takes evidence from outside the specification.
+
+The external suites are that evidence: SingleStepTests and the mooneye ROMs (`krs/sm83/README.md`), and later SameSuite and other test ROMs.
+Each runs against the definition through its own harness, and none of their tests is copied into the corpus:
+
+- A corpus case states its purpose, and kink checks it. A copied test states none, so nothing could say what it protects or when it becomes redundant.
+- A suite that helped build the corpus would no longer be independent evidence about it.
+
+When an external suite finds a defect the corpus misses, the definition is fixed. If the corpus also failed to notice the defect, its process is fixed too: a case for an obligation kink already states, or the kind of obligation kink is missing, raised with k-rust.
+
 ## Comparing implementations
 
 `bun run compare` (`scripts/compare.ts`) compares every case's run on another implementation with the definition's run, cell by cell, with `krs compare`.
