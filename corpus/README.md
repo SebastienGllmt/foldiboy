@@ -67,6 +67,10 @@ They start from the boot state, not from zeroed registers.
 Three cover what the first `krs kink results` showed no case reaching: `ram-code` runs a routine from WRAM (fetches, a CB fetch, the HALT bug and a dispatch all reading RAM), `halt-ime` executes HALT with IME set and a request pending, and `ie-push-cancel` cancels a dispatch by pushing onto IE.
 Five cover what `krs kink coverage` showed open at k-rust 86eafc770: `halt-mode` and `halt-mode-ime` enter `HALT` mode with IME clear and set, `interrupt-sources` requests STAT and serial together (priority, and the two vectors no case reached), `rom-write` writes into the ROM region, and `stop` executes `STOP`. `daa-flags` gained the four `DAA` inputs whose branch no case told apart: above `$99` with no carry, and a low digit above 9 with no half-carry, after an addition and after a subtraction.
 
+Seven sweeps close the syntax family: at k-rust 86eafc770 `krs kink coverage` showed 82 `k::bits!` field values no case executed, and each sweep executes every encoding of the decode families those values belong to, not only the missing values, so it does not depend on kink's depth.
+`cb-sweep` runs all 256 CB opcodes, `rst-sweep` the 8 `RST` vectors, `cc-sweep` `JR`, `JP`, `CALL` and `RET` on each condition in all four states of Z and C, `ld-sweep` the 63 `LD r, r'`, `alu-sweep` the 8 ALU operations on the 8 operands and an immediate, `incdec-sweep` `INC` and `DEC` on the 8 operands and the 4 pairs, and `word-sweep` `LD rr, nn`, `ADD HL, rr`, `LD (rr), A` and `LD A, (rr)`.
+Each pushes or stores every result, from inputs chosen so that a wrong register, bit index, condition or vector gives a different end; its header says how.
+
 `scripts/roms.ts` pads every cartridge with `$DD`, the lock opcode, so a jump outside a case's code locks at once instead of running on.
 
 ## Mutation testing
@@ -100,7 +104,7 @@ Two committed files are kink's record, each rewritten by the command after a run
 Under the Z3 profile kink caches results and outcomes (its solver queries are bounded by Z3 resource units, not the clock), so a rerun on an unchanged definition and corpus reuses them.
 `[observe]` compares every run at each instruction boundary on `pc`, `ime` and `halted` as well as at its end, so a mutant whose run never ends is told apart where it first differs. While the corpus has `[stop]` or `[observe]`, `krs kink query` and `fuzz` refuse it (their searches do not yet end or compare a path that way).
 
-At k-rust 86eafc770, on the 25 cases (Z3 profile, 2026-11-08), every case is comparable.
+At k-rust 86eafc770, on the 32 cases (Z3 profile, 2026-11-08), every case is comparable.
 Of 81 mutations, 72 are killed and the 9 `unobservable` controls survive, as they must; none is unknown.
 `coverage`, for each family:
 
@@ -108,7 +112,7 @@ Of 81 mutations, 72 are killed and the 9 `unobservable` controls survive, as the
 | --- | --- | --- |
 | rules | 291 of 292 fire (67 claim helpers not counted) | `boundary_wake`: waking from `HALT` needs a request while halted, which only a peripheral makes |
 | requirements | 151 of 196 | 45, none a gap a case can close: 37 are outcomes kink records only when k-rust tries one equation of a function before another (an `if`/`else if` chain, or two complementary equations), 6 are the ROM side of rules that match `memory: { pc -> opcode }`, which never holds a ROM address, and 2 are `boundary_wake`'s |
-| syntax | 225 of 307 | 82 `k::bits!` field values no case executes (CB `RES`/`SET`/`BIT`, `RST`, condition codes, register fields) |
+| syntax | 307 of 307 | none: the sweeps execute every `k::bits!` field value |
 | condition flips | 36 of 56 distinguished | the 20 others flip claim helpers, which no case runs; kink counts them |
 
 The open requirements and the claim-helper flips are not cases to write: they are how `krs kink coverage` counts at this pin.
