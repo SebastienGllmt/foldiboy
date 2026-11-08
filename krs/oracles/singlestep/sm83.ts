@@ -1,9 +1,9 @@
 // Runs the SingleStepTests SM83 suite (v1) on the definition:
 //
-//   bun scripts/singlestep.ts [--wz W,Z] [--jobs N] [FILE...]     (FILE: a suite file's name, e.g. 00 "cb 40"; all by default)
+//   bun krs/oracles/singlestep/sm83.ts [--wz W,Z] [--jobs N] [FILE...]     (FILE: a suite file's name, e.g. 00 "cb 40"; all by default)
 //
-// Converts each suite file into a krs case document (krs/sm83/results/singlestep-cases/), runs
-// them with `krs cases`, and saves its records to krs/sm83/results/singlestep.jsonl.
+// Converts each suite file into a krs case document (krs/oracles/singlestep/results/sm83-cases/), runs
+// them with `krs cases`, and saves its records to krs/oracles/singlestep/results/sm83.jsonl.
 //
 // Each vector is one instruction from a boundary state: a case that starts from the vector's
 // initial state (`--cfg whole_state`, the definition's second initializer) and expects its final
@@ -23,8 +23,8 @@
 
 import { mkdir, readdir, rm } from "node:fs/promises";
 import { resolve } from "node:path";
-import { krs, printSummary, root } from "./krs";
-import { checkout } from "./roms";
+import { krs, printSummary, root } from "../../../scripts/krs";
+import { checkout } from "../../../scripts/roms";
 
 const REGISTERS = ["a", "b", "c", "d", "e", "h", "l"];
 const IE = 0xffff;
@@ -79,7 +79,7 @@ const wz = option("--wz", "0,0").split(",").map(Number) as [number, number];
 const jobs = option("--jobs", "8");
 
 const suite = resolve(checkout("sm83"), "v1");
-const out = resolve(root, "krs/sm83/results/singlestep-cases");
+const out = resolve(root, "krs/oracles/singlestep/results/sm83-cases");
 const files = args.length ? args : (await readdir(suite)).filter((f) => f.endsWith(".json")).map((f) => f.slice(0, -5)).sort();
 await rm(out, { recursive: true, force: true });
 await mkdir(out, { recursive: true });
@@ -91,7 +91,7 @@ for (const file of files) {
 console.error(`converted ${files.length} suite files (W,Z = ${wz.join(",")})`);
 
 const documents = files.map((file) => `${out}/${file}.json`);
-const records = "krs/sm83/results/singlestep.jsonl";
+const records = "krs/oracles/singlestep/results/sm83.jsonl";
 const status = await krs("cases", [...documents, "--cfg", "whole_state", "--jobs", jobs, "--output", "json"], records);
 await printSummary(records);
 process.exit(status);

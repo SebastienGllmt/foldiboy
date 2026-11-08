@@ -3,7 +3,7 @@
 //   bun scripts/roms.ts [corpus] [mooneye] [samesuite]     (all three by default)
 //
 //   corpus     corpus/cases/<id>/case.asm  ->  corpus/cases/<id>/case.gb, with RGBDS
-//   mooneye    the mooneye tests krs/sm83/mooneye/mooneye.toml runs  ->  krs/sm83/mooneye/<test>.gb, with WLA-DX
+//   mooneye    the mooneye tests krs/oracles/mooneye/sm83.toml runs  ->  krs/oracles/mooneye/<test>.gb, with WLA-DX
 //   samesuite  every SameSuite test, in its own checkout, as its Makefile does
 //
 // The upstream suites are checkouts under FOLDIBOY_TEST_ROOT (default: roms/tests beside this
@@ -57,7 +57,7 @@ async function corpus() {
 async function mooneye() {
   const bin = await tools("nixpkgs#wla-dx");
   const suite = checkout("mooneye-test-suite");
-  const out = resolve(root, "krs/sm83/mooneye");
+  const out = resolve(root, "krs/oracles/mooneye");
   for (const test of MOONEYE_TESTS) {
     const name = basename(test);
     await $`${bin}/wla-gb -I ${suite}/common -o ${out}/${name}.o ${suite}/acceptance/${test}.s`.quiet();

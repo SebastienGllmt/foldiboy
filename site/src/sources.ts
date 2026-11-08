@@ -138,7 +138,7 @@ const stripLinks = (s: string) => s.replace(/\[([^\]]*)\](\([^)]*\))?/g, "$1").r
 export async function loadOpcodes(problems: Problem[]) {
   return guard("opcodes", problems, async () => {
     const opsPath = resolve(workspaceRoot, "docs/dmgops.json");
-    const vectorsPath = resolve(sm83, "results/singlestep.jsonl");
+    const vectorsPath = resolve(repoRoot, "krs/oracles/singlestep/results/sm83.jsonl");
     const ops = (await Bun.file(opsPath).json()) as Record<"Unprefixed" | "CBPrefixed", { Name: string; Group: string }[]>;
     // Per suite file (a case document named as the suite file): vectors, met, and the first failure.
     const byFile = new Map<string, { passed: number; total: number; failure?: string }>();
@@ -201,9 +201,9 @@ export async function loadMooneye(problems: Problem[]) {
   return guard("mooneye", problems, async () => {
     const dir = resolve(testRoot, "mooneye-test-suite/acceptance");
     const files = (await readdir(dir, { recursive: true })).filter((f) => f.endsWith(".s")).sort();
-    const reportPath = resolve(sm83, "results/mooneye.jsonl");
+    const reportPath = resolve(repoRoot, "krs/oracles/mooneye/results/sm83.jsonl");
     const report = (await Bun.file(reportPath).exists()) ? (await jsonLines<CaseRecord>(reportPath)).filter((r) => r.case) : undefined;
-    // A case is named as its test's file, without the directory (krs/sm83/mooneye/mooneye.toml).
+    // A case is named as its test's file, without the directory (krs/oracles/mooneye/sm83.toml).
     const results = new Map(report?.map((r) => [caseName(r), r]));
     const rows = files.map((f) => {
       const test = f.replace(/\.s$/, "");

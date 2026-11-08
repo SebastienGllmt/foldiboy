@@ -26,7 +26,7 @@ Each case is there to close something kink computes from the definition, and kin
 Like any formal method, kink cannot tell whether the specification says what the hardware does.
 That takes evidence from outside the specification.
 
-The external suites are that evidence: SingleStepTests and the mooneye ROMs (`krs/sm83/README.md`), and later SameSuite and other test ROMs.
+The external suites are that evidence: SingleStepTests and the mooneye ROMs (`krs/oracles/`), and later SameSuite and other test ROMs.
 Each runs against the definition through its own harness, and none of their tests is copied into the corpus:
 
 - A corpus case states its purpose, and kink checks it. A copied test states none, so nothing could say what it protects or when it becomes redundant.

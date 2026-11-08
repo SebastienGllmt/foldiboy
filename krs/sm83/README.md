@@ -13,7 +13,7 @@ A step is a sequence of micro-operations.
 An unused opcode locks the CPU: its step ends at `#locked`, after which nothing happens.
 `STOP` decodes to `stop`, which no rule executes: the model does not support it.
 
-A cartridge starts from the state a hardware model's boot ROM hands over, which `src/boot.rs` states once (`DmgRegisters`, `DmgFlags`, `BootPc`, `BootSp`, `DmgIo`, and `CpuStageIo` with the CPU stage's two display stand-ins), the cartridge's first 32 KiB as the ROM (`RomRegion`), and RAM that holds no byte until the program writes one. The initializer (`src/machine.rs`) puts these together from the definition's one input, the cartridge: `krs run FILE` binds it to the file's bytes, and `mooneye/mooneye.toml` names each ROM with `{"$file": ..}`.
+A cartridge starts from the state a hardware model's boot ROM hands over, which `src/boot.rs` states once (`DmgRegisters`, `DmgFlags`, `BootPc`, `BootSp`, `DmgIo`, and `CpuStageIo` with the CPU stage's two display stand-ins), the cartridge's first 32 KiB as the ROM (`RomRegion`), and RAM that holds no byte until the program writes one. The initializer (`src/machine.rs`) puts these together from the definition's one input, the cartridge: `krs run FILE` binds it to the file's bytes, and `../oracles/mooneye/sm83.toml` names each ROM with `{"$file": ..}`.
 
 SingleStepTests starts from any boundary state, so it builds the definition with `--cfg whole_state`, which swaps in a second initializer. That one takes the whole architectural state at a boundary: `REGS`, `F`, `PC`, `SP`, `IME`, `EI_PENDING`, `HALTED`, `HALT_BUG` and `MEMORY`; and the unobservable registers `W` and `Z` (the harnesses pass 0), so a run can test that their initial value changes nothing observed.
 The bus log starts empty.
@@ -109,7 +109,7 @@ Moving the pin is a deliberate change: check out the new commit there, rebuild, 
 `KRS_BIN` overrides the scripts' default binary. krs links the Z3 release its `Krs.lock` names (5.3.3), statically, so no Z3 library path is needed; kink's locks name that Z3 build, so a lock written on another build is stale under `--locked`.
 The scripts are `bun run` commands of the repository's `package.json` (`../../scripts/`). `scripts/krs.ts` runs krs with the root definition's selection, `--dependency foldiboy-sm83-core:core --dependency foldiboy-sm83-events:events`; direct KRS commands require the same selection.
 The scripts find the test suites under `FOLDIBOY_TEST_ROOT` (by default `roms/tests` beside the repository, reached through its logical path): `sm83/v1` (SingleStepTests) and `mooneye-test-suite`.
-Build output goes to `target/`, `results/` and the mooneye ROMs beside `mooneye/mooneye.toml`, none of them tracked.
+Build output goes to `target/` and `results/` (the claims' records) here, and to each oracle's directory under `../oracles/`, none of it tracked.
 
 ## Tools and workflow
 
@@ -121,7 +121,7 @@ Claims specify properties to check; they do not define additional CPU behavior.
 | KRS configuration, functions and `k::rules!` | Define the machine state and SM83 transitions. |
 | `krs check` | Check that the composed definition is well formed before executing or proving it. This does not establish SM83 correctness. |
 | `krs emit-k` | Generate K and definition IR from the semantics. |
-| `krs cases` | Run case documents and check each against its expectation: the upstream suites' cases and `mooneye/mooneye.toml`. |
+| `krs cases` | Run case documents and check each against its expectation: the upstream suites' cases and `../oracles/mooneye/sm83.toml`. |
 | `krs run` | Run a cartridge. `krs run FILE --depth 0 --output end` also writes its start for the Rust CPU adapter (`../sm83-rust-cpu`). |
 | `bun run sst` | Run the upstream SingleStepTests SM83 corpus against the semantics. |
 | `bun run mooneye` | Run upstream mooneye acceptance ROMs against the semantics. |
@@ -179,13 +179,13 @@ bun run mooneye
 
 ## Upstream conformance suites
 
-`bun run sst` (`scripts/singlestep.ts`) and `bun run mooneye` (`mooneye/mooneye.toml`) are adapters for the named upstream suites only.
+`bun run sst` (`../oracles/singlestep/sm83.ts`) and `bun run mooneye` (`../oracles/mooneye/sm83.toml`) are adapters for the named upstream suites only. They live in `../oracles/`, one directory per suite, and their tests are not corpus cases (`../../corpus/README.md`, "The corpus and external test suites").
 Their scope is building and loading those suites, executing them, and reporting their prescribed checks.
 Do not add project-authored test cases, proof workflows or general test infrastructure to them.
 Changes should be limited to maintaining the suite integration as the build system, execution API or upstream suite changes.
 Keep project-authored verification separate, such as the symbolic contracts in `src/claims.rs`.
 
-`bun run sst` converts every vector of the [SingleStepTests sm83](https://github.com/SingleStepTests/sm83) corpus into a case document (`scripts/singlestep.ts`, which states the mapping), runs them with `krs cases`, and saves krs's records to `results/singlestep.jsonl`.
+`bun run sst` converts every vector of the [SingleStepTests sm83](https://github.com/SingleStepTests/sm83) corpus into a case document (`../oracles/singlestep/sm83.ts`, which states the mapping), runs them with `krs cases`, and saves krs's records to `../oracles/singlestep/results/sm83.jsonl`.
 Each vector becomes a named case: its inputs are the vector's initial state, for the `--cfg whole_state` initializer, and its expectation the final registers, flags, `PC`, `SP`, `IME`, `EI`'s pending state, memory and bus log, compared by `krs cases` cell by cell.
 A case runs from its boundary to the next boundary rule: it stops before a boundary rule, at the second stop (the first is the initial state).
 `IE` and `IF` read as zero when a vector does not list them (no vector lists both), so no interrupt is requested: the corpus does not model interrupts.
@@ -194,10 +194,10 @@ An idle cycle is compared by kind only, because the corpus records the address a
 `--wz W,Z` sets the unobservable registers' initial value; every vector must give the same verdict for any value.
 The corpus is generated by an emulator; it is conformance evidence, not hardware or proof evidence.
 
-`bun run mooneye` builds the mooneye acceptance ROMs that need only the CPU, RAM, `IE` and `IF` (`scripts/roms.ts`, with WLA-DX from nixpkgs) beside `mooneye/mooneye.toml`, and runs its cases with `krs cases`.
+`bun run mooneye` builds the mooneye acceptance ROMs that need only the CPU, RAM, `IE` and `IF` (`scripts/roms.ts`, with WLA-DX from nixpkgs) beside `../oracles/mooneye/sm83.toml`, and runs its cases with `krs cases`.
 Each case starts from the ROM's cartridge as the boot ROM leaves it (the CPU stage's `LY` reads `$FF`, so the mooneye harness skips its display code), and expects mooneye's pass registers, `B C D E H L` = 3 5 8 13 21 34, compared under the view `MooneyeResult` (`../sm83-views`).
 The tests' authors verified their expected results on hardware (the `Verified results` header of each mooneye source), so they are hardware evidence.
-A mooneye test ends at its breakpoint (`LD B,B`) after setting the result registers, and then loops; one decode rule covers every `LD r,r`, so each run stops before the first fetch of $40, a stop condition evaluated in `krs/sm83-views` (`MooneyeBreakpoint`); `results/mooneye.jsonl` holds krs's record of each case (`krs-cases/4`, with the boundaries it passed, `arrivals`).
+A mooneye test ends at its breakpoint (`LD B,B`) after setting the result registers, and then loops; one decode rule covers every `LD r,r`, so each run stops before the first fetch of $40, a stop condition evaluated in `krs/sm83-views` (`MooneyeBreakpoint`); `../oracles/mooneye/results/sm83.jsonl` holds krs's record of each case (`krs-cases/4`, with the boundaries it passed, `arrivals`).
 
 The migration from KRS `8299da60f` to `793cc0a3a` adds typed helper parameters and builtin list notation.
 Its emitted `definition.k` is byte-identical to the unchanged source emitted by `793cc0a3a`.
