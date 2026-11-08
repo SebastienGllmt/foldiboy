@@ -20,7 +20,9 @@
 //!   does, then the run ends stuck with `k` holding the lock, as the definition's does (the Rust
 //!   CPU treats it as a NOP).
 //! - `STOP` is not covered (the definition is stuck on it): its fetch is logged and the run ends
-//!   stuck.
+//!   stuck with `k` holding `STOP`, as the definition's does.
+//! - HALT mode with no interrupt requested never ends at the CPU stage: the run stops there, as
+//!   the corpus's runs stop at their second halted boundary (corpus/FLOW.toml `[stop]`).
 //! - The interrupt logic's `IE`/`IF` accesses are not bus cycles
 //!   ([`memory::Bus::read_interrupt_register`]) and are not logged.
 //!
@@ -39,6 +41,8 @@ use serde_json::{Value as Json, json};
 /// The opcodes no instruction uses (Pan Docs): executing one locks the CPU.
 const UNUSED: [u8; 11] = [0xD3, 0xDB, 0xDD, 0xE3, 0xE4, 0xEB, 0xEC, 0xED, 0xF4, 0xFC, 0xFD];
 const STOP: u8 = 0x10;
+const IE: u16 = 0xFFFF;
+const IF: u16 = 0xFF0F;
 const REGISTERS: [&str; 7] = ["A", "B", "C", "D", "E", "H", "L"];
 
 fn usage() -> ! {
@@ -92,6 +96,12 @@ impl Bus for CorpusBus {
     fn write_interrupt_register(&mut self, addr: u16, value: u8) {
         self.memory.insert(addr, value);
     }
+}
+
+/// Whether an enabled interrupt is requested: `IE` and `IF` share a set bit.
+fn interrupt_requested(bus: &CorpusBus) -> bool {
+    let byte = |addr| bus.memory.get(&addr).copied().unwrap_or(0);
+    byte(IE) & byte(IF) & 0x1F != 0
 }
 
 fn int<T: TryFrom<u64>>(value: &Json, what: &str) -> Result<T, String> {
@@ -153,6 +163,11 @@ fn run(initial: &Json, budget: u64) -> Result<(Json, Outcome), String> {
     let mut outcome = Outcome { end: "bound", instructions: 0, cycles: 0 };
     let mut k = None;
     loop {
+        if cpu.halted && !interrupt_requested(&cpu.bus) {
+            outcome.end = "stopped";
+            k = Some(json!({ "$seq": [{ "Boundary": [] }] }));
+            break;
+        }
         if cpu.bus.undefined.is_some() {
             outcome.end = "stuck";
             break;
@@ -167,6 +182,7 @@ fn run(initial: &Json, budget: u64) -> Result<(Json, Outcome), String> {
                 cpu.halt_bug = false;
                 if opcode == STOP {
                     outcome.end = "stuck";
+                    k = Some(json!({ "$seq": [{ "Stop": [] }, { "Boundary": [] }] }));
                 } else {
                     outcome.end = "locked";
                     k = Some(json!({ "$seq": [{ "Locked": [] }, { "Boundary": [] }] }));
@@ -182,9 +198,16 @@ fn run(initial: &Json, budget: u64) -> Result<(Json, Outcome), String> {
     }
 
     let mut end = initial.clone();
-    end["halt"] = json!(if outcome.end == "bound" { "depth-bound" } else { "stuck" });
+    end["halt"] = json!(match outcome.end {
+        "bound" => "depth-bound",
+        "stopped" => "stopped",
+        _ => "stuck",
+    });
+    if outcome.end == "stopped" {
+        end["rule"] = json!("crate::interrupt::boundary_halted");
+    }
     let cells = &mut end["cells"];
-    // Only the lock's computation is known; any other end leaves the CPU somewhere the definition
+    // Only the computation at a lock, at STOP and in HALT mode is known; any other end leaves the CPU somewhere the definition
     // names by its own micro-operations, so `k` is stated as empty and differs.
     cells["k"] = k.unwrap_or_else(|| json!({ "$seq": [] }));
     let r = &cpu.regs;

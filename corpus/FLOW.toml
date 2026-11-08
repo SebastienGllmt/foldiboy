@@ -2,7 +2,7 @@
 # `krs kink <verb>` runs every case against the definition and its mutations (mutations/*.toml,
 # K patches of definition.k anchored by KRS item). kink compares a mutant's end with the
 # definition's on every cell the definition does not declare unobservable (W and Z).
-# `bun run kink` builds the cartridges first; each cartridge is a case.
+# `bun run kink VERB` builds the cartridges first; each cartridge is a case.
 
 [spec]
 krs = { definition = "main" }
@@ -14,3 +14,20 @@ work_factor = 4
 
 [[program]]
 files = "cases/*/case.gb"
+
+# A case ends by locking the CPU, except one that enters HALT mode: at the CPU stage nothing
+# requests an interrupt while the CPU is halted, so it never wakes, and its run ends at its second
+# halted boundary (the first one idles). No other case reaches a halted boundary.
+[stop]
+before = ["crate::interrupt::boundary_halted"]
+count = 2
+
+# Every run is also compared at each instruction boundary on where the instruction stream goes
+# and on the interrupt and HALT state, so a mutant whose run never ends (it re-fetches one
+# opcode, or never dispatches) is told apart where it first differs, not left unknown.
+# The rules are named by K label: krs kink does not yet map KRS items here.
+[[observe.point]]
+name = "boundary"
+before = ["SM83.boundary-dispatch", "SM83.boundary-fetch", "SM83.boundary-halted", "SM83.boundary-wake"]
+stutter = "count"
+cells = ["pc", "ime", "halted"]

@@ -4,19 +4,14 @@
 # Each case starts from its cartridge as the boot ROM leaves it (src/boot.rs). A mooneye
 # test ends in its quit routine: it sets B C D E H L (3 5 8 13 21 34 is a pass, all $42 a failure)
 # and executes `LD B,B`, mooneye's breakpoint, then sends the registers over serial and loops.
-# No rule marks that end, so a run stops at an instruction boundary count past every ROM's
-# breakpoint (stop before a boundary rule, `stop_count`), and the expectation compares only the
-# registers there, under the view that keeps B C D E H L (krs/sm83-views); A is stated as 0 and
-# never compared.
-#
-# The boundary count at the breakpoint, measured at k-rust ec5f5ec1f: ei_sequence 1620,
-# ei_timing 1617, rapid_di_ei 1706, reti_intr_timing 1649, ie_push 165, if_ie_registers 1926 (with
-# the failure values). A count too small leaves the test's working values in the registers, so
-# the case is unmet, never met by mistake.
+# One decode rule covers every `LD r,r`, so no rule marks that end: a run stops before the first
+# fetch whose opcode is $40 (`stop_when`, MooneyeBreakpoint in krs/sm83-views), and the expectation
+# compares only the registers there, under the view that keeps B C D E H L (krs/sm83-views); A is
+# stated as 0 and never compared. The depth is a budget: a run that reaches it is inconclusive.
 
 [run]
-stop_before = ["crate::interrupt::boundary_dispatch", "crate::interrupt::boundary_fetch", "crate::interrupt::boundary_wake", "crate::interrupt::boundary_halted"]
-stop_count = 2500
+stop_before = ["crate::interrupt::boundary_fetch"]
+stop_when = { function = "MooneyeBreakpoint", cells = ["pc", "rom_end", "rom"], observer = "foldiboy-sm83-views:views" }
 depth = 10000000
 
 [[case]]

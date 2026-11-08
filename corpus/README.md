@@ -8,6 +8,7 @@ Programs every implementation of the Game Boy CPU runs, and the runner that comp
 `cases/<id>/case.asm` is a cartridge in RGBDS syntax, and the case is the cartridge itself: `case.gb`, which `bun run roms` assembles beside it (ignored by git).
 `krs run cases/<id>/case.gb`, `bun run kink` and `bun run compare` all start from that file.
 It starts at `$0100` in the state the DMG boot ROM leaves, jumps to `Start`, and ends by locking the CPU with an unused opcode (`LOCK`, or `DUMP_AND_LOCK`, which first pushes every register and stores `SP` at `$C000`).
+Two kinds of case end otherwise, as the definition does: `stop` ends stuck on `STOP`, which the CPU stage does not model, and a case that enters `HALT` mode with no interrupt requested never wakes (nothing at the CPU stage requests one), so its run ends at its second halted boundary (`FLOW.toml` `[stop]`, and the same stop in `bun run compare`).
 `include/case.inc` holds the entry, the header space and those macros.
 
 A case sets no register or memory directly: it writes what it needs in a prologue.
@@ -24,7 +25,7 @@ The Rust CPU starts from the state the definition's initializer builds from the 
 An implementation reports a run as a krs end document (`halt`, and every cell of the definition's configuration in the typed case encoding), in `build/ends/<id>.json`.
 
 The Rust emulator's CPU is the one other system today: `krs/sm83-rust-cpu` runs `lib/crates/cpu` over the definition's memory model, from the state the definition's initializer builds from the case (`krs run --depth 0 --output end`, so there is one statement of the boot state), and writes its end document.
-The adapter locks on an unused opcode and is stuck on `STOP`, as the definition is.
+The adapter locks on an unused opcode, is stuck on `STOP`, and stops in `HALT` mode with no interrupt requested, as the definition does.
 
 Every cell is compared; the bus log (`read`, `write`, `idle` events) is compared under a view, a function of the cell's value applied to both sides (`krs/sm83-views`).
 `WritesView` keeps only the writes; `AccessesView` keeps the reads and writes in order and drops idle cycles; no view keeps every event.
@@ -48,7 +49,8 @@ The 17 seed cases are the programs of the first mutation run (`draft-personal/ob
 Where those programs preset RAM, `IE` or `IF`, each case now writes the value in its prologue.
 They start from the boot state, not from zeroed registers.
 
-Three more cover what the first `krs kink results` showed no case reaching: `ram-code` runs a routine from WRAM (fetches, a CB fetch, the HALT bug and a dispatch all reading RAM), `halt-ime` executes HALT with IME set and a request pending, and `ie-push-cancel` cancels a dispatch by pushing onto IE.
+Three cover what the first `krs kink results` showed no case reaching: `ram-code` runs a routine from WRAM (fetches, a CB fetch, the HALT bug and a dispatch all reading RAM), `halt-ime` executes HALT with IME set and a request pending, and `ie-push-cancel` cancels a dispatch by pushing onto IE.
+Five cover what `krs kink coverage` showed open at k-rust 86eafc770: `halt-mode` and `halt-mode-ime` enter `HALT` mode with IME clear and set, `interrupt-sources` requests STAT and serial together (priority, and the two vectors no case reached), `rom-write` writes into the ROM region, and `stop` executes `STOP`. `daa-flags` gained the four `DAA` inputs whose branch no case told apart: above `$99` with no carry, and a low digit above 9 with no half-carry, after an addition and after a subtraction.
 
 `scripts/roms.ts` pads every cartridge with `$DD`, the lock opcode, so a jump outside a case's code locks at once instead of running on.
 
@@ -69,16 +71,29 @@ kink runs each case on the definition and on each mutant and compares their ends
 
 ```sh
 bun run kink check          # admit the definition and the cases, resolve every mutation
-bun run kink results        # each case's end and the rules it fires
-bun run kink run            # each mutation's status: stops at its first killer
-bun run kink report --output verdicts > corpus/results/kink-verdicts.txt
+bun run kink coverage       # what the cases cover: rules, guard outcomes, syntax, condition flips
+bun run kink run            # each mutation's status and its killer
 bun run kink run --full     # every case against every mutation: which cases are redundant
 ```
 
-`results/kink-verdicts.txt` is the last run in kink's own rendering: each mutation's status.
-A mutation stops at the first case that kills it, so adding a case runs only the mutations that survive; kink leaves the killer out of this rendering because which case kills first depends on the order and the cache (`run` prints it). `run --full` names every killer and costs every case on every mutation, so it is for occasional corpus pruning, not routine runs.
-Under the Z3 profile kink caches results and outcomes (its solver queries are bounded by Z3 resource units, not the clock), so a rerun on an unchanged definition and corpus reuses them (2026-11-07, under load: 252 s cold, 116 s warm, the same verdicts).
+Two committed files are kink's record, each rewritten by the command after a run that judged everything, and checked by the same command with `--locked` (exit 1 when it would change):
 
-At k-rust ec5f5ec1f, on the 20 cases (Z3 profile, 2026-11-07): kink compares every cell but `w` and `z`; every case is comparable and ends at `#locked`.
-Of 81 mutations, 72 are killed and the 9 `unobservable` controls survive, as they must; none is unknown. The statuses are those of the first run at d0cf74b53.
-Of the definition's 361 rules and equations, 291 are covered by some case and 67 are claim helpers, which only claims apply. Of the 291, 283 fire and 8 are only matched, so no case takes them: `halt`, `boundary_halted` and `boundary_wake` (no case enters `HALT` mode), `interrupt_vector_2`, `interrupt_vector_4`, `lowest_request_2` and `lowest_request_4` (no case requests those interrupts) and `write_byte_rom`. The other three rules are `decode_stop` (STOP is outside the CPU stage) and `WellFormed` and `WellFormedRegisters`, which nothing applies.
+- `verdicts.lock` (`run`): each mutation's status and, for a killed one, one killer. A run tries the recorded killer first and keeps it while it still kills, so adding a case moves no killer and runs only the survivors on it; a killer that stops killing is replaced, and the diff shows it.
+- `coverage.lock` (`coverage`): each open obligation (a rule no case fires, a guard outcome no case shows, a production or `k::bits!` field value no case reaches) and each condition flip's status and killer.
+
+`run --full` costs every case on every mutation, so it is for occasional corpus pruning, not routine runs.
+Under the Z3 profile kink caches results and outcomes (its solver queries are bounded by Z3 resource units, not the clock), so a rerun on an unchanged definition and corpus reuses them.
+`[observe]` compares every run at each instruction boundary on `pc`, `ime` and `halted` as well as at its end, so a mutant whose run never ends is told apart where it first differs. While the corpus has `[stop]` or `[observe]`, `krs kink query` and `fuzz` refuse it (their searches do not yet end or compare a path that way).
+
+At k-rust 86eafc770, on the 25 cases (Z3 profile, 2026-11-08), every case is comparable.
+Of 81 mutations, 72 are killed and the 9 `unobservable` controls survive, as they must; none is unknown.
+`coverage`, for each family:
+
+| Family | Covered | Open |
+| --- | --- | --- |
+| rules | 291 of 292 fire (67 claim helpers not counted) | `boundary_wake`: waking from `HALT` needs a request while halted, which only a peripheral makes |
+| requirements | 151 of 196 | 45, none a gap a case can close: 37 are outcomes kink records only when k-rust tries one equation of a function before another (an `if`/`else if` chain, or two complementary equations), 6 are the ROM side of rules that match `memory: { pc -> opcode }`, which never holds a ROM address, and 2 are `boundary_wake`'s |
+| syntax | 225 of 307 | 82 `k::bits!` field values no case executes (CB `RES`/`SET`/`BIT`, `RST`, condition codes, register fields) |
+| condition flips | 36 of 56 distinguished | the 20 others flip claim helpers, which no case runs; kink counts them |
+
+The open requirements and the claim-helper flips are not cases to write: they are how `krs kink coverage` counts at this pin.

@@ -20,6 +20,24 @@ Start:
     add a, $08
     daa
     push af
+    ; DAA after an addition above $99 with no carry, and with a low digit above 9 and no
+    ; half-carry; then the same two after a subtraction
+    ld a, $50
+    add a, $50
+    daa
+    push af
+    ld a, $05
+    add a, $05
+    daa
+    push af
+    ld a, $A0
+    sub a, $01
+    daa
+    push af
+    ld a, $1F
+    sub a, $05
+    daa
+    push af
     ld a, $5A
     cpl
     push af

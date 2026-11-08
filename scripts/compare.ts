@@ -44,9 +44,11 @@ await Promise.all(Array.from({ length: JOBS }, starts));
 await $`cargo build --release --offline --quiet`.cwd(resolve(root, "krs/sm83-rust-cpu"));
 await $`${root}/krs/sm83-rust-cpu/target/release/sm83-rust-cpu --out ${build}/ends ${ids.map((id) => `${build}/starts/${id}.json`)}`;
 
-// 3. Every case under every view, in one batch.
+// 3. Every case under every view, in one batch. A case that enters HALT mode stops at its second
+//    halted boundary, as in the corpus (FLOW.toml [stop]); no other case reaches one.
+const run = { stop_before: ["crate::interrupt::boundary_halted"], stop_count: 2 };
 const cases = ids.map((id) => ({ name: id, inputs: { cartridge: { $file: cartridge(id) } } }));
-await Bun.write(`${build}/cases.json`, JSON.stringify({ case: cases }));
+await Bun.write(`${build}/cases.json`, JSON.stringify({ run, case: cases }));
 const pairs = ids.flatMap((id) =>
   VIEWS.map((view) => ({ left: `cases.json#${id}`, right: `ends/${id}.json`, views: { bus: view }, observer: "foldiboy-sm83-views:views" })),
 );

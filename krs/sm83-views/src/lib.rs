@@ -14,8 +14,8 @@
 //! `List.foldl_append` in Lean.
 
 use k::Term;
-use k::builtin::{Int, List, Map};
-use sm83::machine::{Reg8, Register};
+use k::builtin::{Bool, Bytes, Int, List, Map, bytes};
+use sm83::machine::{InRom, Reg8, Register};
 use sm83_events::{CpuEvent, Event};
 
 /// The write events of a bus log, in order.
@@ -68,4 +68,12 @@ pub fn MooneyeResult(regs: Term<Map<Reg8, Int>>) -> Term<Map<Reg8, Int>> {
         Register::H -> regs[Register::H],
         Register::L -> regs[Register::L],
     ]
+}
+
+/// Whether the instruction at `pc` is mooneye's breakpoint, `LD B,B` ($40): a test executes it
+/// once its result is in the registers. Outside the ROM it is false, since `bytes::get` has no
+/// value there.
+#[k::function(total, internal)]
+pub fn MooneyeBreakpoint(pc: Term<Int>, rom_end: Term<Int>, rom: Term<Bytes>) -> Term<Bool> {
+    if InRom(rom_end, pc) { bytes::get(rom, pc) == 0x40 } else { false }
 }
