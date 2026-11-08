@@ -1,3 +1,3 @@
-commit = "86eafc770"
+commit = "13819fe0f"
 path = "/artifacts/worktrees/k-rust-foldiboy-pin"
-note = "k-rust main 2026-11-08 (FB-31 stop conditions; FB-32 verdicts.lock; FB-33..FB-36 krs kink coverage: rules, guard requirements, syntax and condition flips, with coverage.lock; FB-35 query answers no; [observe]; Z3 5.3.3 linked statically)"
+note = "k-rust main 2026-11-08 (FB-40 [observe] by KRS name; [[coverage.argued]]; [coverage] mcdc; heating rules in the rules family; fuzz --cover and --refuted; a claim's status independent of search order). Earlier: FB-31 stop conditions, FB-32 verdicts.lock, FB-33..FB-36 krs kink coverage with coverage.lock, FB-35 query answers no, [observe], Z3 5.3.3 linked statically"

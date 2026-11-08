@@ -1,10 +1,10 @@
 schema = "kink-flow-verdicts"
-version = 12
+version = 16
 document = "coverage"
 profile = "z3"
 z3_version = "5.3.3.0 430d19e697e2ec9bad79ff210d41b4a7a5fcfa3e 430d19e"
 z3_library_sha256 = "7ca2ea1f27e40c86269d6ff7f0e82293708253cb05dbec094c90b08c4ec04d31"
-krs_annotation = 6
+krs_annotation = 8
 
 [spec]
 outcome = "admitted"
@@ -16,12 +16,15 @@ mcdc = []
 
 [rules]
 open = ["rule:crate::interrupt::boundary_wake"]
+argued = []
 
 [requirements]
 open = ["requirement:crate::interrupt::boundary_halted:InterruptRequested(memory):true", "requirement:crate::interrupt::boundary_wake:held", "requirement:crate::interrupt::discard_fetch:refuted", "requirement:crate::micro::fetch:InRom(rom_end, pc):true", "requirement:crate::micro::fetch_cb:refuted", "requirement:crate::micro::fetch_halt_bug:InRom(rom_end, pc):true", "requirement:crate::micro::read_w:refuted", "requirement:crate::micro::read_z:refuted", "requirement:crate::decode::decode_ld_r_r:refuted", "requirement:crate::interrupt::interrupt_vector_2:requested & 0x01 != 0:true", "requirement:crate::interrupt::interrupt_vector_3:requested & 0x01 != 0:true", "requirement:crate::interrupt::interrupt_vector_3:requested & 0x02 != 0:true", "requirement:crate::interrupt::interrupt_vector_4:requested & 0x01 != 0:true", "requirement:crate::interrupt::interrupt_vector_4:requested & 0x02 != 0:true", "requirement:crate::interrupt::interrupt_vector_4:requested & 0x04 != 0:true", "requirement:crate::interrupt::interrupt_vector_5:requested & 0x01 != 0:true", "requirement:crate::interrupt::interrupt_vector_5:requested & 0x02 != 0:true", "requirement:crate::interrupt::interrupt_vector_5:requested & 0x04 != 0:true", "requirement:crate::interrupt::interrupt_vector_5:requested & 0x08 != 0:true", "requirement:crate::interrupt::interrupt_vector_6:refuted", "requirement:crate::interrupt::interrupt_vector_6:requested & 0x01 != 0:true", "requirement:crate::interrupt::interrupt_vector_6:requested & 0x02 != 0:true", "requirement:crate::interrupt::interrupt_vector_6:requested & 0x04 != 0:true", "requirement:crate::interrupt::interrupt_vector_6:requested & 0x08 != 0:true", "requirement:crate::interrupt::interrupt_vector_6:requested & 0x10 != 0:true", "requirement:crate::interrupt::lowest_request_2:requested & 0x01 != 0:true", "requirement:crate::interrupt::lowest_request_3:requested & 0x01 != 0:true", "requirement:crate::interrupt::lowest_request_3:requested & 0x02 != 0:true", "requirement:crate::interrupt::lowest_request_4:requested & 0x01 != 0:true", "requirement:crate::interrupt::lowest_request_4:requested & 0x02 != 0:true", "requirement:crate::interrupt::lowest_request_4:requested & 0x04 != 0:true", "requirement:crate::interrupt::lowest_request_5:requested & 0x01 != 0:true", "requirement:crate::interrupt::lowest_request_5:requested & 0x02 != 0:true", "requirement:crate::interrupt::lowest_request_5:requested & 0x04 != 0:true", "requirement:crate::interrupt::lowest_request_5:requested & 0x08 != 0:true", "requirement:crate::interrupt::lowest_request_6:refuted", "requirement:crate::interrupt::lowest_request_6:requested & 0x01 != 0:true", "requirement:crate::interrupt::lowest_request_6:requested & 0x02 != 0:true", "requirement:crate::interrupt::lowest_request_6:requested & 0x04 != 0:true", "requirement:crate::interrupt::lowest_request_6:requested & 0x08 != 0:true", "requirement:crate::interrupt::lowest_request_6:requested & 0x10 != 0:true", "requirement:foldiboy_sm83_core::alu::daa_high_2:refuted", "requirement:foldiboy_sm83_core::alu::daa_low_2:refuted", "requirement:foldiboy_sm83_core::alu::daa_result_after_sub:refuted", "requirement:foldiboy_sm83_core::arith::signed_2:refuted"]
+argued = []
 
 [syntax]
 open = []
+argued = []
 
 [flips]
 run = true

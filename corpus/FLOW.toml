@@ -25,9 +25,8 @@ count = 2
 # Every run is also compared at each instruction boundary on where the instruction stream goes
 # and on the interrupt and HALT state, so a mutant whose run never ends (it re-fetches one
 # opcode, or never dispatches) is told apart where it first differs, not left unknown.
-# The rules are named by K label: krs kink does not yet map KRS items here.
 [[observe.point]]
 name = "boundary"
-before = ["SM83.boundary-dispatch", "SM83.boundary-fetch", "SM83.boundary-halted", "SM83.boundary-wake"]
+before = ["crate::interrupt::boundary_dispatch", "crate::interrupt::boundary_fetch", "crate::interrupt::boundary_halted", "crate::interrupt::boundary_wake"]
 stutter = "count"
 cells = ["pc", "ime", "halted"]
