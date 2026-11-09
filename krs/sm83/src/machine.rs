@@ -7,7 +7,7 @@ use crate::alu::{FlagByte, FlagSet, Flags};
 use crate::arith::Pair;
 use crate::boot::{BootPc, BootSp, CpuStageIo, DmgFlags, DmgRegisters, RomRegion};
 use crate::decode::{Cond, Condition, Pair16, RegPair};
-use crate::interrupt::{IF, InterruptRequest, Step};
+use crate::interrupt::{IF, IF_UNUSED_BITS, InterruptRequest, Step};
 
 pub use sm83_events::{CpuEvent, Event};
 
@@ -175,7 +175,7 @@ pub fn InRom(rom_end: Term<Int>, addr: Term<Int>) -> Term<Bool> {
 #[cfg(not(whole_state))]
 #[k::function(total, internal)]
 pub fn Latch(addr: Term<Int>, value: Term<Int>) -> Term<Int> {
-    if addr == IF { value | 0xE0 } else { value }
+    if addr == IF { value | IF_UNUSED_BITS } else { value }
 }
 
 /// The byte `memory` holds at `addr` after a bus write of `value`: every address is RAM.

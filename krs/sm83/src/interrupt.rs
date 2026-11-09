@@ -69,10 +69,18 @@ pub const IE: Int = 0xFFFF;
 #[k::constant]
 pub const IF: Int = 0xFF0F;
 
+/// The five interrupts' bits in `IE` and `IF`: VBlank, LCD STAT, timer, serial and joypad.
+#[k::constant]
+pub const INTERRUPT_BITS: Int = 0x1F;
+
+/// `IF`'s bits 7 to 5, which do not exist and read as 1 (Pan Docs; mooneye if_ie_registers).
+#[k::constant]
+pub const IF_UNUSED_BITS: Int = 0xE0;
+
 /// The interrupts both enabled and requested, as a bit set.
 #[k::function(total, internal)]
 pub fn Requested(ie: Term<Int>, flags: Term<Int>) -> Term<Int> {
-    ie & flags & 0x1F
+    ie & flags & INTERRUPT_BITS
 }
 
 /// Whether `memory` holds an enabled and requested interrupt.

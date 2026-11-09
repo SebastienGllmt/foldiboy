@@ -51,6 +51,10 @@ const UNUSED: [u8; 11] = [0xD3, 0xDB, 0xDD, 0xE3, 0xE4, 0xEB, 0xEC, 0xED, 0xF4, 
 const STOP: u8 = 0x10;
 const IE: u16 = 0xFFFF;
 const IF: u16 = 0xFF0F;
+/// The five interrupts' bits in `IE` and `IF`, as the definition's `INTERRUPT_BITS`.
+const INTERRUPT_BITS: u8 = 0x1F;
+/// `IF`'s bits 7 to 5, which read as 1, as the definition's `IF_UNUSED_BITS`.
+const IF_UNUSED_BITS: u8 = 0xE0;
 const REGISTERS: [&str; 7] = ["A", "B", "C", "D", "E", "H", "L"];
 
 fn usage() -> ! {
@@ -93,7 +97,7 @@ impl Bus for CorpusBus {
     fn write(&mut self, addr: u16, value: u8) {
         self.log.push(json!({ "Write": { "addr": addr, "value": value } }));
         if usize::from(addr) >= self.rom.len() {
-            self.memory.insert(addr, if addr == IF { value | 0xE0 } else { value });
+            self.memory.insert(addr, if addr == IF { value | IF_UNUSED_BITS } else { value });
         }
     }
 
@@ -102,14 +106,14 @@ impl Bus for CorpusBus {
     }
 
     fn write_interrupt_register(&mut self, addr: u16, value: u8) {
-        self.memory.insert(addr, if addr == IF { value | 0xE0 } else { value });
+        self.memory.insert(addr, if addr == IF { value | IF_UNUSED_BITS } else { value });
     }
 }
 
 /// Whether an enabled interrupt is requested: `IE` and `IF` share a set bit.
 fn interrupt_requested(bus: &CorpusBus) -> bool {
     let byte = |addr| bus.memory.get(&addr).copied().unwrap_or(0);
-    byte(IE) & byte(IF) & 0x1F != 0
+    byte(IE) & byte(IF) & INTERRUPT_BITS != 0
 }
 
 fn int<T: TryFrom<u64>>(value: &Json, what: &str) -> Result<T, String> {
