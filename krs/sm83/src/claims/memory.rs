@@ -42,6 +42,7 @@ pub mod spec {
                 ),
         )]
         contract_load_a_pair: {
+            requests: [],
             rom_end,
             k: [Instruction::LoadA { addr: Address::ViaPair { high, low } }],
             regs: r,
@@ -76,6 +77,7 @@ pub mod spec {
                 ),
         )]
         contract_store_a_pair: {
+            requests: [],
             rom_end,
             k: [Instruction::StoreA { addr: Address::ViaPair { high, low } }],
             regs: r,
@@ -109,6 +111,7 @@ pub mod spec {
                 ),
         )]
         contract_load_a_hl_step: {
+            requests: [],
             rom_end,
             k: [Instruction::LoadA { addr: Address::ViaHlStep { delta } }],
             regs: r,
@@ -153,6 +156,7 @@ pub mod spec {
                 ),
         )]
         contract_store_a_hl_step: {
+            requests: [],
             rom_end,
             k: [Instruction::StoreA { addr: Address::ViaHlStep { delta } }],
             regs: r,
@@ -193,6 +197,7 @@ pub mod spec {
                 ),
         )]
         contract_load_a_high_c: {
+            requests: [],
             rom_end,
             k: [Instruction::LoadA { addr: Address::HighC }],
             regs: r,
@@ -223,6 +228,7 @@ pub mod spec {
                 ),
         )]
         contract_store_a_high_c: {
+            requests: [],
             rom_end,
             k: [Instruction::StoreA { addr: Address::HighC }],
             regs: r,
@@ -255,6 +261,7 @@ pub mod spec {
                 ),
         )]
         contract_load_a_high_immediate: {
+            requests: [],
             rom_end,
             k: [Instruction::LoadA { addr: Address::HighImmediate }],
             regs: r,
@@ -289,6 +296,7 @@ pub mod spec {
                 ),
         )]
         contract_store_a_high_immediate: {
+            requests: [],
             rom_end,
             k: [Instruction::StoreA { addr: Address::HighImmediate }],
             regs: r,
@@ -325,6 +333,7 @@ pub mod spec {
                 ),
         )]
         contract_load_a_absolute: {
+            requests: [],
             rom_end,
             k: [Instruction::LoadA { addr: Address::Absolute }],
             regs: r,
@@ -364,6 +373,7 @@ pub mod spec {
                 ),
         )]
         contract_store_a_absolute: {
+            requests: [],
             rom_end,
             k: [Instruction::StoreA { addr: Address::Absolute }],
             regs: r,
@@ -405,6 +415,7 @@ pub mod spec {
                 ),
         )]
         contract_store_sp: {
+            requests: [],
             rom_end,
             k: [Instruction::StoreSp],
             pc: pc,
@@ -453,6 +464,7 @@ pub mod spec {
                 ),
         )]
         contract_push_registers: {
+            requests: [],
             rom_end,
             k: [Instruction::Push { pair: Pair16::Registers { high, low } }],
             regs: r,
@@ -495,6 +507,7 @@ pub mod spec {
                 ),
         )]
         contract_push_af: {
+            requests: [],
             rom_end,
             k: [Instruction::Push { pair: Pair16::Af }],
             regs: r,
@@ -535,6 +548,7 @@ pub mod spec {
                 ),
         )]
         contract_pop_registers: {
+            requests: [],
             rom_end,
             k: [Instruction::Pop { pair: Pair16::Registers { high, low } }],
             regs: r,
@@ -567,6 +581,7 @@ pub mod spec {
                 ),
         )]
         contract_pop_af: {
+            requests: [],
             rom_end,
             k: [Instruction::Pop { pair: Pair16::Af }],
             regs: r,
@@ -606,6 +621,7 @@ pub mod spec {
                 ),
         )]
         contract_sp_offset_hl: {
+            requests: [],
             rom_end,
             k: [Instruction::LdHlSpOffset],
             pc: pc,
@@ -650,6 +666,7 @@ pub mod spec {
                 ),
         )]
         contract_sp_offset_sp: {
+            requests: [],
             rom_end,
             k: [Instruction::AddSpOffset],
             pc: pc,

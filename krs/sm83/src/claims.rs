@@ -31,6 +31,7 @@ pub mod add_hl_de {
                 && IsByte(r[Register::E])
         )]
         add_hl_de: {
+            requests: [],
             k: [
                 Instruction::AddHl {
                     pair: Pair16::Registers { high: Register::D, low: Register::E },

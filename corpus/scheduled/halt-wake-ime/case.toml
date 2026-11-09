@@ -1,0 +1,5 @@
+# The timer requests its interrupt one machine cycle into HALT mode: the CPU has spent one halted
+# boundary idling. Cycle 20 is the number of bus events before it.
+[inputs]
+cartridge = { "$file" = "case.gb" }
+requests = [{ At = { cycle = 20, bits = 0x04 } }]

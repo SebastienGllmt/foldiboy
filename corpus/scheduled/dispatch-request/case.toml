@@ -1,0 +1,6 @@
+# The timer at cycle 19, the boundary after the second NOP: the dispatch's five machine cycles are
+# 19 to 23 (a discarded fetch, two internal cycles, the two pushes of PC). VBlank at cycle 21,
+# during the second internal cycle.
+[inputs]
+cartridge = { "$file" = "case.gb" }
+requests = [{ At = { cycle = 19, bits = 0x04 } }, { At = { cycle = 21, bits = 0x01 } }]

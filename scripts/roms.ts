@@ -2,7 +2,7 @@
 //
 //   bun scripts/roms.ts [corpus] [mooneye] [samesuite]     (all three by default)
 //
-//   corpus     corpus/cases/<id>/case.asm  ->  corpus/cases/<id>/case.gb, with RGBDS
+//   corpus     corpus/{cases,scheduled}/<id>/case.asm  ->  case.gb beside it, with RGBDS
 //   mooneye    the mooneye tests krs/oracles/mooneye/sm83.toml runs  ->  krs/oracles/mooneye/<test>.gb, with WLA-DX
 //   samesuite  every SameSuite test, in its own checkout, as its Makefile does
 //
@@ -43,15 +43,17 @@ async function tools(installable: string): Promise<string> {
 // ends the run at once.
 async function corpus() {
   const bin = await tools("nixpkgs#rgbds");
-  const ids = await readdir(resolve(root, "corpus/cases"));
-  for (const id of ids) {
-    const dir = resolve(root, "corpus/cases", id);
+  const dirs = [];
+  for (const kind of ["cases", "scheduled"]) {
+    for (const id of await readdir(resolve(root, "corpus", kind))) dirs.push(resolve(root, "corpus", kind, id));
+  }
+  for (const dir of dirs) {
     await $`${bin}/rgbasm -Wall -I ${root}/corpus/include -o ${dir}/case.o ${dir}/case.asm`.quiet();
     await $`${bin}/rgblink -p 0xDD -o ${dir}/case.gb -n ${dir}/case.sym -m ${dir}/case.map ${dir}/case.o`.quiet();
     await $`${bin}/rgbfix -v -p 0xDD ${dir}/case.gb`.quiet();
     await rm(`${dir}/case.o`);
   }
-  console.error(`corpus: ${ids.length} ROMs`);
+  console.error(`corpus: ${dirs.length} ROMs`);
 }
 
 async function mooneye() {

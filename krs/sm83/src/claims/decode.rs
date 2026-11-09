@@ -155,6 +155,7 @@ pub mod spec {
         #[k::claim(all_paths)]
         #[k::requires(k::bits!(opcode, "00 __0 001"))]
         contract_decode_ld_r16_immediate: {
+            requests: [],
             k: [crate::Decode(opcode)],
         } => {
             k: [Instruction::Ld16 { pair: ExpectedPair((opcode / 0x10) % 4) }],
@@ -164,6 +165,7 @@ pub mod spec {
         #[k::claim(all_paths)]
         #[k::requires(k::bits!(opcode, "00 __0 010"))]
         contract_decode_store_a_indirect: {
+            requests: [],
             k: [crate::Decode(opcode)],
         } => {
             k: [Instruction::StoreA { addr: ExpectedIndirectAddress((opcode / 0x10) % 4) }],
@@ -173,6 +175,7 @@ pub mod spec {
         #[k::claim(all_paths)]
         #[k::requires(k::bits!(opcode, "00 __1 010"))]
         contract_decode_load_a_indirect: {
+            requests: [],
             k: [crate::Decode(opcode)],
         } => {
             k: [Instruction::LoadA { addr: ExpectedIndirectAddress((opcode / 0x10) % 4) }],
@@ -182,6 +185,7 @@ pub mod spec {
         #[k::claim(all_paths)]
         #[k::requires(k::bits!(opcode, "00 __0 011"))]
         contract_decode_inc16: {
+            requests: [],
             k: [crate::Decode(opcode)],
         } => {
             k: [Instruction::Inc16 { pair: ExpectedPair((opcode / 0x10) % 4) }],
@@ -191,6 +195,7 @@ pub mod spec {
         #[k::claim(all_paths)]
         #[k::requires(k::bits!(opcode, "00 __1 011"))]
         contract_decode_dec16: {
+            requests: [],
             k: [crate::Decode(opcode)],
         } => {
             k: [Instruction::Dec16 { pair: ExpectedPair((opcode / 0x10) % 4) }],
@@ -200,6 +205,7 @@ pub mod spec {
         #[k::claim(all_paths)]
         #[k::requires(k::bits!(opcode, "00 __1 001"))]
         contract_decode_addhl: {
+            requests: [],
             k: [crate::Decode(opcode)],
         } => {
             k: [Instruction::AddHl { pair: ExpectedPair((opcode / 0x10) % 4) }],
@@ -209,6 +215,7 @@ pub mod spec {
         #[k::claim(all_paths)]
         #[k::requires(k::bits!(opcode, "00 ___ 100"))]
         contract_decode_inc_r8: {
+            requests: [],
             k: [crate::Decode(opcode)],
         } => {
             k: [Instruction::Update8 { op: Unary::Inc, target: ExpectedOperand((opcode / 8) % 8) }],
@@ -218,6 +225,7 @@ pub mod spec {
         #[k::claim(all_paths)]
         #[k::requires(k::bits!(opcode, "00 ___ 101"))]
         contract_decode_dec_r8: {
+            requests: [],
             k: [crate::Decode(opcode)],
         } => {
             k: [Instruction::Update8 { op: Unary::Dec, target: ExpectedOperand((opcode / 8) % 8) }],
@@ -227,6 +235,7 @@ pub mod spec {
         #[k::claim(all_paths)]
         #[k::requires(k::bits!(opcode, "00 ___ 110"))]
         contract_decode_ld_r8_immediate: {
+            requests: [],
             k: [crate::Decode(opcode)],
         } => {
             k: [
@@ -241,6 +250,7 @@ pub mod spec {
         #[k::claim(all_paths)]
         #[k::requires(k::bits!(opcode, "00 ___ 111"))]
         contract_decode_accumulator: {
+            requests: [],
             k: [crate::Decode(opcode)],
         } => {
             k: [
@@ -255,6 +265,7 @@ pub mod spec {
         #[k::claim(all_paths)]
         #[k::requires(k::bits!(opcode, "00 1__ 000"))]
         contract_decode_jr_conditional: {
+            requests: [],
             k: [crate::Decode(opcode)],
         } => {
             k: [Instruction::JumpRelative { cond: ExpectedCondition((opcode / 8) % 4) }],
@@ -264,6 +275,7 @@ pub mod spec {
         #[k::claim(all_paths)]
         #[k::requires(k::bits!(opcode, "01 ___ ___") && opcode != HALT_OPCODE)]
         contract_decode_ld_r8_r8: {
+            requests: [],
             k: [crate::Decode(opcode)],
         } => {
             k: [
@@ -278,6 +290,7 @@ pub mod spec {
         #[k::claim(all_paths)]
         #[k::requires(k::bits!(opcode, "10 ___ ___"))]
         contract_decode_alu_r8: {
+            requests: [],
             k: [crate::Decode(opcode)],
         } => {
             k: [
@@ -292,6 +305,7 @@ pub mod spec {
         #[k::claim(all_paths)]
         #[k::requires(k::bits!(opcode, "11 0__ 000"))]
         contract_decode_returnif: {
+            requests: [],
             k: [crate::Decode(opcode)],
         } => {
             k: [Instruction::ReturnIf { cond: ExpectedCondition((opcode / 8) % 4) }],
@@ -301,6 +315,7 @@ pub mod spec {
         #[k::claim(all_paths)]
         #[k::requires(k::bits!(opcode, "11 0__ 010"))]
         contract_decode_jump: {
+            requests: [],
             k: [crate::Decode(opcode)],
         } => {
             k: [Instruction::Jump { cond: ExpectedCondition((opcode / 8) % 4) }],
@@ -310,6 +325,7 @@ pub mod spec {
         #[k::claim(all_paths)]
         #[k::requires(k::bits!(opcode, "11 0__ 100"))]
         contract_decode_call: {
+            requests: [],
             k: [crate::Decode(opcode)],
         } => {
             k: [Instruction::Call { cond: ExpectedCondition((opcode / 8) % 4) }],
@@ -319,6 +335,7 @@ pub mod spec {
         #[k::claim(all_paths)]
         #[k::requires(k::bits!(opcode, "11 __0 001"))]
         contract_decode_pop: {
+            requests: [],
             k: [crate::Decode(opcode)],
         } => {
             k: [Instruction::Pop { pair: ExpectedStackPair((opcode / 0x10) % 4) }],
@@ -328,6 +345,7 @@ pub mod spec {
         #[k::claim(all_paths)]
         #[k::requires(k::bits!(opcode, "11 __0 101"))]
         contract_decode_push: {
+            requests: [],
             k: [crate::Decode(opcode)],
         } => {
             k: [Instruction::Push { pair: ExpectedStackPair((opcode / 0x10) % 4) }],
@@ -337,6 +355,7 @@ pub mod spec {
         #[k::claim(all_paths)]
         #[k::requires(k::bits!(opcode, "11 ___ 110"))]
         contract_decode_alu_immediate: {
+            requests: [],
             k: [crate::Decode(opcode)],
         } => {
             k: [Instruction::Alu8 { op: ExpectedAluOp((opcode / 8) % 8), src: Operand::Immediate }],
@@ -345,6 +364,7 @@ pub mod spec {
         /// RST retains explicit cases: the generated Lean closer does not yet handle its symbolic arithmetic target.
         #[k::claim(all_paths)]
         contract_decode_rst: {
+            requests: [],
             k: [crate::Decode(opcode @ (0xC7 | 0xCF | 0xD7 | 0xDF | 0xE7 | 0xEF | 0xF7 | 0xFF))],
         } => {
             k: [Instruction::Restart { target: ((opcode / 8) % 8) * 8 }],
@@ -353,6 +373,7 @@ pub mod spec {
         /// Pan Docs opcode layout: explicit finite byte alternatives and independently specified fields.
         #[k::claim(all_paths)]
         contract_decode_fixed_00: {
+            requests: [],
             k: [crate::Decode(0x00)],
         } => {
             k: [Instruction::Nop],
@@ -361,6 +382,7 @@ pub mod spec {
         /// Pan Docs opcode layout: explicit finite byte alternatives and independently specified fields.
         #[k::claim(all_paths)]
         contract_decode_fixed_08: {
+            requests: [],
             k: [crate::Decode(0x08)],
         } => {
             k: [Instruction::StoreSp],
@@ -369,6 +391,7 @@ pub mod spec {
         /// Pan Docs opcode layout: explicit finite byte alternatives and independently specified fields.
         #[k::claim(all_paths)]
         contract_decode_fixed_18: {
+            requests: [],
             k: [crate::Decode(0x18)],
         } => {
             k: [Instruction::JumpRelative { cond: Condition::Always }],
@@ -377,6 +400,7 @@ pub mod spec {
         /// Pan Docs opcode layout: explicit finite byte alternatives and independently specified fields.
         #[k::claim(all_paths)]
         contract_decode_fixed_76: {
+            requests: [],
             k: [crate::Decode(0x76)],
         } => {
             k: [Instruction::Halt],
@@ -385,6 +409,7 @@ pub mod spec {
         /// Pan Docs opcode layout: explicit finite byte alternatives and independently specified fields.
         #[k::claim(all_paths)]
         contract_decode_fixed_c3: {
+            requests: [],
             k: [crate::Decode(0xC3)],
         } => {
             k: [Instruction::Jump { cond: Condition::Always }],
@@ -393,6 +418,7 @@ pub mod spec {
         /// Pan Docs opcode layout: explicit finite byte alternatives and independently specified fields.
         #[k::claim(all_paths)]
         contract_decode_fixed_c9: {
+            requests: [],
             k: [crate::Decode(0xC9)],
         } => {
             k: [Instruction::Return],
@@ -401,6 +427,7 @@ pub mod spec {
         /// Pan Docs opcode layout: explicit finite byte alternatives and independently specified fields.
         #[k::claim(all_paths)]
         contract_decode_fixed_cb: {
+            requests: [],
             k: [crate::Decode(0xCB)],
         } => {
             k: [Instruction::Prefix],
@@ -409,6 +436,7 @@ pub mod spec {
         /// Pan Docs opcode layout: explicit finite byte alternatives and independently specified fields.
         #[k::claim(all_paths)]
         contract_decode_fixed_cd: {
+            requests: [],
             k: [crate::Decode(0xCD)],
         } => {
             k: [Instruction::Call { cond: Condition::Always }],
@@ -417,6 +445,7 @@ pub mod spec {
         /// Pan Docs opcode layout: explicit finite byte alternatives and independently specified fields.
         #[k::claim(all_paths)]
         contract_decode_fixed_d9: {
+            requests: [],
             k: [crate::Decode(0xD9)],
         } => {
             k: [Instruction::ReturnFromInterrupt],
@@ -425,6 +454,7 @@ pub mod spec {
         /// Pan Docs opcode layout: explicit finite byte alternatives and independently specified fields.
         #[k::claim(all_paths)]
         contract_decode_fixed_e0: {
+            requests: [],
             k: [crate::Decode(0xE0)],
         } => {
             k: [Instruction::StoreA { addr: Address::HighImmediate }],
@@ -433,6 +463,7 @@ pub mod spec {
         /// Pan Docs opcode layout: explicit finite byte alternatives and independently specified fields.
         #[k::claim(all_paths)]
         contract_decode_fixed_e2: {
+            requests: [],
             k: [crate::Decode(0xE2)],
         } => {
             k: [Instruction::StoreA { addr: Address::HighC }],
@@ -441,6 +472,7 @@ pub mod spec {
         /// Pan Docs opcode layout: explicit finite byte alternatives and independently specified fields.
         #[k::claim(all_paths)]
         contract_decode_fixed_e8: {
+            requests: [],
             k: [crate::Decode(0xE8)],
         } => {
             k: [Instruction::AddSpOffset],
@@ -449,6 +481,7 @@ pub mod spec {
         /// Pan Docs opcode layout: explicit finite byte alternatives and independently specified fields.
         #[k::claim(all_paths)]
         contract_decode_fixed_e9: {
+            requests: [],
             k: [crate::Decode(0xE9)],
         } => {
             k: [Instruction::JumpHl],
@@ -457,6 +490,7 @@ pub mod spec {
         /// Pan Docs opcode layout: explicit finite byte alternatives and independently specified fields.
         #[k::claim(all_paths)]
         contract_decode_fixed_ea: {
+            requests: [],
             k: [crate::Decode(0xEA)],
         } => {
             k: [Instruction::StoreA { addr: Address::Absolute }],
@@ -465,6 +499,7 @@ pub mod spec {
         /// Pan Docs opcode layout: explicit finite byte alternatives and independently specified fields.
         #[k::claim(all_paths)]
         contract_decode_fixed_f0: {
+            requests: [],
             k: [crate::Decode(0xF0)],
         } => {
             k: [Instruction::LoadA { addr: Address::HighImmediate }],
@@ -473,6 +508,7 @@ pub mod spec {
         /// Pan Docs opcode layout: explicit finite byte alternatives and independently specified fields.
         #[k::claim(all_paths)]
         contract_decode_fixed_f2: {
+            requests: [],
             k: [crate::Decode(0xF2)],
         } => {
             k: [Instruction::LoadA { addr: Address::HighC }],
@@ -481,6 +517,7 @@ pub mod spec {
         /// Pan Docs opcode layout: explicit finite byte alternatives and independently specified fields.
         #[k::claim(all_paths)]
         contract_decode_fixed_f3: {
+            requests: [],
             k: [crate::Decode(0xF3)],
         } => {
             k: [Instruction::DisableInterrupts],
@@ -489,6 +526,7 @@ pub mod spec {
         /// Pan Docs opcode layout: explicit finite byte alternatives and independently specified fields.
         #[k::claim(all_paths)]
         contract_decode_fixed_f8: {
+            requests: [],
             k: [crate::Decode(0xF8)],
         } => {
             k: [Instruction::LdHlSpOffset],
@@ -497,6 +535,7 @@ pub mod spec {
         /// Pan Docs opcode layout: explicit finite byte alternatives and independently specified fields.
         #[k::claim(all_paths)]
         contract_decode_fixed_f9: {
+            requests: [],
             k: [crate::Decode(0xF9)],
         } => {
             k: [Instruction::LdSpHl],
@@ -505,6 +544,7 @@ pub mod spec {
         /// Pan Docs opcode layout: explicit finite byte alternatives and independently specified fields.
         #[k::claim(all_paths)]
         contract_decode_fixed_fa: {
+            requests: [],
             k: [crate::Decode(0xFA)],
         } => {
             k: [Instruction::LoadA { addr: Address::Absolute }],
@@ -513,6 +553,7 @@ pub mod spec {
         /// Pan Docs opcode layout: explicit finite byte alternatives and independently specified fields.
         #[k::claim(all_paths)]
         contract_decode_fixed_fb: {
+            requests: [],
             k: [crate::Decode(0xFB)],
         } => {
             k: [Instruction::EnableInterrupts],
@@ -521,6 +562,7 @@ pub mod spec {
         /// Model policy only: STOP decodes to an instruction no rule executes. This is not a hardware STOP claim.
         #[k::claim(all_paths)]
         contract_decode_stop_unsupported: {
+            requests: [],
             k: [crate::Decode(0x10)],
         } => {
             k: [Instruction::Stop],
@@ -529,6 +571,7 @@ pub mod spec {
         /// Pan Docs: the eleven unused opcodes lock up the CPU; each decodes to the locking instruction.
         #[k::claim(all_paths)]
         contract_decode_illegal: {
+            requests: [],
             k: [
                 crate::Decode(
                     opcode @ (0xD3
@@ -552,6 +595,7 @@ pub mod spec {
         #[k::claim(all_paths)]
         #[k::requires(k::bits!(opcode, "00 ___ ___"))]
         contract_decode_cb_rotations: {
+            requests: [],
             k: [crate::DecodeCb(opcode)],
         } => {
             k: [
@@ -566,6 +610,7 @@ pub mod spec {
         #[k::claim(all_paths)]
         #[k::requires(k::bits!(opcode, "01 ___ ___"))]
         contract_decode_cb_bit: {
+            requests: [],
             k: [crate::DecodeCb(opcode)],
         } => {
             k: [
@@ -577,6 +622,7 @@ pub mod spec {
         #[k::claim(all_paths)]
         #[k::requires(k::bits!(opcode, "10 ___ ___"))]
         contract_decode_cb_reset: {
+            requests: [],
             k: [crate::DecodeCb(opcode)],
         } => {
             k: [
@@ -591,6 +637,7 @@ pub mod spec {
         #[k::claim(all_paths)]
         #[k::requires(k::bits!(opcode, "11 ___ ___"))]
         contract_decode_cb_set: {
+            requests: [],
             k: [crate::DecodeCb(opcode)],
         } => {
             k: [

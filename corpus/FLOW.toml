@@ -12,12 +12,17 @@ time_ms = 30000
 max_depth = 200000
 work_factor = 4
 
+# A case in cases/ is a cartridge, and the rest of the console requests no interrupt. A case in
+# scheduled/ is a case document: its cartridge and the requests (the CPU stage's REQUESTS input).
 [[program]]
 files = "cases/*/case.gb"
+inputs = { requests = [] }
 
-# A case ends by locking the CPU, except one that enters HALT mode: at the CPU stage nothing
-# requests an interrupt while the CPU is halted, so it never wakes, and its run ends at its second
-# halted boundary (the first one idles). No other case reaches a halted boundary.
+[[program]]
+cases = "scheduled/*/case.toml"
+
+# A case ends by locking the CPU, except one that enters HALT mode with nothing to wake it: its run
+# ends at its second halted boundary (the first one idles). No other case reaches one.
 [stop]
 before = ["crate::interrupt::boundary_halted"]
 count = 2

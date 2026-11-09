@@ -7,8 +7,12 @@ Programs every implementation of the Game Boy CPU runs, and the runner that comp
 
 `cases/<id>/case.asm` is a cartridge in RGBDS syntax, and the case is the cartridge itself: `case.gb`, which `bun run roms` assembles beside it (ignored by git).
 `krs run cases/<id>/case.gb`, `bun run kink` and `bun run compare` all start from that file.
+
+`scheduled/<id>/` holds the cases that need the rest of the console: `case.asm`, assembled the same way, and `case.toml`, a case document that binds the cartridge and the interrupt requests the console makes (`requests`, the CPU stage's `REQUESTS` input; `krs/sm83/src/interrupt.rs`).
+A request `{ At = { cycle = N, bits = B } }` sets `B` in `IF` once `N` machine cycles have run, which the bus log counts: one event per machine cycle.
+Only a request can wake the CPU from `HALT` mode or arrive during an interrupt dispatch, since no program runs then. A case in `cases/` makes no request.
 It starts at `$0100` in the state the DMG boot ROM leaves, jumps to `Start`, and ends by locking the CPU with an unused opcode (`LOCK`, or `DUMP_AND_LOCK`, which first pushes every register and stores `SP` at `$C000`).
-Two kinds of case end otherwise, as the definition does: `stop` ends stuck on `STOP`, which the CPU stage does not model, and a case that enters `HALT` mode with no interrupt requested never wakes (nothing at the CPU stage requests one), so its run ends at its second halted boundary (`FLOW.toml` `[stop]`, and the same stop in `bun run compare`).
+Two kinds of case end otherwise, as the definition does: `stop` ends stuck on `STOP`, which the CPU stage does not model, and a case that enters `HALT` mode with nothing to wake it never wakes, so its run ends at its second halted boundary (`FLOW.toml` `[stop]`, and the same stop in `bun run compare`).
 `include/case.inc` holds the entry, the header space and those macros.
 
 A case sets no register or memory directly: it writes what it needs in a prologue.
@@ -40,13 +44,14 @@ When an external suite finds a defect the corpus misses, the definition is fixed
 An implementation reports a run as a krs end document (`halt`, and every cell of the definition's configuration in the typed case encoding), in `build/ends/<id>.json`.
 
 The Rust emulator's CPU is the one other system today: `krs/sm83-rust-cpu` runs `lib/crates/cpu` over the definition's memory model, from the state the definition's initializer builds from the case (`krs run --depth 0 --output end`, so there is one statement of the boot state), and writes its end document.
-The adapter locks on an unused opcode, is stuck on `STOP`, and stops in `HALT` mode with no interrupt requested, as the definition does.
+The adapter locks on an unused opcode, is stuck on `STOP`, and stops in `HALT` mode with nothing to wake it, as the definition does.
+It sets a scheduled case's requests in `IF` between two of the Rust CPU's steps, and a step executes an instruction and then dispatches: a request it delivers later than the definition does (inside an instruction or a dispatch, or at a boundary where `IME` is set) is counted, and that case is reported, not required equal.
 
 Every cell is compared; the bus log (`read`, `write`, `idle` events) is compared under a view, a function of the cell's value applied to both sides (`krs/sm83-views`).
 `WritesView` keeps only the writes; `AccessesView` keeps the reads and writes in order and drops idle cycles; no view keeps every event.
 The Rust CPU performs an instruction's accesses at once, with no internal cycles, so its bus is compared under `WritesView` (required equal) and `AccessesView` (reported).
-Under `WritesView` every case is equal.
-Under `AccessesView` the six cases that dispatch an interrupt (`interrupt`, `interrupt-sources`, `joypad-int`, `halt-ime`, `ie-push-cancel`, `ram-code`) differ, each first at its first dispatch, where the definition reads the opcode at `PC` and discards it and the Rust CPU pushes at once.
+Under `WritesView` every case is equal but the two whose requests the adapter delivers late: `dispatch-request` (a request inside a dispatch) and `if-read-request` (a request read inside an instruction).
+Under `AccessesView` the seven cases that dispatch an interrupt (`interrupt`, `interrupt-sources`, `joypad-int`, `halt-ime`, `ie-push-cancel`, `ram-code`, `halt-wake-ime`) differ, each first at its first dispatch, where the definition reads the opcode at `PC` and discards it and the Rust CPU pushes at once.
 That bus order follows SameBoy (`krs/sm83/README.md`); Pan Docs gives only the five cycles, so which system matches hardware is open until a hardware run decides it.
 The Rust CPU's interrupt logic accesses `IE` and `IF` without bus cycles (`memory::Bus::read_interrupt_register`), so those accesses are not logged.
 
@@ -70,6 +75,8 @@ Five cover what `krs kink coverage` showed open at k-rust 86eafc770: `halt-mode`
 Seven sweeps close the syntax family: at k-rust 86eafc770 `krs kink coverage` showed 82 `k::bits!` field values no case executed, and each sweep executes every encoding of the decode families those values belong to, not only the missing values, so it does not depend on kink's depth.
 `cb-sweep` runs all 256 CB opcodes, `rst-sweep` the 8 `RST` vectors, `cc-sweep` `JR`, `JP`, `CALL` and `RET` on each condition in all four states of Z and C, `ld-sweep` the 63 `LD r, r'`, `alu-sweep` the 8 ALU operations on the 8 operands and an immediate, `incdec-sweep` `INC` and `DEC` on the 8 operands and the 4 pairs, and `word-sweep` `LD rr, nn`, `ADD HL, rr`, `LD (rr), A` and `LD A, (rr)`.
 Each pushes or stores every result, from inputs chosen so that a wrong register, bit index, condition or vector gives a different end; its header says how.
+
+Four scheduled cases close what no cartridge can, the open items of `krs kink coverage` at k-rust 599bb8485: `halt-wake` and `halt-wake-ime` are woken from `HALT` mode by a timer request, with IME clear (the CPU resumes, the request stays in `IF`) and set (the CPU dispatches it). `dispatch-request` requests VBlank inside a timer dispatch, before `IF` is sampled, so VBlank is served, and `if-read-request` places two requests around a read of `IF`, one in the read's cycle and one in the next.
 
 `scripts/roms.ts` pads every cartridge with `$DD`, the lock opcode, so a jump outside a case's code locks at once instead of running on.
 
@@ -104,16 +111,16 @@ Two committed files are kink's record, each rewritten by the command after a run
 Under the Z3 profile kink caches results and outcomes (its solver queries are bounded by Z3 resource units, not the clock), so a rerun on an unchanged definition and corpus reuses them.
 `[observe]` compares every run at each instruction boundary on `pc`, `ime` and `halted` as well as at its end, so a mutant whose run never ends is told apart where it first differs. `krs kink query` ends its runs at `[stop]` as `run` does. `fuzz` has no template to vary: kink varies only a program bound as `$PGM` text, and a case is a cartridge.
 
-At k-rust 599bb8485, on the 32 cases (Z3 profile, 2026-11-09), every case is comparable.
+At k-rust 599bb8485, on the 36 cases (Z3 profile, 2026-11-09), every case is comparable.
 Of 81 mutations, 72 are killed and the 9 `unobservable` controls survive, as they expect; none is unknown.
 `coverage`, for each family:
 
 | Family | Covered | Open |
 | --- | --- | --- |
-| rules | 291 of 292 fire (claim helpers and the invariant are no obligation) | `boundary_wake`: waking from `HALT` needs a request while halted, which only a peripheral makes |
-| requirements | 188 of 196, 6 argued | `boundary_wake`'s 2, as for the rule |
-| syntax | 307 of 307 | none: the sweeps execute every `k::bits!` field value |
-| condition flips | 36 of 36 distinguished | none |
+| rules | 293 of 293 fire (claim helpers and the invariant are no obligation) | none |
+| requirements | 192 of 198, 6 argued | none |
+| syntax | 308 of 308 | none: the sweeps execute every `k::bits!` field value |
+| condition flips | 37 of 37 distinguished | none |
 
 The 6 argued requirements are the ROM side of the rules that read `memory` (`fetch`, `fetch_halt_bug`, `discard_fetch`, `fetch_cb`, `read_w`, `read_z`).
 No case can reach them: `memory` never holds a ROM address, since a write into the ROM region stores nothing, and the rules carry their `!InRom` guards only so that krs's overlap check sees them disjoint from their ROM-side twins.

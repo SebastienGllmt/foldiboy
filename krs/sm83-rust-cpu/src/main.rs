@@ -21,8 +21,15 @@
 //!   CPU treats it as a NOP).
 //! - `STOP` is not covered (the definition is stuck on it): its fetch is logged and the run ends
 //!   stuck with `k` holding `STOP`, as the definition's does.
-//! - HALT mode with no interrupt requested never ends at the CPU stage: the run stops there, as
-//!   the corpus's runs stop at their second halted boundary (corpus/FLOW.toml `[stop]`).
+//! - The rest of the console's interrupt requests (the start's `requests`) are set in `IF` between
+//!   two steps of the Rust CPU, once their machine cycle has come. A step executes an instruction
+//!   and then dispatches, so a request is delivered as the definition delivers it only when it
+//!   comes due at that boundary and the CPU is halted or `IME` is clear and not about to be set;
+//!   any other is late, and counted in `DIR/late.json` (scripts/compare.ts reports such a case
+//!   instead of requiring it equal).
+//! - HALT mode idles until the next request comes due; with none left, it never ends at the CPU
+//!   stage: the run stops there, as the corpus's runs stop at their second halted boundary
+//!   (corpus/FLOW.toml `[stop]`).
 //! - The interrupt logic's `IE`/`IF` accesses are not bus cycles
 //!   ([`memory::Bus::read_interrupt_register`]) and are not logged.
 //!
@@ -30,7 +37,7 @@
 //! its log has no idle events and reads may be ordered differently: compare its `bus` under the
 //! write view (`foldiboy-sm83-views`).
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, VecDeque};
 use std::path::PathBuf;
 use std::{env, fs};
 
@@ -132,11 +139,19 @@ fn hex(text: &str) -> Result<Vec<u8>, String> {
         .collect()
 }
 
+/// The requests of a start's `requests` cell, each `{"At": {"cycle": .., "bits": ..}}`, in order.
+fn requests(document: &Json) -> Result<VecDeque<(u64, u8)>, String> {
+    let items = document.as_array().ok_or(format!("requests: not a list document: {document}"))?;
+    items.iter().map(|item| Ok((int(&item["At"]["cycle"], "request cycle")?, int(&item["At"]["bits"], "request bits")?))).collect()
+}
+
 /// How the run ended, and what it cost.
 struct Outcome {
     end: &'static str,
     instructions: u64,
     cycles: u64,
+    /// The requests delivered later than the definition delivers them.
+    late: u64,
 }
 
 /// Runs the CPU from the initial end document and returns the end document of its run.
@@ -160,10 +175,23 @@ fn run(initial: &Json, budget: u64) -> Result<(Json, Outcome), String> {
     cpu.halted = boolean(&cells["halted"], "halted")?;
     cpu.halt_bug = boolean(&cells["halt_bug"], "halt_bug")?;
 
-    let mut outcome = Outcome { end: "bound", instructions: 0, cycles: 0 };
+    let mut pending = requests(&cells["requests"])?;
+
+    let mut outcome = Outcome { end: "bound", instructions: 0, cycles: 0, late: 0 };
     let mut k = None;
     loop {
+        while let Some(&(cycle, bits)) = pending.front().filter(|(cycle, _)| *cycle <= outcome.cycles) {
+            let exact = cycle == outcome.cycles && (cpu.halted || (!cpu.ime && cpu.ime_delay.is_none()));
+            outcome.late += u64::from(!exact);
+            *cpu.bus.memory.entry(IF).or_insert(0) |= bits;
+            pending.pop_front();
+        }
         if cpu.halted && !interrupt_requested(&cpu.bus) {
+            if let Some(&(cycle, _)) = pending.front() {
+                // HALT mode idles one machine cycle at a time until the request comes due.
+                outcome.cycles = cycle;
+                continue;
+            }
             outcome.end = "stopped";
             k = Some(json!({ "$seq": [{ "Boundary": [] }] }));
             break;
@@ -221,6 +249,7 @@ fn run(initial: &Json, budget: u64) -> Result<(Json, Outcome), String> {
     cells["halt_bug"] = json!(cpu.halt_bug);
     cells["memory"] = json!({ "$map": cpu.bus.memory.iter().map(|(addr, value)| json!([addr, value])).collect::<Vec<_>>() });
     cells["bus"] = Json::Array(std::mem::take(&mut cpu.bus.log));
+    cells["requests"] = pending.iter().map(|(cycle, bits)| json!({ "At": { "cycle": cycle, "bits": bits } })).collect();
     if let Some(cells) = cells.as_object_mut() {
         // Unobservable: the Rust CPU has no W and Z, and no comparison reads them.
         cells.remove("w");
@@ -243,6 +272,7 @@ fn main() {
     let Some(out) = out else { usage() };
     fs::create_dir_all(&out).expect("output directory");
     let mut failed = false;
+    let mut late = serde_json::Map::new();
     for path in &starts {
         let id = path.file_stem().map_or_else(|| path.display().to_string(), |id| id.to_string_lossy().into_owned());
         let result = fs::read_to_string(path)
@@ -253,7 +283,11 @@ fn main() {
             Ok((end, outcome)) => {
                 let text = serde_json::to_string_pretty(&end).expect("end document") + "\n";
                 fs::write(out.join(format!("{id}.json")), text).expect("write end document");
-                println!("{id}: {} after {} instructions, {} M-cycles", outcome.end, outcome.instructions, outcome.cycles);
+                let note = if outcome.late > 0 { format!(", {} request(s) late", outcome.late) } else { String::new() };
+                println!("{id}: {} after {} instructions, {} M-cycles{note}", outcome.end, outcome.instructions, outcome.cycles);
+                if outcome.late > 0 {
+                    late.insert(id, json!(outcome.late));
+                }
             }
             Err(reason) => {
                 eprintln!("{id}: {reason}");
@@ -261,5 +295,6 @@ fn main() {
             }
         }
     }
+    fs::write(out.join("late.json"), Json::Object(late).to_string() + "\n").expect("write late.json");
     std::process::exit(i32::from(failed));
 }

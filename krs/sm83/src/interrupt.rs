@@ -11,9 +11,14 @@
 //! them over internal wires, not the bus, so these reads add nothing to the
 //! bus log. An interrupt is requested when a bit 0 to 4 is set in both; the
 //! lowest such bit is the one served.
+//!
+//! The rest of the console (the timer, the PPU, the serial port, the joypad) requests interrupts
+//! by setting bits of `IF`. The CPU stage has none of it, so its requests are an input of the
+//! machine (`REQUESTS`, the `requests` cell): `deliver_request` sets each request's bits when its
+//! machine cycle comes, also while the CPU is halted or dispatching, where no program can.
 
 use k::Term;
-use k::builtin::{Bool, Int, Map, bytes};
+use k::builtin::{Bool, Int, Map, bytes, list};
 
 use crate::Machine;
 use crate::arith::{High, Low, Word};
@@ -41,6 +46,19 @@ pub enum Step {
     /// Choose the vector from `ie` and the current `IF`, and acknowledge it.
     #[k::syntax("#selectVector({ie})")]
     SelectVector { ie: Int },
+}
+
+k::sorts! {
+    InterruptRequest;
+}
+
+/// An interrupt request from the rest of the console.
+#[k::constructors(sort = InterruptRequest, result = k::KResult)]
+pub enum Request {
+    /// `bits` are set in `IF` once `cycle` machine cycles have run (the bus log holds `cycle`
+    /// events): every step from then on sees them.
+    #[k::syntax("request({cycle}, {bits})")]
+    At { cycle: Int, bits: Int },
 }
 
 /// The interrupt enable register.
@@ -109,6 +127,21 @@ pub fn InterruptVector(requested: Term<Int>) -> Term<Int> {
 
 k::rules! {
     for Machine;
+
+    /// The next request of the rest of the console reaches `IF` once its cycle has come, before
+    /// any other step (priority 10 runs ahead of every other rule, at K's default 50), so every
+    /// read of `IF`, boundary decision and dispatch from then on sees it. The requests are in
+    /// cycle order.
+    #[k::rule(priority = 10)]
+    #[k::requires(cycle <= list::size(log))]
+    deliver_request: {
+        requests: [Request::At { cycle, bits }, rest @ ..],
+        memory,
+        bus: log,
+    } => {
+        requests: rest,
+        memory: k::map![IF -> memory[IF] | bits, ..memory],
+    };
 
     /// The check uses `IME` from before the `EI` delay is applied: `EI` sets
     /// `eiPending`, the boundary after `EI` still sees `IME` clear, and the

@@ -23,6 +23,7 @@ pub mod spec {
         #[k::claim(all_paths)]
         #[k::requires(rom_end == 0 && (IsWord(pc) && m[pc] == 0x00))]
         contract_fetch_nop: {
+            requests: [],
             rom_end,
             k: [Micro::Fetch],
             pc: pc,
@@ -46,6 +47,7 @@ pub mod spec {
                 ),
         )]
         contract_fetch_ld_b_immediate: {
+            requests: [],
             rom_end,
             k: [Micro::Fetch],
             pc: pc,
@@ -77,6 +79,7 @@ pub mod spec {
                 ),
         )]
         contract_fetch_ld_c_immediate: {
+            requests: [],
             rom_end,
             k: [Micro::Fetch],
             pc: pc,
@@ -108,6 +111,7 @@ pub mod spec {
                 ),
         )]
         contract_fetch_ld_d_immediate: {
+            requests: [],
             rom_end,
             k: [Micro::Fetch],
             pc: pc,
@@ -139,6 +143,7 @@ pub mod spec {
                 ),
         )]
         contract_fetch_ld_e_immediate: {
+            requests: [],
             rom_end,
             k: [Micro::Fetch],
             pc: pc,
@@ -170,6 +175,7 @@ pub mod spec {
                 ),
         )]
         contract_fetch_ld_h_immediate: {
+            requests: [],
             rom_end,
             k: [Micro::Fetch],
             pc: pc,
@@ -201,6 +207,7 @@ pub mod spec {
                 ),
         )]
         contract_fetch_ld_l_immediate: {
+            requests: [],
             rom_end,
             k: [Micro::Fetch],
             pc: pc,
@@ -232,6 +239,7 @@ pub mod spec {
                 ),
         )]
         contract_fetch_ld_a_immediate: {
+            requests: [],
             rom_end,
             k: [Micro::Fetch],
             pc: pc,
@@ -264,6 +272,7 @@ pub mod spec {
                 ),
         )]
         contract_fetch_ld_bc_immediate: {
+            requests: [],
             rom_end,
             k: [Micro::Fetch],
             pc: pc,
@@ -303,6 +312,7 @@ pub mod spec {
                 ),
         )]
         contract_fetch_ld_de_immediate: {
+            requests: [],
             rom_end,
             k: [Micro::Fetch],
             pc: pc,
@@ -342,6 +352,7 @@ pub mod spec {
                 ),
         )]
         contract_fetch_ld_hl_immediate: {
+            requests: [],
             rom_end,
             k: [Micro::Fetch],
             pc: pc,
@@ -381,6 +392,7 @@ pub mod spec {
                 ),
         )]
         contract_fetch_ld_sp_immediate: {
+            requests: [],
             rom_end,
             k: [Micro::Fetch],
             pc: pc,
@@ -408,6 +420,7 @@ pub mod spec {
         #[k::claim(all_paths)]
         #[k::requires(rom_end == 0 && (IsWord(pc) && m[pc] == 0x00))]
         contract_halt_bug_fetch_nop: {
+            requests: [],
             rom_end,
             k: [Micro::Fetch],
             pc: pc,
@@ -424,6 +437,7 @@ pub mod spec {
         #[k::claim(all_paths)]
         #[k::requires(rom_end == 0 && (IsWord(pc) && m[pc] == 0x06))]
         contract_halt_bug_repeats_immediate: {
+            requests: [],
             rom_end,
             k: [Micro::Fetch],
             pc: pc,
@@ -457,6 +471,7 @@ pub mod spec {
                 ),
         )]
         contract_fetch_cb_rlc_a: {
+            requests: [],
             rom_end,
             k: [Micro::Fetch],
             pc: pc,
@@ -501,6 +516,7 @@ pub mod spec {
                 ),
         )]
         contract_boundary_ld_hl_immediate: {
+            requests: [],
             rom_end,
             k: [Step::Boundary],
             pc: pc,

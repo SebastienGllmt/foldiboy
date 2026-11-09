@@ -17,15 +17,12 @@ mcdc = [
 
 [rules]
 open = [
-  "rule:crate::interrupt::boundary_wake",
 ]
 argued = [
 ]
 
 [requirements]
 open = [
-  "requirement:crate::interrupt::boundary_halted:InterruptRequested(memory):true",
-  "requirement:crate::interrupt::boundary_wake:held",
 ]
 argued = [
   "requirement:crate::interrupt::discard_fetch:refuted",
@@ -97,6 +94,11 @@ killer = "cases/alu-flags/case.gb"
 id = "flip--boundary_halted+boundary_wake--InterruptRequested"
 status = "distinguished"
 killer = "cases/halt-mode-ime/case.gb"
+
+[[flip]]
+id = "flip--deliver_request--IntLessEqual"
+status = "distinguished"
+killer = "scheduled/dispatch-request/case.toml"
 
 [[flip]]
 id = "flip--discard_fetch+discard_fetch_rom--InRom"

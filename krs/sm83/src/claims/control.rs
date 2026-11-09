@@ -21,6 +21,7 @@ pub mod spec {
         #[k::claim(all_paths)]
         #[k::requires(rom_end == 0 && (IsWord(pc) && IsByte(m[pc]) && (kequal::eq(cond, Condition::Always) || (kequal::eq(cond, Condition::Zero) && zero) || (kequal::eq(cond, Condition::NotZero) && !zero) || (kequal::eq(cond, Condition::Carry) && carry) || (kequal::eq(cond, Condition::NotCarry) && !carry))))]
         contract_jumprelative_taken: {
+            requests: [],
             rom_end,
             k: [Instruction::JumpRelative { cond: cond @ (Condition::Always | Condition::NotZero | Condition::Zero | Condition::NotCarry | Condition::Carry) }],
             pc: pc,
@@ -39,6 +40,7 @@ pub mod spec {
         #[k::claim(all_paths)]
         #[k::requires(rom_end == 0 && (IsWord(pc) && IsByte(m[pc]) && !(kequal::eq(cond, Condition::Always) || (kequal::eq(cond, Condition::Zero) && zero) || (kequal::eq(cond, Condition::NotZero) && !zero) || (kequal::eq(cond, Condition::Carry) && carry) || (kequal::eq(cond, Condition::NotCarry) && !carry))))]
         contract_jumprelative_not_taken: {
+            requests: [],
             rom_end,
             k: [Instruction::JumpRelative { cond: cond @ (Condition::NotZero | Condition::Zero | Condition::NotCarry | Condition::Carry) }],
             pc: pc,
@@ -57,6 +59,7 @@ pub mod spec {
         #[k::claim(all_paths)]
         #[k::requires(rom_end == 0 && (IsWord(pc) && IsByte(m[pc]) && (kequal::eq(cond, Condition::Always) || (kequal::eq(cond, Condition::Zero) && zero) || (kequal::eq(cond, Condition::NotZero) && !zero) || (kequal::eq(cond, Condition::Carry) && carry) || (kequal::eq(cond, Condition::NotCarry) && !carry)) && IsByte(m[(pc + 1) % 0x1_0000])))]
         contract_jump_taken: {
+            requests: [],
             rom_end,
             k: [Instruction::Jump { cond: cond @ (Condition::Always | Condition::NotZero | Condition::Zero | Condition::NotCarry | Condition::Carry) }],
             pc: pc,
@@ -77,6 +80,7 @@ pub mod spec {
         #[k::claim(all_paths)]
         #[k::requires(rom_end == 0 && (IsWord(pc) && IsByte(m[pc]) && !(kequal::eq(cond, Condition::Always) || (kequal::eq(cond, Condition::Zero) && zero) || (kequal::eq(cond, Condition::NotZero) && !zero) || (kequal::eq(cond, Condition::Carry) && carry) || (kequal::eq(cond, Condition::NotCarry) && !carry)) && IsByte(m[(pc + 1) % 0x1_0000])))]
         contract_jump_not_taken: {
+            requests: [],
             rom_end,
             k: [Instruction::Jump { cond: cond @ (Condition::NotZero | Condition::Zero | Condition::NotCarry | Condition::Carry) }],
             pc: pc,
@@ -97,6 +101,7 @@ pub mod spec {
         #[k::claim(all_paths)]
         #[k::requires(rom_end == 0 && (IsWord(pc) && IsByte(m[pc]) && (kequal::eq(cond, Condition::Always) || (kequal::eq(cond, Condition::Zero) && zero) || (kequal::eq(cond, Condition::NotZero) && !zero) || (kequal::eq(cond, Condition::Carry) && carry) || (kequal::eq(cond, Condition::NotCarry) && !carry)) && IsByte(m[(pc + 1) % 0x1_0000]) && IsWord(sp) && m.contains_key((sp + 0xFFFF) % 0x1_0000) && m.contains_key((sp + 0xFFFE) % 0x1_0000) && IsByte(m[(sp + 0xFFFF) % 0x1_0000]) && IsByte(m[(sp + 0xFFFE) % 0x1_0000])))]
         contract_call_taken: {
+            requests: [],
             rom_end,
             k: [Instruction::Call { cond: cond @ (Condition::Always | Condition::NotZero | Condition::Zero | Condition::NotCarry | Condition::Carry) }],
             pc: pc,
@@ -124,6 +129,7 @@ pub mod spec {
         #[k::claim(all_paths)]
         #[k::requires(rom_end == 0 && (IsWord(pc) && IsByte(m[pc]) && !(kequal::eq(cond, Condition::Always) || (kequal::eq(cond, Condition::Zero) && zero) || (kequal::eq(cond, Condition::NotZero) && !zero) || (kequal::eq(cond, Condition::Carry) && carry) || (kequal::eq(cond, Condition::NotCarry) && !carry)) && IsByte(m[(pc + 1) % 0x1_0000])))]
         contract_call_not_taken: {
+            requests: [],
             rom_end,
             k: [Instruction::Call { cond: cond @ (Condition::NotZero | Condition::Zero | Condition::NotCarry | Condition::Carry) }],
             pc: pc,
@@ -144,6 +150,7 @@ pub mod spec {
         #[k::claim(all_paths)]
         #[k::requires(rom_end == 0 && (IsWord(sp) && IsByte(m[sp]) && IsByte(m[(sp + 1) % 0x1_0000])))]
         contract_return_taken: {
+            requests: [],
             rom_end,
             k: [Instruction::Return],
             sp: sp,
@@ -165,6 +172,7 @@ pub mod spec {
         #[k::claim(all_paths)]
         #[k::requires(rom_end == 0 && (IsWord(sp) && IsByte(m[sp]) && IsByte(m[(sp + 1) % 0x1_0000]) && (kequal::eq(cond, Condition::Always) || (kequal::eq(cond, Condition::Zero) && zero) || (kequal::eq(cond, Condition::NotZero) && !zero) || (kequal::eq(cond, Condition::Carry) && carry) || (kequal::eq(cond, Condition::NotCarry) && !carry))))]
         contract_returnif_taken: {
+            requests: [],
             rom_end,
             k: [Instruction::ReturnIf { cond: cond @ (Condition::Always | Condition::NotZero | Condition::Zero | Condition::NotCarry | Condition::Carry) }],
             sp: sp,
@@ -187,6 +195,7 @@ pub mod spec {
         #[k::claim(all_paths)]
         #[k::requires(rom_end == 0 && (IsWord(sp) && IsByte(m[sp]) && IsByte(m[(sp + 1) % 0x1_0000])))]
         contract_returnfrominterrupt_taken: {
+            requests: [],
             rom_end,
             k: [Instruction::ReturnFromInterrupt],
             sp: sp,
@@ -210,6 +219,7 @@ pub mod spec {
         #[k::claim(all_paths)]
         #[k::requires(!(kequal::eq(cond, Condition::Always) || (kequal::eq(cond, Condition::Zero) && zero) || (kequal::eq(cond, Condition::NotZero) && !zero) || (kequal::eq(cond, Condition::Carry) && carry) || (kequal::eq(cond, Condition::NotCarry) && !carry)))]
         contract_returnif_not_taken: {
+            requests: [],
             k: [Instruction::ReturnIf { cond: cond @ (Condition::NotZero | Condition::Zero | Condition::NotCarry | Condition::Carry) }],
             f: Flags { z: zero, c: carry, .. },
             bus: log,
@@ -222,6 +232,7 @@ pub mod spec {
         #[k::claim(all_paths)]
         #[k::requires(rom_end == 0 && (0 <= target && target <= 0x38 && target % 8 == 0 && IsWord(pc) && IsWord(sp) && m.contains_key((sp + 0xFFFF) % 0x1_0000) && m.contains_key((sp + 0xFFFE) % 0x1_0000) && IsByte(m[(sp + 0xFFFF) % 0x1_0000]) && IsByte(m[(sp + 0xFFFE) % 0x1_0000])))]
         contract_restart: {
+            requests: [],
             rom_end,
             k: [Instruction::Restart { target }],
             pc: pc,

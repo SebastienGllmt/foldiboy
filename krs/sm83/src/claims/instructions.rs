@@ -69,6 +69,7 @@ pub mod spec {
         /// NOP: no architectural state change or remaining bus cycle.
         #[k::claim(all_paths)]
         contract_nop: {
+            requests: [],
             k: [Instruction::Nop],
         } => {
             k: [],
@@ -77,6 +78,7 @@ pub mod spec {
         /// Pan Docs: an unused opcode locks up the CPU; no further step follows.
         #[k::claim(all_paths)]
         contract_illegal_locks: {
+            requests: [],
             k: [Instruction::Illegal { opcode }],
         } => {
             k: [Step::Locked],
@@ -86,6 +88,7 @@ pub mod spec {
         #[k::claim(all_paths)]
         #[k::requires(IsByte(r[src]))]
         contract_ld8_register: {
+            requests: [],
             k: [Instruction::Ld8 { dst: Operand::Reg { r: dst }, src: Operand::Reg { r: src } }],
             regs: r,
             z: _,
@@ -99,6 +102,7 @@ pub mod spec {
         #[k::claim(all_paths)]
         #[k::requires(rom_end == 0 && (IsWord(pc) && IsByte(m[pc])))]
         contract_ld8_immediate: {
+            requests: [],
             rom_end,
             k: [Instruction::Ld8 { dst: Operand::Reg { r: dst }, src: Operand::Immediate }],
             regs: r,
@@ -125,6 +129,7 @@ pub mod spec {
                 ),
         )]
         contract_ld8_indirect: {
+            requests: [],
             rom_end,
             k: [Instruction::Ld8 { dst: Operand::Reg { r: dst }, src: Operand::HlIndirect }],
             regs: r,
@@ -157,6 +162,7 @@ pub mod spec {
                 ),
         )]
         contract_ld8_store_register: {
+            requests: [],
             rom_end,
             k: [Instruction::Ld8 { dst: Operand::HlIndirect, src: Operand::Reg { r: src } }],
             regs: r,
@@ -190,6 +196,7 @@ pub mod spec {
                 ),
         )]
         contract_ld8_store_immediate: {
+            requests: [],
             rom_end,
             k: [Instruction::Ld8 { dst: Operand::HlIndirect, src: Operand::Immediate }],
             regs: r,
@@ -223,6 +230,7 @@ pub mod spec {
                 ),
         )]
         contract_ld16_registers: {
+            requests: [],
             rom_end,
             k: [Instruction::Ld16 { pair: Pair16::Registers { high, low } }],
             pc: pc,
@@ -255,6 +263,7 @@ pub mod spec {
                 ),
         )]
         contract_ld16_sp: {
+            requests: [],
             rom_end,
             k: [Instruction::Ld16 { pair: Pair16::StackPointer }],
             pc: pc,
@@ -283,6 +292,7 @@ pub mod spec {
                 && IsByte(r[Register::L]),
         )]
         contract_ld_sp_hl: {
+            requests: [],
             k: [Instruction::LdSpHl],
             regs: r,
             sp: _,
@@ -300,6 +310,7 @@ pub mod spec {
                 && IsByte(r[src]),
         )]
         contract_alu_add_register: {
+            requests: [],
             k: [Instruction::Alu8 { op: Alu::Add, src: Operand::Reg { r: src } }],
             regs: r,
             f: _,
@@ -329,6 +340,7 @@ pub mod spec {
                 ),
         )]
         contract_alu_add_immediate: {
+            requests: [],
             rom_end,
             k: [Instruction::Alu8 { op: Alu::Add, src: Operand::Immediate }],
             regs: r,
@@ -363,6 +375,7 @@ pub mod spec {
                 ),
         )]
         contract_alu_add_indirect: {
+            requests: [],
             rom_end,
             k: [Instruction::Alu8 { op: Alu::Add, src: Operand::HlIndirect }],
             regs: r,
@@ -401,6 +414,7 @@ pub mod spec {
                 && IsByte(r[src]),
         )]
         contract_alu_adc_register: {
+            requests: [],
             k: [Instruction::Alu8 { op: Alu::Adc, src: Operand::Reg { r: src } }],
             regs: r,
             f: Flags { c: carry, .. },
@@ -433,6 +447,7 @@ pub mod spec {
                 ),
         )]
         contract_alu_adc_immediate: {
+            requests: [],
             rom_end,
             k: [Instruction::Alu8 { op: Alu::Adc, src: Operand::Immediate }],
             regs: r,
@@ -470,6 +485,7 @@ pub mod spec {
                 ),
         )]
         contract_alu_adc_indirect: {
+            requests: [],
             rom_end,
             k: [Instruction::Alu8 { op: Alu::Adc, src: Operand::HlIndirect }],
             regs: r,
@@ -509,6 +525,7 @@ pub mod spec {
                 && IsByte(r[src]),
         )]
         contract_alu_sub_register: {
+            requests: [],
             k: [Instruction::Alu8 { op: Alu::Sub, src: Operand::Reg { r: src } }],
             regs: r,
             f: _,
@@ -538,6 +555,7 @@ pub mod spec {
                 ),
         )]
         contract_alu_sub_immediate: {
+            requests: [],
             rom_end,
             k: [Instruction::Alu8 { op: Alu::Sub, src: Operand::Immediate }],
             regs: r,
@@ -572,6 +590,7 @@ pub mod spec {
                 ),
         )]
         contract_alu_sub_indirect: {
+            requests: [],
             rom_end,
             k: [Instruction::Alu8 { op: Alu::Sub, src: Operand::HlIndirect }],
             regs: r,
@@ -612,6 +631,7 @@ pub mod spec {
                 && IsByte(r[src]),
         )]
         contract_alu_sbc_register: {
+            requests: [],
             k: [Instruction::Alu8 { op: Alu::Sbc, src: Operand::Reg { r: src } }],
             regs: r,
             f: Flags { c: carry, .. },
@@ -644,6 +664,7 @@ pub mod spec {
                 ),
         )]
         contract_alu_sbc_immediate: {
+            requests: [],
             rom_end,
             k: [Instruction::Alu8 { op: Alu::Sbc, src: Operand::Immediate }],
             regs: r,
@@ -681,6 +702,7 @@ pub mod spec {
                 ),
         )]
         contract_alu_sbc_indirect: {
+            requests: [],
             rom_end,
             k: [Instruction::Alu8 { op: Alu::Sbc, src: Operand::HlIndirect }],
             regs: r,
@@ -722,6 +744,7 @@ pub mod spec {
                 && IsByte(r[src]),
         )]
         contract_alu_and_register: {
+            requests: [],
             k: [Instruction::Alu8 { op: Alu::And, src: Operand::Reg { r: src } }],
             regs: r,
             f: _,
@@ -746,6 +769,7 @@ pub mod spec {
                 ),
         )]
         contract_alu_and_immediate: {
+            requests: [],
             rom_end,
             k: [Instruction::Alu8 { op: Alu::And, src: Operand::Immediate }],
             regs: r,
@@ -775,6 +799,7 @@ pub mod spec {
                 ),
         )]
         contract_alu_and_indirect: {
+            requests: [],
             rom_end,
             k: [Instruction::Alu8 { op: Alu::And, src: Operand::HlIndirect }],
             regs: r,
@@ -811,6 +836,7 @@ pub mod spec {
                 && IsByte(r[src]),
         )]
         contract_alu_xor_register: {
+            requests: [],
             k: [Instruction::Alu8 { op: Alu::Xor, src: Operand::Reg { r: src } }],
             regs: r,
             f: _,
@@ -835,6 +861,7 @@ pub mod spec {
                 ),
         )]
         contract_alu_xor_immediate: {
+            requests: [],
             rom_end,
             k: [Instruction::Alu8 { op: Alu::Xor, src: Operand::Immediate }],
             regs: r,
@@ -864,6 +891,7 @@ pub mod spec {
                 ),
         )]
         contract_alu_xor_indirect: {
+            requests: [],
             rom_end,
             k: [Instruction::Alu8 { op: Alu::Xor, src: Operand::HlIndirect }],
             regs: r,
@@ -900,6 +928,7 @@ pub mod spec {
                 && IsByte(r[src]),
         )]
         contract_alu_or_register: {
+            requests: [],
             k: [Instruction::Alu8 { op: Alu::Or, src: Operand::Reg { r: src } }],
             regs: r,
             f: _,
@@ -924,6 +953,7 @@ pub mod spec {
                 ),
         )]
         contract_alu_or_immediate: {
+            requests: [],
             rom_end,
             k: [Instruction::Alu8 { op: Alu::Or, src: Operand::Immediate }],
             regs: r,
@@ -953,6 +983,7 @@ pub mod spec {
                 ),
         )]
         contract_alu_or_indirect: {
+            requests: [],
             rom_end,
             k: [Instruction::Alu8 { op: Alu::Or, src: Operand::HlIndirect }],
             regs: r,
@@ -989,6 +1020,7 @@ pub mod spec {
                 && IsByte(r[src]),
         )]
         contract_alu_cp_register: {
+            requests: [],
             k: [Instruction::Alu8 { op: Alu::Cp, src: Operand::Reg { r: src } }],
             regs: r,
             f: _,
@@ -1018,6 +1050,7 @@ pub mod spec {
                 ),
         )]
         contract_alu_cp_immediate: {
+            requests: [],
             rom_end,
             k: [Instruction::Alu8 { op: Alu::Cp, src: Operand::Immediate }],
             regs: r,
@@ -1052,6 +1085,7 @@ pub mod spec {
                 ),
         )]
         contract_alu_cp_indirect: {
+            requests: [],
             rom_end,
             k: [Instruction::Alu8 { op: Alu::Cp, src: Operand::HlIndirect }],
             regs: r,
@@ -1084,6 +1118,7 @@ pub mod spec {
             IsByte(r[target]),
         )]
         contract_unary_inc_register: {
+            requests: [],
             k: [Instruction::Update8 { op: Unary::Inc, target: Operand::Reg { r: target } }],
             regs: r,
             f: Flags { c: carry, .. },
@@ -1113,6 +1148,7 @@ pub mod spec {
                 ),
         )]
         contract_unary_inc_indirect: {
+            requests: [],
             rom_end,
             k: [Instruction::Update8 { op: Unary::Inc, target: Operand::HlIndirect }],
             regs: r,
@@ -1154,6 +1190,7 @@ pub mod spec {
             IsByte(r[target]),
         )]
         contract_unary_dec_register: {
+            requests: [],
             k: [Instruction::Update8 { op: Unary::Dec, target: Operand::Reg { r: target } }],
             regs: r,
             f: Flags { c: carry, .. },
@@ -1183,6 +1220,7 @@ pub mod spec {
                 ),
         )]
         contract_unary_dec_indirect: {
+            requests: [],
             rom_end,
             k: [Instruction::Update8 { op: Unary::Dec, target: Operand::HlIndirect }],
             regs: r,
@@ -1224,6 +1262,7 @@ pub mod spec {
             IsByte(r[target]),
         )]
         contract_unary_rlc_register: {
+            requests: [],
             k: [Instruction::Update8 { op: Unary::Rlc, target: Operand::Reg { r: target } }],
             regs: r,
             f: _,
@@ -1253,6 +1292,7 @@ pub mod spec {
                 ),
         )]
         contract_unary_rlc_indirect: {
+            requests: [],
             rom_end,
             k: [Instruction::Update8 { op: Unary::Rlc, target: Operand::HlIndirect }],
             regs: r,
@@ -1305,6 +1345,7 @@ pub mod spec {
             IsByte(r[target]),
         )]
         contract_unary_rrc_register: {
+            requests: [],
             k: [Instruction::Update8 { op: Unary::Rrc, target: Operand::Reg { r: target } }],
             regs: r,
             f: _,
@@ -1334,6 +1375,7 @@ pub mod spec {
                 ),
         )]
         contract_unary_rrc_indirect: {
+            requests: [],
             rom_end,
             k: [Instruction::Update8 { op: Unary::Rrc, target: Operand::HlIndirect }],
             regs: r,
@@ -1386,6 +1428,7 @@ pub mod spec {
             IsByte(r[target]),
         )]
         contract_unary_rl_register: {
+            requests: [],
             k: [Instruction::Update8 { op: Unary::Rl, target: Operand::Reg { r: target } }],
             regs: r,
             f: Flags { c: carry, .. },
@@ -1415,6 +1458,7 @@ pub mod spec {
                 ),
         )]
         contract_unary_rl_indirect: {
+            requests: [],
             rom_end,
             k: [Instruction::Update8 { op: Unary::Rl, target: Operand::HlIndirect }],
             regs: r,
@@ -1458,6 +1502,7 @@ pub mod spec {
             IsByte(r[target]),
         )]
         contract_unary_rr_register: {
+            requests: [],
             k: [Instruction::Update8 { op: Unary::Rr, target: Operand::Reg { r: target } }],
             regs: r,
             f: Flags { c: carry, .. },
@@ -1487,6 +1532,7 @@ pub mod spec {
                 ),
         )]
         contract_unary_rr_indirect: {
+            requests: [],
             rom_end,
             k: [Instruction::Update8 { op: Unary::Rr, target: Operand::HlIndirect }],
             regs: r,
@@ -1530,6 +1576,7 @@ pub mod spec {
             IsByte(r[target]),
         )]
         contract_unary_sla_register: {
+            requests: [],
             k: [Instruction::Update8 { op: Unary::Sla, target: Operand::Reg { r: target } }],
             regs: r,
             f: _,
@@ -1554,6 +1601,7 @@ pub mod spec {
                 ),
         )]
         contract_unary_sla_indirect: {
+            requests: [],
             rom_end,
             k: [Instruction::Update8 { op: Unary::Sla, target: Operand::HlIndirect }],
             regs: r,
@@ -1595,6 +1643,7 @@ pub mod spec {
             IsByte(r[target]),
         )]
         contract_unary_sra_register: {
+            requests: [],
             k: [Instruction::Update8 { op: Unary::Sra, target: Operand::Reg { r: target } }],
             regs: r,
             f: _,
@@ -1624,6 +1673,7 @@ pub mod spec {
                 ),
         )]
         contract_unary_sra_indirect: {
+            requests: [],
             rom_end,
             k: [Instruction::Update8 { op: Unary::Sra, target: Operand::HlIndirect }],
             regs: r,
@@ -1676,6 +1726,7 @@ pub mod spec {
             IsByte(r[target]),
         )]
         contract_unary_swap_register: {
+            requests: [],
             k: [Instruction::Update8 { op: Unary::Swap, target: Operand::Reg { r: target } }],
             regs: r,
             f: _,
@@ -1700,6 +1751,7 @@ pub mod spec {
                 ),
         )]
         contract_unary_swap_indirect: {
+            requests: [],
             rom_end,
             k: [Instruction::Update8 { op: Unary::Swap, target: Operand::HlIndirect }],
             regs: r,
@@ -1751,6 +1803,7 @@ pub mod spec {
             IsByte(r[target]),
         )]
         contract_unary_srl_register: {
+            requests: [],
             k: [Instruction::Update8 { op: Unary::Srl, target: Operand::Reg { r: target } }],
             regs: r,
             f: _,
@@ -1775,6 +1828,7 @@ pub mod spec {
                 ),
         )]
         contract_unary_srl_indirect: {
+            requests: [],
             rom_end,
             k: [Instruction::Update8 { op: Unary::Srl, target: Operand::HlIndirect }],
             regs: r,
@@ -1816,6 +1870,7 @@ pub mod spec {
             IsByte(r[Register::A]),
         )]
         contract_unary_rlca_accumulator: {
+            requests: [],
             k: [Instruction::Update8 { op: Unary::Rlca, target: Operand::Reg { r: Register::A } }],
             regs: r,
             f: _,
@@ -1838,6 +1893,7 @@ pub mod spec {
             IsByte(r[Register::A]),
         )]
         contract_unary_rrca_accumulator: {
+            requests: [],
             k: [Instruction::Update8 { op: Unary::Rrca, target: Operand::Reg { r: Register::A } }],
             regs: r,
             f: _,
@@ -1857,6 +1913,7 @@ pub mod spec {
             IsByte(r[Register::A]),
         )]
         contract_unary_rla_accumulator: {
+            requests: [],
             k: [Instruction::Update8 { op: Unary::Rla, target: Operand::Reg { r: Register::A } }],
             regs: r,
             f: Flags { c: carry, .. },
@@ -1879,6 +1936,7 @@ pub mod spec {
             IsByte(r[Register::A]),
         )]
         contract_unary_rra_accumulator: {
+            requests: [],
             k: [Instruction::Update8 { op: Unary::Rra, target: Operand::Reg { r: Register::A } }],
             regs: r,
             f: Flags { c: carry, .. },
@@ -1898,6 +1956,7 @@ pub mod spec {
             IsByte(r[Register::A]),
         )]
         contract_unary_daa_accumulator: {
+            requests: [],
             k: [Instruction::Update8 { op: Unary::Daa, target: Operand::Reg { r: Register::A } }],
             regs: r,
             f: Flags { n: subtract, h: half_carry, c: carry, .. },
@@ -1925,6 +1984,7 @@ pub mod spec {
             IsByte(r[Register::A]),
         )]
         contract_unary_cpl_accumulator: {
+            requests: [],
             k: [Instruction::Update8 { op: Unary::Cpl, target: Operand::Reg { r: Register::A } }],
             regs: r,
             f: Flags { z: zero, c: carry, .. },
@@ -1944,6 +2004,7 @@ pub mod spec {
             IsByte(r[Register::A]),
         )]
         contract_unary_scf_accumulator: {
+            requests: [],
             k: [Instruction::Update8 { op: Unary::Scf, target: Operand::Reg { r: Register::A } }],
             regs: r,
             f: Flags { z: zero, .. },
@@ -1963,6 +2024,7 @@ pub mod spec {
             IsByte(r[Register::A]),
         )]
         contract_unary_ccf_accumulator: {
+            requests: [],
             k: [Instruction::Update8 { op: Unary::Ccf, target: Operand::Reg { r: Register::A } }],
             regs: r,
             f: Flags { z: zero, c: carry, .. },
@@ -1984,6 +2046,7 @@ pub mod spec {
                 && IsByte(r[target]),
         )]
         contract_bit_resetbit_register: {
+            requests: [],
             k: [
                 Instruction::Update8 {
                     op: Unary::ResetBit { bit: bit @ (0 | 1 | 2 | 3 | 4 | 5 | 6 | 7) },
@@ -2013,6 +2076,7 @@ pub mod spec {
                 ),
         )]
         contract_bit_resetbit_indirect: {
+            requests: [],
             rom_end,
             k: [
                 Instruction::Update8 {
@@ -2064,6 +2128,7 @@ pub mod spec {
                 && IsByte(r[target]),
         )]
         contract_bit_setbit_register: {
+            requests: [],
             k: [
                 Instruction::Update8 {
                     op: Unary::SetBit { bit: bit @ (0 | 1 | 2 | 3 | 4 | 5 | 6 | 7) },
@@ -2096,6 +2161,7 @@ pub mod spec {
                 ),
         )]
         contract_bit_setbit_indirect: {
+            requests: [],
             rom_end,
             k: [
                 Instruction::Update8 {
@@ -2147,6 +2213,7 @@ pub mod spec {
                 && IsByte(r[target]),
         )]
         contract_bit_testbit_register: {
+            requests: [],
             k: [
                 Instruction::TestBit {
                     bit: bit @ (0 | 1 | 2 | 3 | 4 | 5 | 6 | 7),
@@ -2177,6 +2244,7 @@ pub mod spec {
                 ),
         )]
         contract_bit_testbit_indirect: {
+            requests: [],
             rom_end,
             k: [
                 Instruction::TestBit {
@@ -2214,6 +2282,7 @@ pub mod spec {
                 && IsByte(r[low]),
         )]
         contract_inc16_registers: {
+            requests: [],
             k: [Instruction::Inc16 { pair: Pair16::Registers { high, low } }],
             regs: r,
             sp: sp,
@@ -2232,6 +2301,7 @@ pub mod spec {
         #[k::claim(all_paths)]
         #[k::requires(IsWord(sp))]
         contract_inc16_sp: {
+            requests: [],
             k: [Instruction::Inc16 { pair: Pair16::StackPointer }],
             regs: r,
             sp: sp,
@@ -2249,6 +2319,7 @@ pub mod spec {
                 && IsByte(r[low]),
         )]
         contract_dec16_registers: {
+            requests: [],
             k: [Instruction::Dec16 { pair: Pair16::Registers { high, low } }],
             regs: r,
             sp: sp,
@@ -2267,6 +2338,7 @@ pub mod spec {
         #[k::claim(all_paths)]
         #[k::requires(IsWord(sp))]
         contract_dec16_sp: {
+            requests: [],
             k: [Instruction::Dec16 { pair: Pair16::StackPointer }],
             regs: r,
             sp: sp,
@@ -2284,6 +2356,7 @@ pub mod spec {
                 && IsByte(r[Register::L]),
         )]
         contract_jump_hl: {
+            requests: [],
             k: [Instruction::JumpHl],
             regs: r,
             pc: _,
@@ -2295,6 +2368,7 @@ pub mod spec {
         /// DI: disable interrupts immediately and cancel pending EI.
         #[k::claim(all_paths)]
         contract_di: {
+            requests: [],
             k: [Instruction::DisableInterrupts],
             ime: _,
             ei_pending: _,
@@ -2307,6 +2381,7 @@ pub mod spec {
         /// EI: schedule delayed enable; do not immediately change IME.
         #[k::claim(all_paths)]
         contract_ei: {
+            requests: [],
             k: [Instruction::EnableInterrupts],
             ei_pending: _,
         } => {
@@ -2323,6 +2398,7 @@ pub mod spec {
                 && IsByte(r[low]),
         )]
         contract_add_hl_registers: {
+            requests: [],
             k: [Instruction::AddHl { pair: Pair16::Registers { high, low } }],
             regs: r,
             f: Flags { z: zero, .. },
@@ -2360,6 +2436,7 @@ pub mod spec {
                 && IsWord(sp),
         )]
         contract_add_hl_sp: {
+            requests: [],
             k: [Instruction::AddHl { pair: Pair16::StackPointer }],
             regs: r,
             f: Flags { z: zero, .. },

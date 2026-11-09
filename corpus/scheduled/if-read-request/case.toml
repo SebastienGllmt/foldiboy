@@ -1,0 +1,5 @@
+# VBlank at cycle 16, the cycle the first `LDH A,[IF]` reads IF in; STAT at cycle 17, the next
+# instruction's fetch.
+[inputs]
+cartridge = { "$file" = "case.gb" }
+requests = [{ At = { cycle = 16, bits = 0x01 } }, { At = { cycle = 17, bits = 0x02 } }]

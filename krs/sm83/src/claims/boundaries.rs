@@ -66,6 +66,7 @@ pub mod spec {
                 ),
         )]
         contract_halt_enter: {
+            requests: [],
             rom_end,
             k: [Instruction::Halt],
             memory: m,
@@ -86,6 +87,7 @@ pub mod spec {
                 ),
         )]
         contract_halt_bug_set: {
+            requests: [],
             rom_end,
             k: [Instruction::Halt],
             ime: false,
@@ -110,6 +112,7 @@ pub mod spec {
                 ),
         )]
         contract_halt_pending_ime: {
+            requests: [],
             rom_end,
             k: [Instruction::Halt],
             pc: pc,
@@ -133,6 +136,7 @@ pub mod spec {
                 ),
         )]
         contract_halt_idle: {
+            requests: [],
             rom_end,
             k: [Step::Boundary],
             halted: true,
@@ -156,6 +160,7 @@ pub mod spec {
                 ),
         )]
         contract_halt_wake_without_dispatch: {
+            requests: [],
             rom_end,
             k: [Step::Boundary],
             halted: true,
@@ -183,6 +188,7 @@ pub mod spec {
                 ),
         )]
         contract_boundary_choose_dispatch: {
+            requests: [],
             rom_end,
             k: [Step::Boundary],
             halted: false,
@@ -204,6 +210,7 @@ pub mod spec {
                 ),
         )]
         contract_boundary_apply_ei_delay: {
+            requests: [],
             rom_end,
             k: [Step::Boundary],
             halted: false,
@@ -238,6 +245,7 @@ pub mod spec {
                 ),
         )]
         contract_dispatch_running: {
+            requests: [],
             rom_end,
             k: [Step::Boundary],
             halted: false,
@@ -297,6 +305,7 @@ pub mod spec {
                 ),
         )]
         contract_dispatch_wake: {
+            requests: [],
             rom_end,
             k: [Step::Boundary],
             halted: true,
@@ -351,6 +360,7 @@ pub mod spec {
                 ),
         )]
         contract_dispatch_ie_high_cancels: {
+            requests: [],
             rom_end,
             k: [Step::Dispatch],
             ime: true,
@@ -390,6 +400,7 @@ pub mod spec {
                 ),
         )]
         contract_dispatch_ie_low_too_late: {
+            requests: [],
             rom_end,
             k: [Step::Dispatch],
             ime: true,
@@ -425,6 +436,7 @@ pub mod spec {
                 ),
         )]
         contract_ei_then_nop: {
+            requests: [],
             rom_end,
             k: [Step::Boundary],
             pc: 0x0100,
@@ -457,6 +469,7 @@ pub mod spec {
                 ),
         )]
         contract_ei_then_di: {
+            requests: [],
             rom_end,
             k: [Step::Boundary],
             pc: 0x0100,
@@ -489,6 +502,7 @@ pub mod spec {
                 ),
         )]
         contract_ei_then_halt_buffered: {
+            requests: [],
             rom_end,
             k: [Step::Boundary],
             pc: 0x0100,

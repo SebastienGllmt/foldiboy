@@ -7,7 +7,7 @@ use crate::alu::{FlagByte, FlagSet, Flags};
 use crate::arith::Pair;
 use crate::boot::{BootPc, BootSp, CpuStageIo, DmgFlags, DmgRegisters, RomRegion};
 use crate::decode::{Cond, Condition, Pair16, RegPair};
-use crate::interrupt::Step;
+use crate::interrupt::{InterruptRequest, Step};
 
 pub use sm83_events::{CpuEvent, Event};
 
@@ -93,13 +93,21 @@ pub struct Machine {
     /// event per machine cycle (the observation contract's vocabulary, `sm83-events`).
     #[k::cell]
     pub bus: List<CpuEvent>,
+    /// The CPU stage's input from the rest of the console: the interrupt requests it makes, in
+    /// cycle order, each removed when `deliver_request` sets its bits in `IF`. The console stage
+    /// replaces it with the peripherals.
+    #[k::cell]
+    pub requests: List<InterruptRequest>,
 }
 
 /// The initial state of a cartridge: the state a DMG's boot ROM leaves in the CPU stage (boot.rs).
 impl Machine {
     #[cfg(not(whole_state))]
     #[k::init]
-    pub fn init(#[k::config_var(name = "CARTRIDGE", main)] cartridge: Bytes) -> Self {
+    pub fn init(
+        #[k::config_var(name = "CARTRIDGE", main)] cartridge: Bytes,
+        #[k::config_var(name = "REQUESTS")] requests: List<InterruptRequest>,
+    ) -> Self {
         Self {
             k: k::k![Step::Boundary],
             regs: DmgRegisters(),
@@ -116,6 +124,7 @@ impl Machine {
             rom_end: bytes::length(RomRegion(cartridge)),
             rom: RomRegion(cartridge),
             bus: k::builtin::list::empty(),
+            requests,
         }
     }
 
@@ -142,6 +151,8 @@ impl Machine {
             rom_end: bytes::length(rom),
             rom,
             bus: k::builtin::list::empty(),
+            // A vector is one instruction from a boundary, with no console around it.
+            requests: k::builtin::list::empty(),
         }
     }
 }

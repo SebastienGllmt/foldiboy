@@ -1,9 +1,10 @@
 # The mooneye acceptance ROMs that need only the CPU, RAM, IE and IF, on a DMG in the CPU stage.
 # `bun run mooneye` builds the ROMs beside this file (scripts/roms.ts) and runs these cases with krs cases.
 #
-# Each case starts from its cartridge as the boot ROM leaves it (src/boot.rs). A mooneye
-# test ends in its quit routine: it sets B C D E H L (3 5 8 13 21 34 is a pass, all $42 a failure)
-# and executes `LD B,B`, mooneye's breakpoint, then sends the registers over serial and loops.
+# Each case starts from its cartridge as the boot ROM leaves it (src/boot.rs), and the rest of the
+# console requests no interrupt (these tests need none). A mooneye test ends in its quit routine: it
+# sets B C D E H L (3 5 8 13 21 34 is a pass, all $42 a failure) and executes `LD B,B`, mooneye's
+# breakpoint, then sends the registers over serial and loops.
 # One decode rule covers every `LD r,r`, so no rule marks that end: a run stops before the first
 # fetch whose opcode is $40 (`stop_when`, MooneyeBreakpoint in krs/sm83-views), and the expectation
 # compares only the registers there, under the view that keeps B C D E H L (krs/sm83-views); A is
@@ -18,6 +19,7 @@ depth = 10000000
 name = "ei_sequence"
 [case.inputs]
 cartridge = { "$file" = "ei_sequence.gb" }
+requests = []
 [case.expect]
 halt = "stopped"
 rule = "crate::interrupt::boundary_fetch"
@@ -30,6 +32,7 @@ cells = { regs = { A = 0, B = 3, C = 5, D = 8, E = 13, H = 21, L = 34 } }
 name = "ei_timing"
 [case.inputs]
 cartridge = { "$file" = "ei_timing.gb" }
+requests = []
 [case.expect]
 halt = "stopped"
 rule = "crate::interrupt::boundary_fetch"
@@ -42,6 +45,7 @@ cells = { regs = { A = 0, B = 3, C = 5, D = 8, E = 13, H = 21, L = 34 } }
 name = "rapid_di_ei"
 [case.inputs]
 cartridge = { "$file" = "rapid_di_ei.gb" }
+requests = []
 [case.expect]
 halt = "stopped"
 rule = "crate::interrupt::boundary_fetch"
@@ -54,6 +58,7 @@ cells = { regs = { A = 0, B = 3, C = 5, D = 8, E = 13, H = 21, L = 34 } }
 name = "reti_intr_timing"
 [case.inputs]
 cartridge = { "$file" = "reti_intr_timing.gb" }
+requests = []
 [case.expect]
 halt = "stopped"
 rule = "crate::interrupt::boundary_fetch"
@@ -66,6 +71,7 @@ cells = { regs = { A = 0, B = 3, C = 5, D = 8, E = 13, H = 21, L = 34 } }
 name = "ie_push"
 [case.inputs]
 cartridge = { "$file" = "ie_push.gb" }
+requests = []
 [case.expect]
 halt = "stopped"
 rule = "crate::interrupt::boundary_fetch"
@@ -78,6 +84,7 @@ cells = { regs = { A = 0, B = 3, C = 5, D = 8, E = 13, H = 21, L = 34 } }
 name = "if_ie_registers"
 [case.inputs]
 cartridge = { "$file" = "if_ie_registers.gb" }
+requests = []
 [case.expect]
 halt = "stopped"
 rule = "crate::interrupt::boundary_fetch"

@@ -13,9 +13,14 @@ A step is a sequence of micro-operations.
 An unused opcode locks the CPU: its step ends at `#locked`, after which nothing happens.
 `STOP` decodes to `stop`, which no rule executes: the model does not support it.
 
-A cartridge starts from the state a hardware model's boot ROM hands over, which `src/boot.rs` states once (`DmgRegisters`, `DmgFlags`, `BootPc`, `BootSp`, `DmgIo`, and `CpuStageIo` with the CPU stage's two display stand-ins), the cartridge's first 32 KiB as the ROM (`RomRegion`), and RAM that holds no byte until the program writes one. The initializer (`src/machine.rs`) puts these together from the definition's one input, the cartridge: `krs run FILE` binds it to the file's bytes, and `../oracles/mooneye/sm83.toml` names each ROM with `{"$file": ..}`.
+A cartridge starts from the state a hardware model's boot ROM hands over, which `src/boot.rs` states once (`DmgRegisters`, `DmgFlags`, `BootPc`, `BootSp`, `DmgIo`, and `CpuStageIo` with the CPU stage's two display stand-ins), the cartridge's first 32 KiB as the ROM (`RomRegion`), and RAM that holds no byte until the program writes one. The initializer (`src/machine.rs`) puts these together from the cartridge: `krs run FILE` binds it to the file's bytes, and `../oracles/mooneye/sm83.toml` names each ROM with `{"$file": ..}`.
 
-SingleStepTests starts from any boundary state, so it builds the definition with `--cfg whole_state`, which swaps in a second initializer. That one takes the whole architectural state at a boundary: `REGS`, `F`, `PC`, `SP`, `IME`, `EI_PENDING`, `HALTED`, `HALT_BUG` and `MEMORY`; and the unobservable registers `W` and `Z` (the harnesses pass 0), so a run can test that their initial value changes nothing observed.
+Its other input, `REQUESTS`, is the rest of the console as the CPU sees it: the interrupt requests the timer, PPU, serial port and joypad make, which the CPU stage does not model.
+Each request `InterruptRequest::At { cycle, bits }` sets `bits` in `IF` once `cycle` machine cycles have run (the bus log holds `cycle` events), before any other step (`deliver_request`, priority 10, in `src/interrupt.rs`).
+So a request can arrive while the CPU is halted, inside a dispatch or partway through an instruction, which no program can arrange; the corpus's `scheduled/` cases do (`../../corpus/README.md`).
+Most runs bind it to `[]`. The console stage will replace it with the peripherals, each setting `IF` in the machine cycle it fires.
+
+SingleStepTests starts from any boundary state, so it builds the definition with `--cfg whole_state`, which swaps in a second initializer. That one takes the whole architectural state at a boundary: `REGS`, `F`, `PC`, `SP`, `IME`, `EI_PENDING`, `HALTED`, `HALT_BUG` and `MEMORY`; and the unobservable registers `W` and `Z` (the harnesses pass 0), so a run can test that their initial value changes nothing observed. It makes no interrupt request.
 The bus log starts empty.
 Each machine cycle of the instruction is one bus micro-operation, which appends one event to the `bus` cell:
 `read(addr, value)`, `write(addr, value)`, or `idle` (a cycle with no bus access).
@@ -39,6 +44,7 @@ The state is:
 | `w`, `z` | internal temporary registers, declared `#[k::cell(unobservable)]`: no comparison of runs reads them |
 | `memory` | the address space, a map from address to byte |
 | `bus` | the bus log since the start |
+| `requests` | the rest of the console's interrupt requests not yet delivered, in cycle order |
 
 `memory` is a flat map: this crate does not yet model the Game Boy memory map, cartridge, or I/O registers.
 A read or write of an address absent from `memory` gets stuck instead of inventing a value.
