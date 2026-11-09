@@ -158,6 +158,22 @@ pub fn Hl(registers: Term<Map<Reg8, Int>>) -> Term<Int> {
     Pair(registers[Register::H], registers[Register::L])
 }
 
+/// Whether no address `memory` holds is in the ROM region: an invariant of every run from a
+/// cartridge, since a write into the ROM region stores nothing. Only kink reads it, as the
+/// invariant the corpus's argued ROM-side obligations rest on (corpus/FLOW.toml); no rule
+/// applies it. It is written as its violation, so that whichever binding the map pattern
+/// chooses, the value is the same.
+#[k::function(total, internal)]
+pub fn MemoryOutsideRom(memory: Term<Map<Int, Int>>, rom_end: Term<Int>) -> Term<Bool>;
+
+k::equations! {
+    for MemoryOutsideRom;
+    #[k::requires(InRom(rom_end, addr))]
+    memory_in_rom: (k::builtin::map![addr -> _, ..], rom_end) => false;
+    #[k::equation(owise)]
+    memory_outside_rom: (_, _) => true;
+}
+
 /// The value of a register pair.
 #[k::function(total, internal)]
 pub fn PairValue(

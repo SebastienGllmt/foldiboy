@@ -259,6 +259,7 @@ After the perpetual-boundary migration (foldiboy `6693b4d`), `bun run-claims.ts`
 At k-rust `b06b9b869` (2026-11-06), `bun run-claims.ts` replayed all 183 contracts in one `krs prove --output jsonl --claim-timeout 600`, each solver query bounded by Z3 4.16.0 resource units (310,000, three doubling retries) rather than the clock: 182 proved in 18 minutes at load 20-40, and `contract-unary-daa-accumulator` still fails.
 At k-rust `86eafc770` (2026-11-08, Z3 5.3.3), `bun run claims` gave the same verdicts: 182 proved in 12 minutes, and `contract-unary-daa-accumulator` fails.
 At k-rust `13819fe0f` (2026-11-09), where a claim's status no longer depends on the order the search reaches its leaves, the verdicts are the same: 182 proved in 10 minutes.
+At k-rust `599bb8485` (2026-11-09), with `MemoryOutsideRom` added to the definition, the verdicts are the same: 182 proved in 15 minutes on a busier host.
 `contract-dispatch-running` and `contract-dispatch-wake` prove with `ExpectedInterruptVector` and `ExpectedInterruptMask` written as `if` chains: k-rust now admits those helpers' guards (`x / 2^k` is defined) to the prover's guarded reading (OT-20), so the single-expression workaround is gone.
 
 Before the 2026-11-02 replay, `contract-call-taken`, `contract-dispatch-running` and `contract-dispatch-wake` each reached a 90-second external wall limit without a native verdict; all three prove at `b06b9b869`.

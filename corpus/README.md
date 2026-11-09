@@ -84,7 +84,7 @@ kink runs each case on the definition and on each mutant and compares their ends
 | `instructions` | the instructions' rewrite rules: bus order, internal cycles, the stack, memory, interrupts |
 | `functions` | the functions they apply: ALU results and flags, decoding, conditions, interrupt selection |
 | `boot` | the boot state the cases start from |
-| `unobservable` | controls that change only W or Z after their last read: each must survive |
+| `unobservable` | controls that change only W or Z after their last read: each must survive (`expect = "survive"`, which `run` checks) |
 
 `definition.k` is the definition's emission, which `krs kink` writes when the definition changes; it is not committed.
 
@@ -98,21 +98,24 @@ bun run kink run --full     # every case against every mutation: which cases are
 Two committed files are kink's record, each rewritten by the command after a run that judged everything, and checked by the same command with `--locked` (exit 1 when it would change):
 
 - `verdicts.lock` (`run`): each mutation's status and, for a killed one, one killer. A run tries the recorded killer first and keeps it while it still kills, so adding a case moves no killer and runs only the survivors on it; a killer that stops killing is replaced, and the diff shows it.
-- `coverage.lock` (`coverage`): each open obligation (a rule no case fires, a guard outcome no case shows, a production or `k::bits!` field value no case reaches) and each condition flip's status and killer.
+- `coverage.lock` (`coverage`): each open obligation (a rule no case fires, a guard outcome no case shows, a production or `k::bits!` field value no case reaches), each argued one with its standing, and each condition flip's status and killer.
 
 `run --full` costs every case on every mutation, so it is for occasional corpus pruning, not routine runs.
 Under the Z3 profile kink caches results and outcomes (its solver queries are bounded by Z3 resource units, not the clock), so a rerun on an unchanged definition and corpus reuses them.
-`[observe]` compares every run at each instruction boundary on `pc`, `ime` and `halted` as well as at its end, so a mutant whose run never ends is told apart where it first differs. While the corpus has `[stop]` or `[observe]`, `krs kink query` and `fuzz` refuse it (their searches do not yet end or compare a path that way).
+`[observe]` compares every run at each instruction boundary on `pc`, `ime` and `halted` as well as at its end, so a mutant whose run never ends is told apart where it first differs. `krs kink query` ends its runs at `[stop]` as `run` does. `fuzz` has no template to vary: kink varies only a program bound as `$PGM` text, and a case is a cartridge.
 
-At k-rust 13819fe0f, on the 32 cases (Z3 profile, 2026-11-09), every case is comparable.
-Of 81 mutations, 72 are killed and the 9 `unobservable` controls survive, as they must; none is unknown.
+At k-rust 599bb8485, on the 32 cases (Z3 profile, 2026-11-09), every case is comparable.
+Of 81 mutations, 72 are killed and the 9 `unobservable` controls survive, as they expect; none is unknown.
 `coverage`, for each family:
 
 | Family | Covered | Open |
 | --- | --- | --- |
-| rules | 291 of 292 fire (67 claim helpers not counted) | `boundary_wake`: waking from `HALT` needs a request while halted, which only a peripheral makes |
-| requirements | 151 of 196 | 45, none a gap a case can close: 37 are outcomes kink records only when k-rust tries one equation of a function before another (an `if`/`else if` chain, or two complementary equations), 6 are the ROM side of rules that match `memory: { pc -> opcode }`, which never holds a ROM address, and 2 are `boundary_wake`'s |
+| rules | 291 of 292 fire (claim helpers and the invariant are no obligation) | `boundary_wake`: waking from `HALT` needs a request while halted, which only a peripheral makes |
+| requirements | 188 of 196, 6 argued | `boundary_wake`'s 2, as for the rule |
 | syntax | 307 of 307 | none: the sweeps execute every `k::bits!` field value |
-| condition flips | 36 of 56 distinguished | the 20 others flip claim helpers, which no case runs; kink counts them |
+| condition flips | 36 of 36 distinguished | none |
 
-The open requirements and the claim-helper flips are not cases to write: they are how `krs kink coverage` counts at this pin.
+The 6 argued requirements are the ROM side of the rules that read `memory` (`fetch`, `fetch_halt_bug`, `discard_fetch`, `fetch_cb`, `read_w`, `read_z`).
+No case can reach them: `memory` never holds a ROM address, since a write into the ROM region stores nothing, and the rules carry their `!InRom` guards only so that krs's overlap check sees them disjoint from their ROM-side twins.
+`FLOW.toml` argues each from the invariant `MemoryOutsideRom` (`krs/sm83/src/machine.rs`), and kink checks the argument: the invariant excludes the outcome at the rule's pattern, and it holds at every state of every run where those rules could apply (`checked-on-runs`).
+It is checked on the corpus's runs, not proved; a refuted argument reopens its item and fails `coverage`.

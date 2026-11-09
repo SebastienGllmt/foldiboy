@@ -30,3 +30,44 @@ name = "boundary"
 before = ["crate::interrupt::boundary_dispatch", "crate::interrupt::boundary_fetch", "crate::interrupt::boundary_halted", "crate::interrupt::boundary_wake"]
 stutter = "count"
 cells = ["pc", "ime", "halted"]
+
+# Six ROM-side requirements no case can reach: `memory` never holds a ROM address, since a write
+# into the ROM region stores nothing (the rom-write case). The rules that read `memory` carry
+# `!InRom` guards only so that krs's overlap check sees them disjoint from their ROM-side twins,
+# so their ROM-side outcomes are argued. kink checks each argument: the invariant excludes the
+# outcome at the rule's pattern (one solver query), and it holds at every state of every run
+# where those rules could apply.
+[[coverage.invariant]]
+name = "memory-outside-rom"
+function = "crate::machine::MemoryOutsideRom"
+cells = ["memory", "rom_end"]
+
+[[coverage.argued]]
+item = "requirement:crate::micro::fetch:InRom(rom_end, pc):true"
+argument = "memory never holds a ROM address, so fetch from memory never sees pc in ROM"
+invariant = "memory-outside-rom"
+
+[[coverage.argued]]
+item = "requirement:crate::micro::fetch_halt_bug:InRom(rom_end, pc):true"
+argument = "memory never holds a ROM address, so the HALT-bug fetch from memory never sees pc in ROM"
+invariant = "memory-outside-rom"
+
+[[coverage.argued]]
+item = "requirement:crate::interrupt::discard_fetch:refuted"
+argument = "memory never holds a ROM address, so the discarded fetch from memory never sees pc in ROM"
+invariant = "memory-outside-rom"
+
+[[coverage.argued]]
+item = "requirement:crate::micro::fetch_cb:refuted"
+argument = "memory never holds a ROM address, so the CB fetch from memory never sees pc in ROM"
+invariant = "memory-outside-rom"
+
+[[coverage.argued]]
+item = "requirement:crate::micro::read_w:refuted"
+argument = "memory never holds a ROM address, so a read into W from memory never sees a ROM address"
+invariant = "memory-outside-rom"
+
+[[coverage.argued]]
+item = "requirement:crate::micro::read_z:refuted"
+argument = "memory never holds a ROM address, so a read into Z from memory never sees a ROM address"
+invariant = "memory-outside-rom"

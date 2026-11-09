@@ -1,11 +1,13 @@
 # Controls: each changes only W or Z after its last read, the internal registers the definition
 # declares unobservable (krs/sm83/src/machine.rs). kink compares every other cell, so each must
-# survive; a kill here means W or Z reached an observable cell (sm83-refactor R8; the first run's
-# internal set, without the two that changed a write's old byte, which events no longer carry).
+# survive, which `expect` states and kink checks: a kill means W or Z reached an observable cell
+# (sm83-refactor R8; the first run's internal set, without the two that changed a write's old byte,
+# which events no longer carry).
 
 [[mutation]]
 id = "wz-jp-clears-w"
 misunderstanding = "a taken JP also clears W"
+expect = "survive"
 
   [[mutation.edit]]
   rule = "jump-taken"
@@ -15,6 +17,7 @@ misunderstanding = "a taken JP also clears W"
 [[mutation]]
 id = "wz-call-clears-z"
 misunderstanding = "a taken CALL also clears Z"
+expect = "survive"
 
   [[mutation.edit]]
   rule = "call-taken"
@@ -24,6 +27,7 @@ misunderstanding = "a taken CALL also clears Z"
 [[mutation]]
 id = "wz-store-pair-bumps-w"
 misunderstanding = "storing W and Z into a pair also increments W"
+expect = "survive"
 
   [[mutation.edit]]
   rule = "store-pair"
@@ -33,6 +37,7 @@ misunderstanding = "storing W and Z into a pair also increments W"
 [[mutation]]
 id = "wz-check-bit-clears-z"
 misunderstanding = "BIT also clears Z"
+expect = "survive"
 
   [[mutation.edit]]
   rule = "check-bit"
@@ -42,6 +47,7 @@ misunderstanding = "BIT also clears Z"
 [[mutation]]
 id = "wz-alu-clears-z"
 misunderstanding = "an ALU operation also clears Z"
+expect = "survive"
 
   [[mutation.edit]]
   rule = "alu-a"
@@ -51,6 +57,7 @@ misunderstanding = "an ALU operation also clears Z"
 [[mutation]]
 id = "wz-store-z-bumps-z"
 misunderstanding = "a register store also increments Z"
+expect = "survive"
 
   [[mutation.edit]]
   rule = "store-z-register"
@@ -60,6 +67,7 @@ misunderstanding = "a register store also increments Z"
 [[mutation]]
 id = "wz-jr-clears-z"
 misunderstanding = "a taken JR also clears Z"
+expect = "survive"
 
   [[mutation.edit]]
   rule = "jump-relative-taken"
@@ -69,6 +77,7 @@ misunderstanding = "a taken JR also clears Z"
 [[mutation]]
 id = "wz-store-sp-clears-w"
 misunderstanding = "LD (nn),SP also clears W"
+expect = "survive"
 
   [[mutation.edit]]
   rule = "store-sp-at-wz"
@@ -78,6 +87,7 @@ misunderstanding = "LD (nn),SP also clears W"
 [[mutation]]
 id = "wz-store-sp-bumps-z"
 misunderstanding = "LD (nn),SP also increments Z"
+expect = "survive"
 
   [[mutation.edit]]
   rule = "store-sp-at-wz"
