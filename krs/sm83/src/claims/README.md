@@ -112,13 +112,26 @@ The audit also checks that these indices equal the previous quotient at every pe
 - Operand/register bounds are explicit where used; every `Flags` value is a valid flag state, so incoming flags need no premise.
   A written address must already be in the memory map (the write rule requires it).
   Each claim states only the premises it needs, spelled with `IsByte` and `IsWord` ([../well_formed.rs](../well_formed.rs)): fewer premises make a stronger statement, and a premise over the whole register map does not give `IsByte(r[src])` for a symbolic register `src` (the prover does not split `Reg8` into its seven constructors), so such a claim is stuck at its first step (measured 2026-11-04, `contract-alu-add-register`).
-- Memory is the current flat map. No cartridge, I/O read masks, timer, DMA, PPU, joypad, STOP execution or peripheral-driven interrupt arrival is established here.
+- Memory is the current flat map, where a write stores `Latch(addr, value)`: the byte with `IF`'s bits 7 to 5 set when `addr` is `IF`, and the byte itself elsewhere (`../machine.rs`). A contract that writes at a symbolic address states the stored byte as `Latch(addr, value)`, so it holds at `IF` too; reads need no such term, since `memory` holds what a read returns. No cartridge, other I/O register, timer, DMA, PPU, joypad, STOP execution or peripheral-driven interrupt arrival is established here.
 - Every contract starts with `requests: []`: the rest of the console makes no interrupt request while it runs (the CPU stage's `REQUESTS` input, `../interrupt.rs`). A request that arrives partway through an instruction or a dispatch is covered by the corpus's `scheduled/` cases, not by a contract.
 - The ordinary dispatch contracts exclude writes to IE/IF. IE alias cases are separately specified; writes onto IF and arbitrary asynchronous changes need further contracts and source qualification.
 - Full decoder coverage plus decoded family contracts does not yet constitute a proof that every fetched instruction composes correctly. The fetch contracts above are the present composition coverage.
 - `all_paths` is weak partial correctness. A proven result alone is not a termination theorem; inspect vacuity, trusted assumptions and claim applications separately.
 
 ## Running
+
+### When to run them
+
+The claims are not a routine check: the corpus with kink, SingleStepTests and mooneye are, and they cover every change to the definition in minutes.
+A full run takes 15 to 25 minutes, so run `bun run claims` only when:
+
+- a rule or function a claim states changes (`micro.rs`, `execute.rs`, `decode.rs`, `interrupt.rs`, the ALU and flag functions), or the configuration gains a cell, since every claim names the cells it fixes;
+- before work that reads them, such as a k2lean translation.
+
+Moving the k-rust pin is not a reason by itself; when a pin changes the prover, run them once to see whether a verdict moved.
+They stay because they state each instruction family for every input, where SingleStepTests samples 1,000 vectors per opcode, and because a k2lean translation can start from them.
+
+### How to run them
 
 From `krs/sm83/`, using the CLI build and library environment described in the parent README:
 
@@ -250,7 +263,7 @@ No successful claim in our targeted review reports vacuity, trusted reachability
 
 On 2026-11-02, `bun run-claims.ts` replayed all 181 contracts with the krs CLI built from k-rust `1a937ef80` (`results/claims.json`, `results/claims-run.json`).
 178 proved: the batch of 178 proved 177 in 18 minutes, and `contract-call-taken` proved alone in 2.6 minutes.
-`contract-unary-daa-accumulator` failed with one stuck leaf at depth 4; it proved on 2026-10-30 at k-rust `d95e77fc9`, so the change between those revisions is under investigation.
+`contract-unary-daa-accumulator` failed with one stuck leaf at depth 4; it proved on 2026-10-30 at k-rust `d95e77fc9`. Bisected on 2026-11-09 (on this source, Foldiboy `778b465`): it proves at `b6434eb8a` and fails from `bb6b4ac90`, where the solver query of an implication stopped applying the definition's equations, so the final state's `unaryResult(unaryDaa, ..)` is never compared with the claim's `ExpectedDaaByte`. SingleStepTests' 1,000 `DAA` vectors pass, so the definition is not at fault; k-rust has it as FB-44.
 `contract-dispatch-running` and `contract-dispatch-wake` each exceeded a 600-second budget without a verdict.
 The machine's load average exceeded 500 during the run, so the durations are not cost measurements.
 

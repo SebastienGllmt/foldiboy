@@ -7,7 +7,7 @@ use crate::alu::{FlagByte, FlagSet, Flags};
 use crate::arith::Pair;
 use crate::boot::{BootPc, BootSp, CpuStageIo, DmgFlags, DmgRegisters, RomRegion};
 use crate::decode::{Cond, Condition, Pair16, RegPair};
-use crate::interrupt::{InterruptRequest, Step};
+use crate::interrupt::{IF, InterruptRequest, Step};
 
 pub use sm83_events::{CpuEvent, Event};
 
@@ -161,6 +161,28 @@ impl Machine {
 #[k::function(total, internal)]
 pub fn InRom(rom_end: Term<Int>, addr: Term<Int>) -> Term<Bool> {
     0 <= addr && addr < rom_end
+}
+
+// An I/O register is not RAM: `memory` holds the byte a read of each address returns, and a write
+// stores what the register then reads back (`Latch`). Every bus write outside the ROM goes
+// through it. `IF` latches its five request bits, and its bits 7 to 5, which do not exist, read
+// as 1 (Pan Docs; mooneye if_ie_registers), so a write to it stores them set. The masking is on
+// the write side, not the read side, so a read is a plain lookup: the claims about reads and
+// fetches from any address need no premise that the address is not `IF`. With
+// `--cfg whole_state` (SingleStepTests) every address is RAM.
+
+/// The byte `memory` holds at `addr` after a bus write of `value`.
+#[cfg(not(whole_state))]
+#[k::function(total, internal)]
+pub fn Latch(addr: Term<Int>, value: Term<Int>) -> Term<Int> {
+    if addr == IF { value | 0xE0 } else { value }
+}
+
+/// The byte `memory` holds at `addr` after a bus write of `value`: every address is RAM.
+#[cfg(whole_state)]
+#[k::function(total, internal)]
+pub fn Latch(addr: Term<Int>, value: Term<Int>) -> Term<Int> {
+    value
 }
 
 /// The value of the register pair `HL`.

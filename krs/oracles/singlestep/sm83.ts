@@ -18,8 +18,12 @@
 // - An idle cycle is compared by kind: the suite records bus lines the definition does not model.
 // - The expected memory is the initial memory with the final bytes written over it.
 // - A step runs to the next boundary rule: stop before one, count 2 (the first stop is the
-//   initial state). The next boundary fetches, except after `HALT`. The suite models `HALT`
-//   ($76) and `STOP` ($10) as one-cycle no-ops; the definition does not, so those 2000 vectors fail.
+//   initial state). The next boundary fetches, except after `HALT`.
+// - A `HALT` vector ($76) records the fetch and two cycles in HALT mode (no interrupt is
+//   requested), so its run goes on to the third halted boundary: count 4.
+// - `STOP` ($10) is not run: the definition does not model it (krs/sm83/README.md), and the
+//   suite's three cycles are no hardware behaviour it states. Its 1000 vectors are reported as
+//   excluded, not run.
 
 import { mkdir, readdir, rm } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -80,15 +84,20 @@ const jobs = option("--jobs", "8");
 
 const suite = resolve(checkout("sm83"), "v1");
 const out = resolve(root, "krs/oracles/singlestep/results/sm83-cases");
-const files = args.length ? args : (await readdir(suite)).filter((f) => f.endsWith(".json")).map((f) => f.slice(0, -5)).sort();
+const EXCLUDED = ["10"];
+const all = args.length ? args : (await readdir(suite)).filter((f) => f.endsWith(".json")).map((f) => f.slice(0, -5)).sort();
+const files = all.filter((file) => !EXCLUDED.includes(file));
 await rm(out, { recursive: true, force: true });
 await mkdir(out, { recursive: true });
 for (const file of files) {
   const vectors = (await Bun.file(`${suite}/${file}.json`).json()) as Vector[];
-  const document = { run: { stop_before: BOUNDARY, stop_count: 2, depth: 64 }, case: vectors.map((v) => toCase(v, wz)) };
+  const stops = file === "76" ? 4 : 2;
+  const document = { run: { stop_before: BOUNDARY, stop_count: stops, depth: 64 }, case: vectors.map((v) => toCase(v, wz)) };
   await Bun.write(`${out}/${file}.json`, JSON.stringify(document) + "\n");
 }
 console.error(`converted ${files.length} suite files (W,Z = ${wz.join(",")})`);
+const excluded = all.filter((file) => EXCLUDED.includes(file));
+if (excluded.length) console.error(`excluded: ${excluded.join(", ")} (STOP, which the definition does not model)`);
 
 const documents = files.map((file) => `${out}/${file}.json`);
 const records = "krs/oracles/singlestep/results/sm83.jsonl";

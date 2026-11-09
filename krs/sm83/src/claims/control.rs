@@ -7,7 +7,7 @@
 use k::builtin::{int, kequal};
 use crate::decode::{Address, Condition, Instruction, Operand, Pair16};
 use crate::alu::{Alu, Flags, Unary};
-use crate::machine::{Event, Register};
+use crate::machine::{Event, Latch, Register};
 use crate::well_formed::{IsByte, IsWord};
 use crate::Machine;
 
@@ -118,8 +118,8 @@ pub mod spec {
             pc: (m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]),
             sp: ((sp + 0xFFFE) % 0x1_0000),
             memory: k::map![
-                ((sp + 0xFFFF) % 0x1_0000) -> ((pc + 2) % 0x1_0000) / 0x100,
-                ((sp + 0xFFFE) % 0x1_0000) -> ((pc + 2) % 0x1_0000) % 0x100,
+                ((sp + 0xFFFF) % 0x1_0000) -> Latch(((sp + 0xFFFF) % 0x1_0000), ((pc + 2) % 0x1_0000) / 0x100),
+                ((sp + 0xFFFE) % 0x1_0000) -> Latch(((sp + 0xFFFE) % 0x1_0000), ((pc + 2) % 0x1_0000) % 0x100),
                 ..m,
             ],
             bus: [..log, Event::Read { addr: pc, value: m[pc] }, Event::Read { addr: ((pc + 1) % 0x1_0000), value: m[(pc + 1) % 0x1_0000] }, Event::Idle, Event::Write { addr: ((sp + 0xFFFF) % 0x1_0000), value: ((pc + 2) % 0x1_0000) / 0x100 }, Event::Write { addr: ((sp + 0xFFFE) % 0x1_0000), value: ((pc + 2) % 0x1_0000) % 0x100 }],
@@ -244,8 +244,8 @@ pub mod spec {
             pc: target,
             sp: ((sp + 0xFFFE) % 0x1_0000),
             memory: k::map![
-                ((sp + 0xFFFF) % 0x1_0000) -> pc / 0x100,
-                ((sp + 0xFFFE) % 0x1_0000) -> pc % 0x100,
+                ((sp + 0xFFFF) % 0x1_0000) -> Latch(((sp + 0xFFFF) % 0x1_0000), pc / 0x100),
+                ((sp + 0xFFFE) % 0x1_0000) -> Latch(((sp + 0xFFFE) % 0x1_0000), pc % 0x100),
                 ..m,
             ],
             bus: [..log, Event::Idle, Event::Write { addr: ((sp + 0xFFFF) % 0x1_0000), value: pc / 0x100 }, Event::Write { addr: ((sp + 0xFFFE) % 0x1_0000), value: pc % 0x100 }],

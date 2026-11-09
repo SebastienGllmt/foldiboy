@@ -8,7 +8,7 @@ use crate::Machine;
 use crate::alu::{Alu, Unary};
 use crate::decode::{Address, Condition, Instruction, Operand, Pair16};
 use crate::interrupt::{IE, IF, Step};
-use crate::machine::{Event, Register};
+use crate::machine::{Event, Latch, Register};
 use crate::well_formed::{IsByte, IsWord};
 use crate::micro::Micro;
 use k::builtin::Int;
@@ -262,8 +262,8 @@ pub mod spec {
             pc: ExpectedInterruptVector(m[IE], m[IF]),
             sp: ((sp + 0xFFFE) % 0x1_0000),
             memory: k::map![
-                ((sp + 0xFFFF) % 0x1_0000) -> pc / 0x100,
-                ((sp + 0xFFFE) % 0x1_0000) -> pc % 0x100,
+                ((sp + 0xFFFF) % 0x1_0000) -> Latch(((sp + 0xFFFF) % 0x1_0000), pc / 0x100),
+                ((sp + 0xFFFE) % 0x1_0000) -> Latch(((sp + 0xFFFE) % 0x1_0000), pc % 0x100),
                 IF -> m[IF] - ExpectedInterruptMask(m[IE], m[IF]),
                 ..m,
             ],
@@ -322,8 +322,8 @@ pub mod spec {
             pc: ExpectedInterruptVector(m[IE], m[IF]),
             sp: ((sp + 0xFFFE) % 0x1_0000),
             memory: k::map![
-                ((sp + 0xFFFF) % 0x1_0000) -> pc / 0x100,
-                ((sp + 0xFFFE) % 0x1_0000) -> pc % 0x100,
+                ((sp + 0xFFFF) % 0x1_0000) -> Latch(((sp + 0xFFFF) % 0x1_0000), pc / 0x100),
+                ((sp + 0xFFFE) % 0x1_0000) -> Latch(((sp + 0xFFFE) % 0x1_0000), pc % 0x100),
                 IF -> m[IF] - ExpectedInterruptMask(m[IE], m[IF]),
                 ..m,
             ],

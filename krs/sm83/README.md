@@ -46,10 +46,12 @@ The state is:
 | `bus` | the bus log since the start |
 | `requests` | the rest of the console's interrupt requests not yet delivered, in cycle order |
 
-`memory` is a flat map: this crate does not yet model the Game Boy memory map, cartridge, or I/O registers.
-A read or write of an address absent from `memory` gets stuck instead of inventing a value.
+`memory` is a flat map: this crate does not yet model the Game Boy memory map, cartridge mappers, or most I/O registers.
+A read of an address absent from `memory` gets stuck instead of inventing a value; a write adds the address.
 `IE` (`$FFFF`) and `IF` (`$FF0F`) are bytes of `memory`.
 The CPU reads them over internal wires, not the bus, so interrupt checks add nothing to the bus log; dispatch acknowledges a request by updating `IF` in `memory` directly.
+An I/O register is not RAM, so every bus write outside the ROM goes through `Latch` (`src/machine.rs`): `memory` holds the byte a read of each address returns, and a write stores what the register then reads back.
+`IF` latches five bits, and its bits 7 to 5 read as 1, so a write to it stores them set. `IE` is a full byte. The masking is on the write side so that a read stays a plain lookup, and the claims about reads and fetches need no premise about the address. `Latch` is where the memory-map stage adds the other registers; with `--cfg whole_state` every address is RAM.
 
 ## Interrupts and `HALT`
 
@@ -211,10 +213,9 @@ The model keeps its hand layout: the current formatter still pads table labels b
 
 Status at the last run:
 
-- vectors: 498,000 of 500,000 pass; the failures are `HALT` and `STOP`.
-  The corpus records `HALT` as a fetch plus two internal cycles with `PC + 1`, its generator's convention, which the model does not follow.
-- mooneye: `ei_sequence`, `ei_timing`, `rapid_di_ei`, `reti_intr_timing` and `interrupts/ie_push` pass.
-  `if_ie_registers` fails: it expects `IF` bits 7 to 5 to read as 1, an I/O register rule for the memory-map stage.
+- vectors: 499,000 of 499,000 pass. `STOP`'s 1,000 are excluded, since the model does not execute `STOP`.
+  The suite records `HALT` as its fetch and two cycles in `HALT` mode, `PC + 1`, so the harness runs a `HALT` vector to its third halted boundary, and the model's idle cycles match.
+- mooneye: all six pass: `ei_sequence`, `ei_timing`, `rapid_di_ei`, `reti_intr_timing`, `interrupts/ie_push` and `if_ie_registers`.
 - SameSuite `interrupt/ei_delay_halt` (last checked with the removed `sm83-rom` harness's `SM83_DUMP=c000:24`; not rerun since; `krs run` prints the memory to recheck it): the VBlank and STAT entries match the hardware results (both return into the `HALT`); the third entry needs the timer.
 
 | Group | Opcodes | Status |

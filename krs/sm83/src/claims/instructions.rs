@@ -10,7 +10,7 @@ use crate::Machine;
 use crate::alu::{Alu, Flags, Unary};
 use crate::decode::{Address, Condition, Instruction, Operand, Pair16};
 use crate::interrupt::Step;
-use crate::machine::{Event, Register};
+use crate::machine::{Event, Latch, Register};
 use crate::well_formed::{IsByte, IsWord};
 use k::builtin::{Bool, Int, int, kequal};
 
@@ -171,7 +171,7 @@ pub mod spec {
             bus: log,
         } => {
             k: [],
-            memory: k::map![(r[Register::H] * 0x100 + r[Register::L]) -> r[src], ..m],
+            memory: k::map![(r[Register::H] * 0x100 + r[Register::L]) -> Latch((r[Register::H] * 0x100 + r[Register::L]), r[src]), ..m],
             z: r[src],
             bus: [
                 ..log,
@@ -206,7 +206,7 @@ pub mod spec {
             pc: pc,
         } => {
             k: [],
-            memory: k::map![(r[Register::H] * 0x100 + r[Register::L]) -> m[pc], ..m],
+            memory: k::map![(r[Register::H] * 0x100 + r[Register::L]) -> Latch((r[Register::H] * 0x100 + r[Register::L]), m[pc]), ..m],
             z: m[pc],
             bus: [
                 ..log,
@@ -1177,9 +1177,9 @@ pub mod spec {
                 },
             ],
             memory: k::map![
-                (r[Register::H] * 0x100 + r[Register::L]) -> (
+                (r[Register::H] * 0x100 + r[Register::L]) -> Latch((r[Register::H] * 0x100 + r[Register::L]), (
                     (m[r[Register::H] * 0x100 + r[Register::L]] + 1) % 0x100
-                ),
+                )),
                 ..m,
             ],
         };
@@ -1249,9 +1249,9 @@ pub mod spec {
                 },
             ],
             memory: k::map![
-                (r[Register::H] * 0x100 + r[Register::L]) -> (
+                (r[Register::H] * 0x100 + r[Register::L]) -> Latch((r[Register::H] * 0x100 + r[Register::L]), (
                     (m[r[Register::H] * 0x100 + r[Register::L]] + 0xFF) % 0x100
-                ),
+                )),
                 ..m,
             ],
         };
@@ -1330,11 +1330,11 @@ pub mod spec {
                 },
             ],
             memory: k::map![
-                (r[Register::H] * 0x100 + r[Register::L]) -> (
+                (r[Register::H] * 0x100 + r[Register::L]) -> Latch((r[Register::H] * 0x100 + r[Register::L]), (
                     (m[r[Register::H] * 0x100 + r[Register::L]] * 2) % 0x100 + m[
                         r[Register::H] * 0x100 + r[Register::L]
                     ] / 0x80
-                ),
+                )),
                 ..m,
             ],
         };
@@ -1413,11 +1413,11 @@ pub mod spec {
                 },
             ],
             memory: k::map![
-                (r[Register::H] * 0x100 + r[Register::L]) -> (
+                (r[Register::H] * 0x100 + r[Register::L]) -> Latch((r[Register::H] * 0x100 + r[Register::L]), (
                     m[r[Register::H] * 0x100 + r[Register::L]] / 2 + (
                         m[r[Register::H] * 0x100 + r[Register::L]] % 2
                     ) * 0x80
-                ),
+                )),
                 ..m,
             ],
         };
@@ -1489,9 +1489,9 @@ pub mod spec {
                 },
             ],
             memory: k::map![
-                (r[Register::H] * 0x100 + r[Register::L]) -> (
+                (r[Register::H] * 0x100 + r[Register::L]) -> Latch((r[Register::H] * 0x100 + r[Register::L]), (
                     (m[r[Register::H] * 0x100 + r[Register::L]] * 2) % 0x100 + kequal::ite(carry, 1, 0)
-                ),
+                )),
                 ..m,
             ],
         };
@@ -1563,9 +1563,9 @@ pub mod spec {
                 },
             ],
             memory: k::map![
-                (r[Register::H] * 0x100 + r[Register::L]) -> (
+                (r[Register::H] * 0x100 + r[Register::L]) -> Latch((r[Register::H] * 0x100 + r[Register::L]), (
                     m[r[Register::H] * 0x100 + r[Register::L]] / 2 + kequal::ite(carry, 1, 0) * 0x80
-                ),
+                )),
                 ..m,
             ],
         };
@@ -1630,9 +1630,9 @@ pub mod spec {
                 },
             ],
             memory: k::map![
-                (r[Register::H] * 0x100 + r[Register::L]) -> (
+                (r[Register::H] * 0x100 + r[Register::L]) -> Latch((r[Register::H] * 0x100 + r[Register::L]), (
                     (m[r[Register::H] * 0x100 + r[Register::L]] * 2) % 0x100
-                ),
+                )),
                 ..m,
             ],
         };
@@ -1711,11 +1711,11 @@ pub mod spec {
                 },
             ],
             memory: k::map![
-                (r[Register::H] * 0x100 + r[Register::L]) -> (
+                (r[Register::H] * 0x100 + r[Register::L]) -> Latch((r[Register::H] * 0x100 + r[Register::L]), (
                     m[r[Register::H] * 0x100 + r[Register::L]] / 2 + (
                         m[r[Register::H] * 0x100 + r[Register::L]] / 0x80
                     ) * 0x80
-                ),
+                )),
                 ..m,
             ],
         };
@@ -1788,11 +1788,11 @@ pub mod spec {
                 },
             ],
             memory: k::map![
-                (r[Register::H] * 0x100 + r[Register::L]) -> (
+                (r[Register::H] * 0x100 + r[Register::L]) -> Latch((r[Register::H] * 0x100 + r[Register::L]), (
                     (m[r[Register::H] * 0x100 + r[Register::L]] % 0x10) * 0x10 + m[
                         r[Register::H] * 0x100 + r[Register::L]
                     ] / 0x10
-                ),
+                )),
                 ..m,
             ],
         };
@@ -1857,9 +1857,9 @@ pub mod spec {
                 },
             ],
             memory: k::map![
-                (r[Register::H] * 0x100 + r[Register::L]) -> (
+                (r[Register::H] * 0x100 + r[Register::L]) -> Latch((r[Register::H] * 0x100 + r[Register::L]), (
                     m[r[Register::H] * 0x100 + r[Register::L]] / 2
-                ),
+                )),
                 ..m,
             ],
         };
@@ -2096,11 +2096,11 @@ pub mod spec {
                 ) * (1 << bit)
             ),
             memory: k::map![
-                (r[Register::H] * 0x100 + r[Register::L]) -> (
+                (r[Register::H] * 0x100 + r[Register::L]) -> Latch((r[Register::H] * 0x100 + r[Register::L]), (
                     m[r[Register::H] * 0x100 + r[Register::L]] - (
                         (m[r[Register::H] * 0x100 + r[Register::L]] / (1 << bit)) % 2
                     ) * (1 << bit)
-                ),
+                )),
                 ..m,
             ],
             bus: [
@@ -2181,11 +2181,11 @@ pub mod spec {
                 ) * (1 << bit) + (1 << bit)
             ),
             memory: k::map![
-                (r[Register::H] * 0x100 + r[Register::L]) -> (
+                (r[Register::H] * 0x100 + r[Register::L]) -> Latch((r[Register::H] * 0x100 + r[Register::L]), (
                     m[r[Register::H] * 0x100 + r[Register::L]] - (
                         (m[r[Register::H] * 0x100 + r[Register::L]] / (1 << bit)) % 2
                     ) * (1 << bit) + (1 << bit)
-                ),
+                )),
                 ..m,
             ],
             bus: [

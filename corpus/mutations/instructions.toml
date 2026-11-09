@@ -294,8 +294,8 @@ misunderstanding = "a write stores value+1 in memory but puts the right value on
 
   [[mutation.edit]]
   rule = "write-byte"
-  find = "Memory:Map [ Addr:Int <- Value:Int ]"
-  replace = "Memory:Map [ Addr:Int <- Value:Int +Int 1 ]"
+  find = "Memory:Map [ Addr:Int <- latch ( Addr:Int , Value:Int ) ]"
+  replace = "Memory:Map [ Addr:Int <- latch ( Addr:Int , Value:Int ) +Int 1 ]"
 
 [[mutation]]
 id = "halt-bug-not-set"

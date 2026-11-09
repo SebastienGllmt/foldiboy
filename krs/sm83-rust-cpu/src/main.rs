@@ -14,6 +14,7 @@
 //! comparison is between the two CPUs and not between two memory maps: the ROM region is
 //! read-only, every other byte holds only what the initial state or a write put there, and a
 //! read of any other byte has no value, which ends the run stuck, as it does in the definition.
+//! `IF`'s bits 7 to 5 read as 1: a write to it stores them set, as the definition's `Latch` does.
 //!
 //! What the adapter decides, because the Rust CPU does not:
 //! - An unused opcode locks: its fetch is logged and `PC` advances as the definition's fetch
@@ -92,7 +93,7 @@ impl Bus for CorpusBus {
     fn write(&mut self, addr: u16, value: u8) {
         self.log.push(json!({ "Write": { "addr": addr, "value": value } }));
         if usize::from(addr) >= self.rom.len() {
-            self.memory.insert(addr, value);
+            self.memory.insert(addr, if addr == IF { value | 0xE0 } else { value });
         }
     }
 
@@ -101,7 +102,7 @@ impl Bus for CorpusBus {
     }
 
     fn write_interrupt_register(&mut self, addr: u16, value: u8) {
-        self.memory.insert(addr, value);
+        self.memory.insert(addr, if addr == IF { value | 0xE0 } else { value });
     }
 }
 

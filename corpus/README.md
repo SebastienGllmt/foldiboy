@@ -52,7 +52,7 @@ Every cell is compared; the bus log (`read`, `write`, `idle` events) is compared
 The Rust CPU performs an instruction's accesses at once, with no internal cycles, so its bus is compared under `WritesView` (required equal) and `AccessesView` (reported).
 Under `WritesView` every case is equal but the two whose requests the adapter delivers late: `dispatch-request` (a request inside a dispatch) and `if-read-request` (a request read inside an instruction).
 Under `AccessesView` the seven cases that dispatch an interrupt (`interrupt`, `interrupt-sources`, `joypad-int`, `halt-ime`, `ie-push-cancel`, `ram-code`, `halt-wake-ime`) differ, each first at its first dispatch, where the definition reads the opcode at `PC` and discards it and the Rust CPU pushes at once.
-That bus order follows SameBoy (`krs/sm83/README.md`); Pan Docs gives only the five cycles, so which system matches hardware is open until a hardware run decides it.
+The definition's order is the one SameBoy, Gambatte and mooneye-gb share (`krs/sm83/notes/interrupt-sources.md`); Pan Docs and mooneye's hardware-verified `intr_timing` give only the five cycles, so no evidence here decides the order of accesses within them. The Rust CPU's order is that emulator's difference, not evidence against the definition's.
 The Rust CPU's interrupt logic accesses `IE` and `IF` without bus cycles (`memory::Bus::read_interrupt_register`), so those accesses are not logged.
 
 ## Running
@@ -117,10 +117,10 @@ Of 81 mutations, 72 are killed and the 9 `unobservable` controls survive, as the
 
 | Family | Covered | Open |
 | --- | --- | --- |
-| rules | 293 of 293 fire (claim helpers and the invariant are no obligation) | none |
-| requirements | 192 of 198, 6 argued | none |
+| rules | 295 of 295 fire (claim helpers and the invariant are no obligation) | none |
+| requirements | 196 of 202, 6 argued | none |
 | syntax | 308 of 308 | none: the sweeps execute every `k::bits!` field value |
-| condition flips | 37 of 37 distinguished | none |
+| condition flips | 38 of 38 distinguished | none |
 
 The 6 argued requirements are the ROM side of the rules that read `memory` (`fetch`, `fetch_halt_bug`, `discard_fetch`, `fetch_cb`, `read_w`, `read_z`).
 No case can reach them: `memory` never holds a ROM address, since a write into the ROM region stores nothing, and the rules carry their `!InRom` guards only so that krs's overlap check sees them disjoint from their ROM-side twins.

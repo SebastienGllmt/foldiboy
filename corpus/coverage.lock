@@ -156,6 +156,11 @@ status = "distinguished"
 killer = "cases/ie-push-cancel/case.gb"
 
 [[flip]]
+id = "flip--latch_1+latch_2--IntEqual"
+status = "distinguished"
+killer = "cases/alu-flags/case.gb"
+
+[[flip]]
 id = "flip--call_not_taken+call_taken--Holds"
 status = "distinguished"
 killer = "cases/calls/case.gb"

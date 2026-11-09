@@ -9,7 +9,7 @@ use k::builtin::{Int, bytes};
 
 use crate::alu::{AluOp, UnaryOp};
 use crate::decode::{AddrMode, Address, Cond, Condition, Operand, Operand8, Pair16, RegPair};
-use crate::machine::{Event, Register};
+use crate::machine::{Event, Latch, Register};
 use crate::{
     AluFlags, AluResult, BitFlags, ByteFlags, Decode, DecodeCb, High, Hl, Holds, InRom, Low, Machine, Pair, Signed,
     SpOffsetFlags, UnaryFlags, UnaryResult, Word,
@@ -412,7 +412,7 @@ k::rules! {
         bus: log,
     } => {
         k: [..],
-        memory: k::map![addr -> value, ..memory],
+        memory: k::map![addr -> Latch(addr, value), ..memory],
         bus: [..log, Event::Write { addr, value }],
     };
 

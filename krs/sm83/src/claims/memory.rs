@@ -7,7 +7,7 @@
 use crate::Machine;
 use crate::alu::{Alu, Flags, Unary};
 use crate::decode::{Address, Condition, Instruction, Operand, Pair16};
-use crate::machine::{Event, Register};
+use crate::machine::{Event, Latch, Register};
 use crate::well_formed::{IsByte, IsWord};
 use k::builtin::{Bool, Int, int, kequal};
 
@@ -89,7 +89,7 @@ pub mod spec {
             k: [],
             w: r[high],
             z: r[low],
-            memory: k::map![(r[high] * 0x100 + r[low]) -> r[Register::A], ..m],
+            memory: k::map![(r[high] * 0x100 + r[low]) -> Latch((r[high] * 0x100 + r[low]), r[Register::A]), ..m],
             bus: [
                 ..log,
                 Event::Write {
@@ -177,7 +177,7 @@ pub mod spec {
                 ) % 0x100,
                 ..r,
             ],
-            memory: k::map![(r[Register::H] * 0x100 + r[Register::L]) -> r[Register::A], ..m],
+            memory: k::map![(r[Register::H] * 0x100 + r[Register::L]) -> Latch((r[Register::H] * 0x100 + r[Register::L]), r[Register::A]), ..m],
             bus: [
                 ..log,
                 Event::Write {
@@ -240,7 +240,7 @@ pub mod spec {
             k: [],
             w: 0xFF,
             z: r[Register::C],
-            memory: k::map![(0xFF00 + r[Register::C]) -> r[Register::A], ..m],
+            memory: k::map![(0xFF00 + r[Register::C]) -> Latch((0xFF00 + r[Register::C]), r[Register::A]), ..m],
             bus: [
                 ..log,
                 Event::Write {
@@ -309,7 +309,7 @@ pub mod spec {
             k: [],
             w: 0xFF,
             z: m[pc],
-            memory: k::map![(0xFF00 + m[pc]) -> r[Register::A], ..m],
+            memory: k::map![(0xFF00 + m[pc]) -> Latch((0xFF00 + m[pc]), r[Register::A]), ..m],
             bus: [
                 ..log,
                 Event::Read { addr: pc, value: m[pc] },
@@ -386,7 +386,7 @@ pub mod spec {
             k: [],
             w: m[(pc + 1) % 0x1_0000],
             z: m[pc],
-            memory: k::map![(m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]) -> r[Register::A], ..m],
+            memory: k::map![(m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]) -> Latch((m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]), r[Register::A]), ..m],
             bus: [
                 ..log,
                 Event::Read { addr: pc, value: m[pc] },
@@ -428,8 +428,8 @@ pub mod spec {
             k: [],
             pc: ((pc + 2) % 0x1_0000),
             memory: k::map![
-                (m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]) -> sp % 0x100,
-                (((m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]) + 1) % 0x1_0000) -> sp / 0x100,
+                (m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]) -> Latch((m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]), sp % 0x100),
+                (((m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]) + 1) % 0x1_0000) -> Latch((((m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]) + 1) % 0x1_0000), sp / 0x100),
                 ..m,
             ],
             w: m[(pc + 1) % 0x1_0000],
@@ -475,8 +475,8 @@ pub mod spec {
             k: [],
             sp: ((sp + 0xFFFE) % 0x1_0000),
             memory: k::map![
-                ((sp + 0xFFFF) % 0x1_0000) -> r[high],
-                ((sp + 0xFFFE) % 0x1_0000) -> r[low],
+                ((sp + 0xFFFF) % 0x1_0000) -> Latch(((sp + 0xFFFF) % 0x1_0000), r[high]),
+                ((sp + 0xFFFE) % 0x1_0000) -> Latch(((sp + 0xFFFE) % 0x1_0000), r[low]),
                 ..m,
             ],
             bus: [
@@ -519,8 +519,8 @@ pub mod spec {
             k: [],
             sp: ((sp + 0xFFFE) % 0x1_0000),
             memory: k::map![
-                ((sp + 0xFFFF) % 0x1_0000) -> r[Register::A],
-                ((sp + 0xFFFE) % 0x1_0000) -> ExpectedFlagByte(zero, subtract, half_carry, carry),
+                ((sp + 0xFFFF) % 0x1_0000) -> Latch(((sp + 0xFFFF) % 0x1_0000), r[Register::A]),
+                ((sp + 0xFFFE) % 0x1_0000) -> Latch(((sp + 0xFFFE) % 0x1_0000), ExpectedFlagByte(zero, subtract, half_carry, carry)),
                 ..m,
             ],
             bus: [
