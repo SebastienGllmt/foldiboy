@@ -175,7 +175,7 @@ Success requires every selected claim to report `proven` and exit status 0.
 krs proves each claim in a supervised worker: a claim that runs past the timeout gets the verdict `timeout`, and a solver crash costs only its claim (`crashed`); neither establishes anything about the claim.
 Each solver query is bounded by Z3 resource units rather than the clock, so a verdict does not depend on the host's load.
 The six bit-index contracts use exhaustive native cases over the three-bit opcode field.
-The [claim inventory](src/claims/README.md#proof-evidence) records the reviewed proof evidence; at k-rust `599bb8485` (Z3 5.3.3) every contract proves except `contract-unary-daa-accumulator`.
+The [claim inventory](src/claims/README.md#proof-evidence) records the reviewed proof evidence; at k-rust `b1966f5c6` (Z3 5.3.3) every contract proves except `contract-unary-daa-accumulator`.
 Proof output is printed to the terminal; any saved diagnostic runs belong in ignored `results/`.
 
 Run the concrete test suites:

@@ -111,7 +111,7 @@ Two committed files are kink's record, each rewritten by the command after a run
 Under the Z3 profile kink caches results and outcomes (its solver queries are bounded by Z3 resource units, not the clock), so a rerun on an unchanged definition and corpus reuses them.
 `[observe]` compares every run at each instruction boundary on `pc`, `ime` and `halted` as well as at its end, so a mutant whose run never ends is told apart where it first differs. `krs kink query` ends its runs at `[stop]` as `run` does. `fuzz` has no template to vary: kink varies only a program bound as `$PGM` text, and a case is a cartridge.
 
-At k-rust 599bb8485, on the 36 cases (Z3 profile, 2026-11-09), every case is comparable.
+At k-rust b1966f5c6, on the 36 cases (Z3 profile, 2026-11-10), every case is comparable.
 Of 81 mutations, 72 are killed and the 9 `unobservable` controls survive, as they expect; none is unknown.
 `coverage`, for each family:
 
