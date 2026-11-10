@@ -78,7 +78,18 @@ Each pushes or stores every result, from inputs chosen so that a wrong register,
 
 Four scheduled cases close what no cartridge can, the open items of `krs kink coverage` at k-rust 599bb8485: `halt-wake` and `halt-wake-ime` are woken from `HALT` mode by a timer request, with IME clear (the CPU resumes, the request stays in `IF`) and set (the CPU dispatches it). `dispatch-request` requests VBlank inside a timer dispatch, before `IF` is sampled, so VBlank is served, and `if-read-request` places two requests around a read of `IF`, one in the read's cycle and one in the next.
 
+Three close situations `krs kink query` showed no case reaching at k-rust b1966f5c6, each named by Pan Docs, while `coverage` showed nothing open: `ei-di` runs `EI` then `DI` with a request pending, so `DI` runs with `IME` set and no interrupt is served; `halt-bug-operand` puts `LD A, n` after a bugged `HALT`, which reads its own opcode as its operand; `halt-bug-rst` puts `RST` after a bugged `HALT`, which pushes its own address and so runs twice.
+
 `scripts/roms.ts` pads every cartridge with `$DD`, the lock opcode, so a jump outside a case's code locks at once instead of running on.
+
+## What each case tests
+
+A case's header states its purpose in prose; `PATTERNS.toml` states it as a pattern, a configuration the case's run must reach, and names the cases that claim it.
+`bun run kink query` runs each claimed case and answers `hit` (a run reached a matching state), `no` (no run does: the claim is refuted, and the command exits 1) or `unknown`.
+A refuted claim is either a case that does not do what its header says or a pattern that does not say what was meant; the answer cannot tell them apart, so check the pattern first.
+`coverage` asks what the definition needs (each rule fired, each guard outcome shown); a pattern asks for a combination no single rule states, such as the HALT bug followed by a two-byte opcode.
+A pattern without `programs` asks every case whether it reaches the situation, which is how the three cases above were found missing.
+`PATTERNS.toml`'s header says how to write a pattern over the emitted K, an order of events along a run included.
 
 ## Mutation testing
 
@@ -100,6 +111,7 @@ bun run kink check          # admit the definition and the cases, resolve every 
 bun run kink coverage       # what the cases cover: rules, guard outcomes, syntax, condition flips
 bun run kink run            # each mutation's status and its killer
 bun run kink run --full     # every case against every mutation: which cases are redundant
+bun run kink query          # each case reaches the situation PATTERNS.toml says it tests
 ```
 
 Two committed files are kink's record, each rewritten by the command after a run that judged everything, and checked by the same command with `--locked` (exit 1 when it would change):
@@ -111,8 +123,10 @@ Two committed files are kink's record, each rewritten by the command after a run
 Under the Z3 profile kink caches results and outcomes (its solver queries are bounded by Z3 resource units, not the clock), so a rerun on an unchanged definition and corpus reuses them.
 `[observe]` compares every run at each instruction boundary on `pc`, `ime` and `halted` as well as at its end, so a mutant whose run never ends is told apart where it first differs. `krs kink query` ends its runs at `[stop]` as `run` does. `fuzz` has no template to vary: kink varies only a program bound as `$PGM` text, and a case is a cartridge.
 
-At k-rust b1966f5c6, on the 36 cases (Z3 profile, 2026-11-10), every case is comparable.
+At k-rust b1966f5c6, on the 39 cases (Z3 profile, 2026-11-10), every case is comparable.
 Of 81 mutations, 72 are killed and the 9 `unobservable` controls survive, as they expect; none is unknown.
+Every claim of `PATTERNS.toml` (20, over 17 cases) is a hit.
+The three cases `query` found missing (`ei-di`, `halt-bug-operand`, `halt-bug-rst`) moved neither lock: they kill no mutation and close no obligation, so their purpose is recorded only in `PATTERNS.toml`, and `bun run compare` finds the Rust CPU equal on each.
 `coverage`, for each family:
 
 | Family | Covered | Open |

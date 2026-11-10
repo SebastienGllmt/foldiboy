@@ -1,0 +1,109 @@
+# Each case's purpose as a situation its run must reach: `krs kink query` (bun run kink query)
+# answers each (pattern, case) hit, no or unknown, and fails (exit 1) when a claimed case is
+# refuted, that is, when the case never does what its header says it tests.
+#
+# A pattern is written as a rule's left-hand side over the emitted K (definition.k): micro-ops as
+# `# selectVector ( Ie )`, flags as `flags(Z, N, H, C)`, IF and IE as 65295 and 65535 (K has no hex
+# literal). The bus log and the pending requests make an order along a run one pattern: match the
+# later event at the end of the log (`L:List ListItem(read(...))`) and require the earlier one in
+# it (`write(...) in L`), or match the earlier state and require a request still to come.
+# A list pattern with a list variable on both sides of an element (`_:List ListItem(X) _:List`)
+# is left undecided by k-rust's matcher at b1966f5c6: write the element last instead.
+
+# --- HALT ---------------------------------------------------------------------------------------
+
+[[pattern]]
+id = "halt-bug-double-read"
+note = "the byte after a bugged HALT is read twice: two adjacent bus reads of one address"
+pattern = "<bus> _:List ListItem(read(P1:Int, _:Int)) ListItem(read(P2:Int, _:Int)) </bus> requires P1 ==Int P2"
+programs = ["cases/halt-bug/case.gb", "cases/ram-code/case.gb", "cases/halt-bug-operand/case.gb"]
+
+[[pattern]]
+id = "halt-bug-on-two-byte-opcode"
+note = "the bugged HALT's next opcode is LD A, n, which then reads its own opcode as its operand"
+pattern = "<k> # fetch ... </k> <haltBug> true </haltBug> <pc> P:Int </pc> <rom> R:Bytes </rom> requires P <Int lengthBytes(R) andThenBool R [ P ] ==Int 62"
+programs = ["cases/halt-bug-operand/case.gb"]
+
+[[pattern]]
+id = "halt-bug-then-rst"
+note = "the bugged HALT's next opcode is an RST, which then pushes its own address"
+pattern = "<k> # fetch ... </k> <haltBug> true </haltBug> <pc> P:Int </pc> <rom> R:Bytes </rom> requires P <Int lengthBytes(R) andThenBool R [ P ] &Int 199 ==Int 199"
+programs = ["cases/halt-bug-rst/case.gb"]
+
+[[pattern]]
+id = "halt-mode-ime-clear"
+note = "HALT with IME clear and nothing requested enters HALT mode"
+pattern = "<halted> true </halted> <ime> false </ime>"
+programs = ["cases/halt-mode/case.gb", "scheduled/halt-wake/case.toml"]
+
+[[pattern]]
+id = "halt-mode-ime-set"
+note = "HALT with IME set and nothing requested enters HALT mode"
+pattern = "<halted> true </halted> <ime> true </ime>"
+programs = ["cases/halt-mode-ime/case.gb", "scheduled/halt-wake-ime/case.toml"]
+
+[[pattern]]
+id = "halt-wake-request"
+note = "in HALT mode with an enabled request pending: the wake condition"
+pattern = "<halted> true </halted> <memory> 65295 |-> If:Int 65535 |-> Ie:Int _:Map </memory> requires (If &Int Ie) &Int 31 =/=Int 0"
+programs = ["scheduled/halt-wake/case.toml", "scheduled/halt-wake-ime/case.toml"]
+
+# --- Interrupts ---------------------------------------------------------------------------------
+
+[[pattern]]
+id = "ei-then-di"
+note = "DI fetched with IME already set and an enabled request pending: EI's delay kept the dispatch out"
+pattern = "<k> di ... </k> <ime> true </ime> <memory> 65295 |-> If:Int 65535 |-> Ie:Int _:Map </memory> requires (If &Int Ie) &Int 31 =/=Int 0"
+programs = ["cases/ei-di/case.gb"]
+
+[[pattern]]
+id = "dispatch-cancelled"
+note = "the vector is selected with no enabled request left: the first push overwrote IE"
+pattern = "<k> # selectVector ( Ie:Int ) ... </k> <memory> 65295 |-> If:Int _:Map </memory> requires (Ie &Int If) &Int 31 ==Int 0"
+programs = ["cases/ie-push-cancel/case.gb"]
+
+[[pattern]]
+id = "dispatch-from-sp-zero"
+note = "a dispatch starts with SP at $0000, so its first push writes IE"
+pattern = "<k> # dispatch ... </k> <sp> 0 </sp>"
+programs = ["cases/ie-push-cancel/case.gb"]
+
+[[pattern]]
+id = "two-requests-at-selection"
+note = "STAT (bit 1) and serial (bit 3) both enabled and requested when a vector is selected"
+pattern = "<k> # selectVector ( Ie:Int ) ... </k> <memory> 65295 |-> If:Int _:Map </memory> requires (Ie &Int If) &Int 10 ==Int 10"
+programs = ["cases/interrupt-sources/case.gb"]
+
+[[pattern]]
+id = "request-due-inside-dispatch"
+note = "a dispatch starts with only the timer in IF, and VBlank comes due before IF is sampled, four cycles on"
+pattern = "<k> # dispatch ... </k> <memory> 65295 |-> If:Int _:Map </memory> <requests> ListItem(request(C:Int, 1)) _:List </requests> <bus> L:List </bus> requires If &Int 31 ==Int 4 andBool C >Int size(L) andBool C <=Int size(L) +Int 4"
+programs = ["scheduled/dispatch-request/case.toml"]
+
+# --- Arithmetic ---------------------------------------------------------------------------------
+
+[[pattern]]
+id = "daa-above-99-no-carry-after-add"
+note = "DAA on a value above $99 after an addition with C clear"
+pattern = "<k> # updateZ ( daa ) ... </k> <z> Z:Int </z> <f> flags(_:Bool, false, _:Bool, false) </f> requires Z >Int 153"
+programs = ["cases/daa-flags/case.gb"]
+
+[[pattern]]
+id = "daa-low-digit-above-9-no-half-after-sub"
+note = "DAA with a low digit above 9 after a subtraction with H clear: no correction applies"
+pattern = "<k> # updateZ ( daa ) ... </k> <z> Z:Int </z> <f> flags(_:Bool, true, false, _:Bool) </f> requires Z &Int 15 >Int 9"
+programs = ["cases/daa-flags/case.gb"]
+
+[[pattern]]
+id = "add-sp-negative-offset"
+note = "ADD SP, e or LD HL, SP+e with a negative offset"
+pattern = "<k> # addSpZ ( _:RegPair ) ... </k> <z> Z:Int </z> requires Z >=Int 128"
+programs = ["cases/word16/case.gb"]
+
+# --- Memory -------------------------------------------------------------------------------------
+
+[[pattern]]
+id = "store-read-back"
+note = "a store to $C110 is read back with the same value"
+pattern = "<bus> L:List ListItem(read(49424, V:Int)) </bus> requires write(49424, V) in L"
+programs = ["cases/word-sweep/case.gb"]
