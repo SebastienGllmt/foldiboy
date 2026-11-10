@@ -40,28 +40,30 @@ When an external suite finds a defect the corpus misses, the definition is fixed
 
 ## Comparing implementations
 
-`bun run compare` (`scripts/compare.ts`) compares every case's run on another implementation with the definition's run, cell by cell, with `krs compare`.
-An implementation reports a run as a krs end document (`halt`, and every cell of the definition's configuration in the typed case encoding), in `build/ends/<id>.json`.
+FLOW.toml declares the other implementations of the CPU (`[[implementation]]`), and `krs kink compare` runs each on every corpus program and compares its end with the definition's, cell by cell, under each view the declaration names (k-rust's kink-flow README, "Comparing implementations"). A case added to the corpus is compared with no other edit.
+The verdicts are `kink.lock`'s `[compare]` section, so a moved verdict or first difference shows in review.
 
-The Rust emulator's CPU is the one other system today: `krs/sm83-rust-cpu` runs `lib/crates/cpu` over the definition's memory model, from the state the definition's initializer builds from the case (`krs run --depth 0 --output end`, so there is one statement of the boot state), and writes its end document.
-The adapter locks on an unused opcode, is stuck on `STOP`, and stops in `HALT` mode with nothing to wake it, as the definition does.
-It sets a scheduled case's requests in `IF` between two of the Rust CPU's steps, and a step executes an instruction and then dispatches: a request it delivers later than the definition does (inside an instruction or a dispatch, or at a boundary where `IME` is set) is counted, and that case is reported, not required equal.
+The Rust emulator's CPU is the one other implementation today: `krs/sm83-rust-cpu` runs `lib/crates/cpu` over the definition's memory model, from the start the definition's initializer builds for the program (kink gives it, so there is one statement of the boot state), and answers by the protocol `kink-implementation/1`: `stopped` or `final` with its end's cells, or `could-not-apply` with a reason.
+It states every cell but the computation (`k`, the definition's internals) and `W` and `Z`, which the Rust CPU does not have.
+The adapter locks on an unused opcode, is stuck on `STOP`, and idles one machine cycle per halted boundary, stopping where the corpus's `[stop]` does, as the definition does.
+It sets a scheduled case's requests in `IF` between two of the Rust CPU's steps, and a step executes an instruction and then dispatches: where a request comes due inside an instruction or a dispatch, or at a boundary where `IME` is set, it cannot deliver the request where the definition does, and answers `could-not-apply`, naming the request.
 
-Every cell is compared; the bus log (`read`, `write`, `idle` events) is compared under a view, a function of the cell's value applied to both sides (`krs/sm83-views`).
+The bus log (`read`, `write`, `idle` events) is compared under a view, a function of the cell's value applied to both sides (`krs/sm83-views`).
 `WritesView` keeps only the writes; `AccessesView` keeps the reads and writes in order and drops idle cycles; no view keeps every event.
-The Rust CPU performs an instruction's accesses at once, with no internal cycles, so its bus is compared under `WritesView` (required equal) and `AccessesView` (reported).
-Under `WritesView` every case is equal but the two whose requests the adapter delivers late: `dispatch-request` (a request inside a dispatch) and `if-read-request` (a request read inside an instruction).
-Under `AccessesView` the seven cases that dispatch an interrupt (`interrupt`, `interrupt-sources`, `joypad-int`, `halt-ime`, `ie-push-cancel`, `ram-code`, `halt-wake-ime`) differ, each first at its first dispatch, where the definition reads the opcode at `PC` and discards it and the Rust CPU pushes at once.
+The Rust CPU performs an instruction's accesses at once, with no internal cycles, so its bus is compared under `writes` (`WritesView`, required) and `accesses` (`AccessesView`, reported).
+At k-rust `2185855a7` (2026-11-11), under `writes` 37 of the 39 cases are equal and none differs; the other two are `could-not-apply`, the two whose requests come due where the Rust CPU cannot deliver them: `dispatch-request` (a request inside a dispatch) and `if-read-request` (a request read inside an instruction).
+Under `accesses` the seven cases that dispatch an interrupt (`interrupt`, `interrupt-sources`, `joypad-int`, `halt-ime`, `ie-push-cancel`, `ram-code`, `halt-wake-ime`) differ, each first at its first dispatch, where the definition reads the opcode at `PC` and discards it and the Rust CPU pushes at once.
 The definition's order is the one SameBoy, Gambatte and mooneye-gb share (`krs/sm83/notes/interrupt-sources.md`); Pan Docs and mooneye's hardware-verified `intr_timing` give only the five cycles, so no evidence here decides the order of accesses within them. The Rust CPU's order is that emulator's difference, not evidence against the definition's.
 The Rust CPU's interrupt logic accesses `IE` and `IF` without bus cycles (`memory::Bus::read_interrupt_register`), so those accesses are not logged.
 
 ## Running
 
 ```sh
-bun run compare
+bun run compare             # krs kink compare, after building the ROMs and sm83-rust-cpu
+bun run compare --locked    # the same, checking kink.lock's [compare] section
 ```
 
-It builds the cases' ROMs, writes each case's start with `krs run`, runs `sm83-rust-cpu` from those starts, and runs every case and view as one `krs compare --pairs` batch, printing each verdict and the first difference. It fails when a case is not equal under `WritesView`.
+Only a required view decides the exit status: `different` exits 1. The adapter's answers are cached under its binary's digest, and every run compares them again with the definition as it is then.
 
 ## Cases
 
@@ -114,17 +116,18 @@ bun run kink run --full     # every case against every mutation: which cases are
 bun run kink query          # each case reaches the situation PATTERNS.toml says it tests
 ```
 
-Two committed files are kink's record, each rewritten by the command after a run that judged everything, and checked by the same command with `--locked` (exit 1 when it would change):
+`kink.lock` is kink's record of the corpus, one section per command, each rewritten by its command after a run that judged everything and checked by it with `--locked` (exit 1 when it would change, 3 when the clock stopped a run it rests on: not decided on this host):
 
-- `verdicts.lock` (`run`): each mutation's status and, for a killed one, one killer. A run tries the recorded killer first and keeps it while it still kills, so adding a case moves no killer and runs only the survivors on it; a killer that stops killing is replaced, and the diff shows it.
-- `coverage.lock` (`coverage`): each open obligation (a rule no case fires, a guard outcome no case shows, a production or `k::bits!` field value no case reaches), each argued one with its standing, and each condition flip's status and killer.
+- `[run]`: each mutation's status and, for a killed one, one killer. A run tries the recorded killer first and keeps it while it still kills, so adding a case moves no killer and runs only the survivors on it; a killer that stops killing is replaced, and the diff shows it.
+- `[coverage]`: each open obligation (a rule no case fires, a guard outcome no case shows, a production or `k::bits!` field value no case reaches), each argued one with its standing, and each condition flip (`[[coverage.flip]]`, a mutant kink generates by negating a guard or toggling a bit of an encoding) with what it changes, its status and its killer.
+- `[compare]`: each other implementation's verdict on each case under each view (below, "Comparing implementations").
 
 `run --full` costs every case on every mutation, so it is for occasional corpus pruning, not routine runs.
 Under the Z3 profile kink caches results and outcomes (its solver queries are bounded by Z3 resource units, not the clock), so a rerun on an unchanged definition and corpus reuses them.
 `[observe]` compares every run at each instruction boundary on `pc`, `ime` and `halted` as well as at its end, so a mutant whose run never ends is told apart where it first differs. `krs kink query` ends its runs at `[stop]` as `run` does. `fuzz` has no template to vary: kink varies only a program bound as `$PGM` text, and a case is a cartridge.
 
-At k-rust b1966f5c6, on the 39 cases (Z3 profile, 2026-11-10), every case is comparable.
-Of 81 mutations, 72 are killed and the 9 `unobservable` controls survive, as they expect; none is unknown.
+At k-rust 2185855a7, on the 39 cases (Z3 profile, 2026-11-11), every case is comparable.
+Of 81 mutations, 72 are killed and the 9 `unobservable` controls survive, as they expect; none is unknown, and no mutant's run reaches the work bound (`[budget] work_factor`, kink's default of 5 times its program's baseline work).
 Every claim of `PATTERNS.toml` (20, over 17 cases) is a hit.
 The three cases `query` found missing (`ei-di`, `halt-bug-operand`, `halt-bug-rst`) moved neither lock: they kill no mutation and close no obligation, so their purpose is recorded only in `PATTERNS.toml`, and `bun run compare` finds the Rust CPU equal on each.
 `coverage`, for each family:

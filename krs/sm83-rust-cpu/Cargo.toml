@@ -1,6 +1,6 @@
 [package]
 name = "sm83-rust-cpu"
-description = "Runs the Rust emulator's CPU on a corpus case and writes its end as a krs end document"
+description = "The Rust emulator's CPU as an implementation krs kink compare compares with the SM83 definition (kink-implementation/1)"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.99"

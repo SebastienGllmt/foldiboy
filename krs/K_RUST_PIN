@@ -1,3 +1,3 @@
-commit = "b1966f5c6"
-path = "/artifacts/worktrees/k-rust-foldiboy-pin"
-note = "k-rust main 2026-11-10: CF-33 (solver answers bounded by Z3 units by default; the clock only cancels), FB-39 review (an argued standing rests on every function its connection applies; invariant evaluation work-bounded), findings named by content (verdicts 23, krs annotation 10), map-choice overlaps, collection patterns in the coverage lint. Earlier: 599bb8485 FB-37..FB-43 (checked arguments, expect on a mutation, query under [stop]); FB-40 [observe] by KRS name; Z3 5.3.3 linked statically"
+commit = "2185855a7"
+path = "/artifacts/worktrees/k-rust-pin-2185855a7"
+note = "k-rust main 2026-11-11, k-rust's response to FB-44..FB-48: the DAA claim proves again (FB-44); no verdict depends on the clock, a mutant's run is bounded in polls relative to its program's baseline (FB-45, work_factor default 5); krs fmt equation tables (FB-46); krs kink compare over [[implementation]] (FB-47 b); one corpus record, kink.lock (FB-48); an input declares its default. Earlier: b1966f5c6 CF-33 (solver answers bounded by Z3 units; the clock only cancels), findings named by content; 599bb8485 FB-37..FB-43"

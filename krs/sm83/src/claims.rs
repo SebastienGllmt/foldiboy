@@ -60,8 +60,9 @@ pub mod add_hl_de {
             f: Flags {
                 z: zero,
                 n: false,
-                h: (r[Register::H] * 0x100 + r[Register::L]) % 0x1000
-                    + (r[Register::D] * 0x100 + r[Register::E]) % 0x1000
+                h: (r[Register::H] * 0x100 + r[Register::L]) % 0x1000 + (
+                    r[Register::D] * 0x100 + r[Register::E]
+                ) % 0x1000
                     >= 0x1000,
                 c: r[Register::H] * 0x100 + r[Register::L] + r[Register::D] * 0x100 + r[Register::E]
                     >= 0x1_0000,

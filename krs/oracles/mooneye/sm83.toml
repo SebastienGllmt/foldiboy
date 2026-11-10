@@ -19,7 +19,6 @@ depth = 10000000
 name = "ei_sequence"
 [case.inputs]
 cartridge = { "$file" = "ei_sequence.gb" }
-requests = []
 [case.expect]
 halt = "stopped"
 rule = "crate::interrupt::boundary_fetch"
@@ -32,7 +31,6 @@ cells = { regs = { A = 0, B = 3, C = 5, D = 8, E = 13, H = 21, L = 34 } }
 name = "ei_timing"
 [case.inputs]
 cartridge = { "$file" = "ei_timing.gb" }
-requests = []
 [case.expect]
 halt = "stopped"
 rule = "crate::interrupt::boundary_fetch"
@@ -45,7 +43,6 @@ cells = { regs = { A = 0, B = 3, C = 5, D = 8, E = 13, H = 21, L = 34 } }
 name = "rapid_di_ei"
 [case.inputs]
 cartridge = { "$file" = "rapid_di_ei.gb" }
-requests = []
 [case.expect]
 halt = "stopped"
 rule = "crate::interrupt::boundary_fetch"
@@ -58,7 +55,6 @@ cells = { regs = { A = 0, B = 3, C = 5, D = 8, E = 13, H = 21, L = 34 } }
 name = "reti_intr_timing"
 [case.inputs]
 cartridge = { "$file" = "reti_intr_timing.gb" }
-requests = []
 [case.expect]
 halt = "stopped"
 rule = "crate::interrupt::boundary_fetch"
@@ -71,7 +67,6 @@ cells = { regs = { A = 0, B = 3, C = 5, D = 8, E = 13, H = 21, L = 34 } }
 name = "ie_push"
 [case.inputs]
 cartridge = { "$file" = "ie_push.gb" }
-requests = []
 [case.expect]
 halt = "stopped"
 rule = "crate::interrupt::boundary_fetch"
@@ -84,7 +79,6 @@ cells = { regs = { A = 0, B = 3, C = 5, D = 8, E = 13, H = 21, L = 34 } }
 name = "if_ie_registers"
 [case.inputs]
 cartridge = { "$file" = "if_ie_registers.gb" }
-requests = []
 [case.expect]
 halt = "stopped"
 rule = "crate::interrupt::boundary_fetch"

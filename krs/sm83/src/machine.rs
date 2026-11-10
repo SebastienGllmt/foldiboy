@@ -106,7 +106,7 @@ impl Machine {
     #[k::init]
     pub fn init(
         #[k::config_var(name = "CARTRIDGE", main)] cartridge: Bytes,
-        #[k::config_var(name = "REQUESTS")] requests: List<InterruptRequest>,
+        #[k::config_var(name = "REQUESTS", default = [])] requests: List<InterruptRequest>,
     ) -> Self {
         Self {
             k: k::k![Step::Boundary],
@@ -147,7 +147,17 @@ impl Machine {
     ) -> Self {
         Self {
             k: k::k![Step::Boundary],
-            regs, f, pc, sp, ime, ei_pending, halted, halt_bug, memory, w, z,
+            regs,
+            f,
+            pc,
+            sp,
+            ime,
+            ei_pending,
+            halted,
+            halt_bug,
+            memory,
+            w,
+            z,
             rom_end: bytes::length(rom),
             rom,
             bus: k::builtin::list::empty(),
@@ -175,7 +185,11 @@ pub fn InRom(rom_end: Term<Int>, addr: Term<Int>) -> Term<Bool> {
 #[cfg(not(whole_state))]
 #[k::function(total, internal)]
 pub fn Latch(addr: Term<Int>, value: Term<Int>) -> Term<Int> {
-    if addr == IF { value | IF_UNUSED_BITS } else { value }
+    if addr == IF {
+        value | IF_UNUSED_BITS
+    } else {
+        value
+    }
 }
 
 /// The byte `memory` holds at `addr` after a bus write of `value`: every address is RAM.
@@ -202,9 +216,9 @@ pub fn MemoryOutsideRom(memory: Term<Map<Int, Int>>, rom_end: Term<Int>) -> Term
 k::equations! {
     for MemoryOutsideRom;
     #[k::requires(InRom(rom_end, addr))]
-    memory_in_rom: (k::builtin::map![addr -> _, ..], rom_end) => false;
+    memory_in_rom:      (k::builtin::map![addr -> _, ..], rom_end) => false;
     #[k::equation(owise)]
-    memory_outside_rom: (_, _) => true;
+    memory_outside_rom: (_, _)                                     => true;
 }
 
 /// The value of a register pair.
@@ -218,11 +232,11 @@ pub fn PairValue(
 
 k::equations! {
     for PairValue;
-    pair_value_registers:
-        (Pair16::Registers(high, low), registers, _, _)
-        => { Pair(registers[high], registers[low]) };
-    pair_value_af: (Pair16::Af, registers, flags, _) => Pair(registers[Register::A], FlagByte(flags));
-    pair_value_sp: (Pair16::StackPointer, _, _, sp)  => sp;
+    pair_value_registers: (Pair16::Registers(high, low), registers, _, _)
+                          => { Pair(registers[high], registers[low]) };
+    pair_value_af:        (Pair16::Af, registers, flags, _)
+                          => Pair(registers[Register::A], FlagByte(flags));
+    pair_value_sp:        (Pair16::StackPointer, _, _, sp) => sp;
 }
 
 /// Whether a branch condition holds for the flags.
@@ -231,9 +245,9 @@ pub fn Holds(cond: Term<Cond>, flags: Term<FlagSet>) -> Term<Bool>;
 
 k::equations! {
     for Holds;
-    holds_always   : (Condition::Always, _)                 => true;
-    holds_not_zero : (Condition::NotZero, Flags { z, .. })  => !z;
-    holds_zero     : (Condition::Zero, Flags { z, .. })     => z;
+    holds_always:    (Condition::Always, _)                 => true;
+    holds_not_zero:  (Condition::NotZero, Flags { z, .. })  => !z;
+    holds_zero:      (Condition::Zero, Flags { z, .. })     => z;
     holds_not_carry: (Condition::NotCarry, Flags { c, .. }) => !c;
-    holds_carry    : (Condition::Carry, Flags { c, .. })    => c;
+    holds_carry:     (Condition::Carry, Flags { c, .. })    => c;
 }

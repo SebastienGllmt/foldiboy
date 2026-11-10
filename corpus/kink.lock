@@ -1,0 +1,1608 @@
+# kink's verdicts of a corpus, one section per command: [run] (`run` on a mutation list),
+# [coverage] (`coverage`) and [compare] (`compare`). As a lock (`--lock FILE`; krs keeps
+# <corpus>/kink.lock), each command reads, checks (--locked) and rewrites only its own section,
+# and keeps the others as they are.
+schema = "kink-flow-verdicts"
+
+[run]
+# The verdicts of kink's `run` command (`krs kink run`, `kink-flow run`): the next run tries
+# each `killer` first, a run without --locked rewrites this section, and `run --locked` checks
+# that it is current.
+version = 26
+profile = "z3"
+z3_version = "5.3.3.0 430d19e697e2ec9bad79ff210d41b4a7a5fcfa3e 430d19e"
+z3_library_sha256 = "7ca2ea1f27e40c86269d6ff7f0e82293708253cb05dbec094c90b08c4ec04d31"
+work_factor = 5
+
+[run.spec]
+outcome = "admitted"
+
+# Each [[run.mutation]] is a mutation of the list, by its id, and its verdict: killed (a
+# program's result differs on the mutant; `killer` names it), survived (every program agreed;
+# `horizon`, those that agreed only up to an observation horizon), equivalent or unkillable (no
+# program can tell the mutant apart), timeout, unknown or error (no verdict), invalid-mutation
+# or not-admitted (its author must fix it; `reason` says why).
+[[run.mutation]]
+id = "boot/boot-a-cgb"
+status = "killed"
+killer = "cases/hl-flags/case.gb"
+
+[[run.mutation]]
+id = "boot/boot-sp-fffc"
+status = "killed"
+killer = "cases/alu-flags/case.gb"
+
+[[run.mutation]]
+id = "boot/rom-region-16k"
+status = "killed"
+killer = "cases/alu-flags/case.gb"
+
+[[run.mutation]]
+id = "functions/add-h-ge"
+status = "killed"
+killer = "cases/alu-flags/case.gb"
+
+[[run.mutation]]
+id = "functions/add-c-ge"
+status = "killed"
+killer = "cases/alu-flags/case.gb"
+
+[[run.mutation]]
+id = "functions/sub-reversed"
+status = "killed"
+killer = "cases/alu-flags/case.gb"
+
+[[run.mutation]]
+id = "functions/sbc-adds-carry"
+status = "killed"
+killer = "cases/alu-flags/case.gb"
+
+[[run.mutation]]
+id = "functions/sub-n-clear"
+status = "killed"
+killer = "cases/alu-flags/case.gb"
+
+[[run.mutation]]
+id = "functions/adc-subs-carry"
+status = "killed"
+killer = "cases/alu/case.gb"
+
+[[run.mutation]]
+id = "functions/and-h-clear"
+status = "killed"
+killer = "cases/alu-flags/case.gb"
+
+[[run.mutation]]
+id = "functions/xor-is-or"
+status = "killed"
+killer = "cases/alu/case.gb"
+
+[[run.mutation]]
+id = "functions/or-is-xor"
+status = "killed"
+killer = "cases/alu/case.gb"
+
+[[run.mutation]]
+id = "functions/cp-flags-swapped"
+status = "killed"
+killer = "cases/alu-flags/case.gb"
+
+[[run.mutation]]
+id = "functions/inc-h-wrong"
+status = "killed"
+killer = "cases/calls/case.gb"
+
+[[run.mutation]]
+id = "functions/dec-z-off-by-one"
+status = "killed"
+killer = "cases/jumps/case.gb"
+
+[[run.mutation]]
+id = "functions/daa-low-ge"
+status = "killed"
+killer = "cases/daa-flags/case.gb"
+
+[[run.mutation]]
+id = "functions/daa-high-ge"
+status = "killed"
+killer = "cases/daa-flags/case.gb"
+
+[[run.mutation]]
+id = "functions/daa-high-16"
+status = "killed"
+killer = "cases/daa-flags/case.gb"
+
+[[run.mutation]]
+id = "functions/daa-h-kept"
+status = "killed"
+killer = "cases/daa-flags/case.gb"
+
+[[run.mutation]]
+id = "functions/swap-shift-3"
+status = "killed"
+killer = "cases/cb/case.gb"
+
+[[run.mutation]]
+id = "functions/rlc-no-wrap"
+status = "killed"
+killer = "cases/cb/case.gb"
+
+[[run.mutation]]
+id = "functions/rr-is-rrc"
+status = "killed"
+killer = "cases/cb-flags/case.gb"
+
+[[run.mutation]]
+id = "functions/sra-no-sign"
+status = "killed"
+killer = "cases/cb/case.gb"
+
+[[run.mutation]]
+id = "functions/sla-carry-bit0"
+status = "killed"
+killer = "cases/cb-flags/case.gb"
+
+[[run.mutation]]
+id = "functions/shift-z-never"
+status = "killed"
+killer = "cases/cb-flags/case.gb"
+
+[[run.mutation]]
+id = "functions/bit-z-inverted"
+status = "killed"
+killer = "cases/cb-flags/case.gb"
+
+[[run.mutation]]
+id = "functions/set-bit-off-by-one"
+status = "killed"
+killer = "cases/cb/case.gb"
+
+[[run.mutation]]
+id = "functions/cpl-n-clear"
+status = "killed"
+killer = "cases/daa-flags/case.gb"
+
+[[run.mutation]]
+id = "functions/ccf-is-scf"
+status = "killed"
+killer = "cases/daa-flags/case.gb"
+
+[[run.mutation]]
+id = "functions/add-hl-h-bit7"
+status = "killed"
+killer = "cases/hl-flags/case.gb"
+
+[[run.mutation]]
+id = "functions/signed-off-by-one"
+status = "killed"
+killer = "cases/ram-code/case.gb"
+
+[[run.mutation]]
+id = "functions/holds-nz-inverted"
+status = "killed"
+killer = "cases/calls/case.gb"
+
+[[run.mutation]]
+id = "functions/carry-reads-h"
+status = "killed"
+killer = "cases/alu-flags/case.gb"
+
+[[run.mutation]]
+id = "functions/vblank-vector"
+status = "killed"
+killer = "cases/interrupt/case.gb"
+
+[[run.mutation]]
+id = "functions/requested-mask-15"
+status = "killed"
+killer = "cases/joypad-int/case.gb"
+
+[[run.mutation]]
+id = "functions/dispatch-ignores-ime"
+status = "killed"
+killer = "cases/halt-bug/case.gb"
+
+[[run.mutation]]
+id = "functions/decode-jr-nz"
+status = "killed"
+killer = "cases/jumps/case.gb"
+
+[[run.mutation]]
+id = "functions/pair-af-swapped"
+status = "killed"
+killer = "cases/alu-flags/case.gb"
+
+[[run.mutation]]
+id = "instructions/add-hl-sub"
+status = "killed"
+killer = "cases/hl-flags/case.gb"
+
+[[run.mutation]]
+id = "instructions/add-sp-unsigned"
+status = "killed"
+killer = "cases/word16/case.gb"
+
+[[run.mutation]]
+id = "instructions/alu-a-wrong-reg"
+status = "killed"
+killer = "cases/alu-flags/case.gb"
+
+[[run.mutation]]
+id = "instructions/ei-never-enables"
+status = "killed"
+killer = "cases/halt-ime/case.gb"
+
+[[run.mutation]]
+id = "instructions/call-swap-bytes"
+status = "killed"
+killer = "cases/calls/case.gb"
+
+[[run.mutation]]
+id = "instructions/call-no-idle"
+status = "killed"
+killer = "cases/calls/case.gb"
+
+[[run.mutation]]
+id = "instructions/call-sp-off-by-one"
+status = "killed"
+killer = "cases/calls/case.gb"
+
+[[run.mutation]]
+id = "instructions/dec16-by-two"
+status = "killed"
+killer = "cases/word16/case.gb"
+
+[[run.mutation]]
+id = "instructions/dispatch-one-idle"
+status = "killed"
+killer = "cases/halt-ime/case.gb"
+
+[[run.mutation]]
+id = "instructions/discard-fetch-idle"
+status = "killed"
+killer = "cases/halt-ime/case.gb"
+
+[[run.mutation]]
+id = "instructions/ei-sets-false"
+status = "killed"
+killer = "cases/halt-ime/case.gb"
+
+[[run.mutation]]
+id = "instructions/idle-no-log"
+status = "killed"
+killer = "cases/alu-flags/case.gb"
+
+[[run.mutation]]
+id = "instructions/jump-hl-plus-one"
+status = "killed"
+killer = "cases/jumps/case.gb"
+
+[[run.mutation]]
+id = "instructions/jr-taken-no-idle"
+status = "killed"
+killer = "cases/jumps/case.gb"
+
+[[run.mutation]]
+id = "instructions/jr-backwards"
+status = "killed"
+killer = "cases/ram-code/case.gb"
+
+[[run.mutation]]
+id = "instructions/jp-swap-bytes"
+status = "killed"
+killer = "cases/alu-flags/case.gb"
+
+[[run.mutation]]
+id = "instructions/pop-high-off"
+status = "killed"
+killer = "cases/halt-ime/case.gb"
+
+[[run.mutation]]
+id = "instructions/ret-sp-off-by-one"
+status = "killed"
+killer = "cases/calls/case.gb"
+
+[[run.mutation]]
+id = "instructions/push-swap-bytes"
+status = "killed"
+killer = "cases/alu-flags/case.gb"
+
+[[run.mutation]]
+id = "instructions/push-no-idle"
+status = "killed"
+killer = "cases/alu-flags/case.gb"
+
+[[run.mutation]]
+id = "instructions/read-z-logs-zero"
+status = "killed"
+killer = "cases/calls/case.gb"
+
+[[run.mutation]]
+id = "instructions/hl-step-reversed"
+status = "killed"
+killer = "cases/loads/case.gb"
+
+[[run.mutation]]
+id = "instructions/rst-off-by-one"
+status = "killed"
+killer = "cases/calls/case.gb"
+
+[[run.mutation]]
+id = "instructions/reti-no-ime"
+status = "killed"
+killer = "cases/interrupt/case.gb"
+
+[[run.mutation]]
+id = "instructions/dispatch-keeps-ime"
+status = "killed"
+killer = "cases/halt-ime/case.gb"
+
+[[run.mutation]]
+id = "instructions/if-ack-adds"
+status = "killed"
+killer = "cases/halt-ime/case.gb"
+
+[[run.mutation]]
+id = "instructions/pop-af-swapped"
+status = "killed"
+killer = "cases/stack/case.gb"
+
+[[run.mutation]]
+id = "instructions/set-pair-swap"
+status = "killed"
+killer = "cases/cb/case.gb"
+
+[[run.mutation]]
+id = "instructions/store-sp-swap"
+status = "killed"
+killer = "cases/alu-flags/case.gb"
+
+[[run.mutation]]
+id = "instructions/write-a-swap-wz"
+status = "killed"
+killer = "cases/cb/case.gb"
+
+[[run.mutation]]
+id = "instructions/write-memory-plus-one"
+status = "killed"
+killer = "cases/alu-flags/case.gb"
+
+[[run.mutation]]
+id = "instructions/halt-bug-not-set"
+status = "killed"
+killer = "cases/halt-bug/case.gb"
+
+[[run.mutation]]
+id = "instructions/halt-dispatching-keeps-pc"
+status = "killed"
+killer = "cases/halt-ime/case.gb"
+
+[[run.mutation]]
+id = "instructions/update-z-identity"
+status = "killed"
+killer = "cases/calls/case.gb"
+
+[[run.mutation]]
+id = "unobservable/wz-jp-clears-w"
+status = "survived"
+
+[[run.mutation]]
+id = "unobservable/wz-call-clears-z"
+status = "survived"
+
+[[run.mutation]]
+id = "unobservable/wz-store-pair-bumps-w"
+status = "survived"
+
+[[run.mutation]]
+id = "unobservable/wz-check-bit-clears-z"
+status = "survived"
+
+[[run.mutation]]
+id = "unobservable/wz-alu-clears-z"
+status = "survived"
+
+[[run.mutation]]
+id = "unobservable/wz-store-z-bumps-z"
+status = "survived"
+
+[[run.mutation]]
+id = "unobservable/wz-jr-clears-z"
+status = "survived"
+
+[[run.mutation]]
+id = "unobservable/wz-store-sp-clears-w"
+status = "survived"
+
+[[run.mutation]]
+id = "unobservable/wz-store-sp-bumps-z"
+status = "survived"
+
+[coverage]
+# The verdicts of kink's `coverage` command (`krs kink coverage`, `kink-flow coverage`): the
+# next run tries each flip's `killer` first, a run without --locked rewrites this section, and
+# `coverage --locked` checks that it is current.
+version = 26
+profile = "z3"
+z3_version = "5.3.3.0 430d19e697e2ec9bad79ff210d41b4a7a5fcfa3e 430d19e"
+z3_library_sha256 = "7ca2ea1f27e40c86269d6ff7f0e82293708253cb05dbec094c90b08c4ec04d31"
+krs_annotation = 10
+
+[coverage.spec]
+outcome = "admitted"
+
+[coverage.settings]
+depth = 1
+mcdc = [
+]
+work_factor = 5
+
+# Each family lists its obligations by id: `open`, those no program covers; `argued`, those an
+# argument of FLOW.toml ([[coverage.argued]]) stands in for, each with the `standing` it rests
+# on (text: its text alone; connected, checked-on-runs or proved: its invariant's checks hold;
+# unchecked: a check did not decide); `undecided`, those the records cannot decide.
+[coverage.rules]
+open = [
+]
+argued = [
+]
+
+[coverage.requirements]
+open = [
+]
+argued = [
+  { id = "requirement:crate::interrupt::discard_fetch:refuted", standing = "checked-on-runs" },
+  { id = "requirement:crate::micro::fetch:InRom(rom_end, pc):true", standing = "checked-on-runs" },
+  { id = "requirement:crate::micro::fetch_cb:refuted", standing = "checked-on-runs" },
+  { id = "requirement:crate::micro::fetch_halt_bug:InRom(rom_end, pc):true", standing = "checked-on-runs" },
+  { id = "requirement:crate::micro::read_w:refuted", standing = "checked-on-runs" },
+  { id = "requirement:crate::micro::read_z:refuted", standing = "checked-on-runs" },
+]
+
+[coverage.syntax]
+open = [
+]
+argued = [
+]
+
+# Each [[coverage.flip]] is a condition flip: a mutant kink generates from the definition by
+# negating one condition (`negates`, as the source writes it) or toggling one bit of an encoding
+# (`toggles`) in the `rules` it lists, and runs as `run` runs a mutation. Its status:
+# distinguished (a program's result differs on it; `killer` names it), undistinguished (every
+# comparable program agreed), unreached (no program reaches the condition), argued (an
+# argument stands in for a program; its `standing`), equivalent (no program can tell it
+# apart), refused (the flipped definition is not admitted; `reason`), unknown (no verdict).
+[coverage.flips]
+run = true
+
+[[coverage.flip]]
+id = "bitflip--decode_cb_bit+decode_cb_rot--bit6"
+toggles = "bit 6 of argument 1"
+rules = [
+  "rule:crate::decode::decode_cb_bit",
+  "rule:crate::decode::decode_cb_rot",
+]
+status = "distinguished"
+killer = "cases/cb-flags/case.gb"
+
+[[coverage.flip]]
+id = "bitflip--decode_cb_res+decode_cb_set--bit6"
+toggles = "bit 6 of argument 1"
+rules = [
+  "rule:crate::decode::decode_cb_res",
+  "rule:crate::decode::decode_cb_set",
+]
+status = "distinguished"
+killer = "cases/cb/case.gb"
+
+[[coverage.flip]]
+id = "bitflip--decode_cb_bit+decode_cb_set--bit7"
+toggles = "bit 7 of argument 1"
+rules = [
+  "rule:crate::decode::decode_cb_bit",
+  "rule:crate::decode::decode_cb_set",
+]
+status = "distinguished"
+killer = "cases/cb-flags/case.gb"
+
+[[coverage.flip]]
+id = "bitflip--decode_cb_res+decode_cb_rot--bit7"
+toggles = "bit 7 of argument 1"
+rules = [
+  "rule:crate::decode::decode_cb_res",
+  "rule:crate::decode::decode_cb_rot",
+]
+status = "distinguished"
+killer = "cases/cb-flags/case.gb"
+
+[[coverage.flip]]
+id = "flip--halt+halt_bug+halt_dispatching--InterruptRequested"
+negates = "InterruptRequested(memory)"
+rules = [
+  "rule:crate::execute::halt",
+  "rule:crate::execute::halt_bug",
+  "rule:crate::execute::halt_dispatching",
+]
+status = "distinguished"
+killer = "cases/halt-bug/case.gb"
+
+[[coverage.flip]]
+id = "flip--halt_bug+halt_dispatching--ime"
+negates = "ime"
+rules = [
+  "rule:crate::execute::halt_bug",
+  "rule:crate::execute::halt_dispatching",
+]
+status = "distinguished"
+killer = "cases/halt-ime/case.gb"
+
+[[coverage.flip]]
+id = "flip--boundary_dispatch+3--halted"
+negates = "halted"
+rules = [
+  "rule:crate::interrupt::boundary_dispatch",
+  "rule:crate::interrupt::boundary_fetch",
+  "rule:crate::interrupt::boundary_halted",
+  "rule:crate::interrupt::boundary_wake",
+]
+status = "distinguished"
+killer = "cases/alu-flags/case.gb"
+
+[[coverage.flip]]
+id = "flip--boundary_dispatch+boundary_fetch--Dispatches"
+negates = "Dispatches(ime, memory)"
+rules = [
+  "rule:crate::interrupt::boundary_dispatch",
+  "rule:crate::interrupt::boundary_fetch",
+]
+status = "distinguished"
+killer = "cases/alu-flags/case.gb"
+
+[[coverage.flip]]
+id = "flip--boundary_halted+boundary_wake--InterruptRequested"
+negates = "InterruptRequested(memory)"
+rules = [
+  "rule:crate::interrupt::boundary_halted",
+  "rule:crate::interrupt::boundary_wake",
+]
+status = "distinguished"
+killer = "cases/halt-mode-ime/case.gb"
+
+[[coverage.flip]]
+id = "flip--deliver_request--IntLessEqual"
+negates = "cycle <= list::size(log)"
+rules = [
+  "rule:crate::interrupt::deliver_request",
+]
+status = "distinguished"
+killer = "scheduled/dispatch-request/case.toml"
+
+[[coverage.flip]]
+id = "flip--discard_fetch+discard_fetch_rom--InRom"
+negates = "InRom(rom_end, pc)"
+rules = [
+  "rule:crate::interrupt::discard_fetch",
+  "rule:crate::interrupt::discard_fetch_rom",
+]
+status = "distinguished"
+killer = "cases/halt-ime/case.gb"
+
+[[coverage.flip]]
+id = "flip--interrupt_vector_1+5--IntNotEqual"
+negates = "requested & 0x01 != 0"
+rules = [
+  "rule:crate::interrupt::interrupt_vector_1",
+  "rule:crate::interrupt::interrupt_vector_2",
+  "rule:crate::interrupt::interrupt_vector_3",
+  "rule:crate::interrupt::interrupt_vector_4",
+  "rule:crate::interrupt::interrupt_vector_5",
+  "rule:crate::interrupt::interrupt_vector_6",
+]
+status = "distinguished"
+killer = "cases/halt-ime/case.gb"
+
+[[coverage.flip]]
+id = "flip--interrupt_vector_2+4--IntNotEqual"
+negates = "requested & 0x02 != 0"
+rules = [
+  "rule:crate::interrupt::interrupt_vector_2",
+  "rule:crate::interrupt::interrupt_vector_3",
+  "rule:crate::interrupt::interrupt_vector_4",
+  "rule:crate::interrupt::interrupt_vector_5",
+  "rule:crate::interrupt::interrupt_vector_6",
+]
+status = "distinguished"
+killer = "cases/halt-ime/case.gb"
+
+[[coverage.flip]]
+id = "flip--interrupt_vector_3+3--IntNotEqual"
+negates = "requested & 0x04 != 0"
+rules = [
+  "rule:crate::interrupt::interrupt_vector_3",
+  "rule:crate::interrupt::interrupt_vector_4",
+  "rule:crate::interrupt::interrupt_vector_5",
+  "rule:crate::interrupt::interrupt_vector_6",
+]
+status = "distinguished"
+killer = "cases/halt-ime/case.gb"
+
+[[coverage.flip]]
+id = "flip--interrupt_vector_4+interrupt_vector_5+interrupt_vector_6--IntNotEqual"
+negates = "requested & 0x08 != 0"
+rules = [
+  "rule:crate::interrupt::interrupt_vector_4",
+  "rule:crate::interrupt::interrupt_vector_5",
+  "rule:crate::interrupt::interrupt_vector_6",
+]
+status = "distinguished"
+killer = "cases/ie-push-cancel/case.gb"
+
+[[coverage.flip]]
+id = "flip--interrupt_vector_5+interrupt_vector_6--IntNotEqual"
+negates = "requested & 0x10 != 0"
+rules = [
+  "rule:crate::interrupt::interrupt_vector_5",
+  "rule:crate::interrupt::interrupt_vector_6",
+]
+status = "distinguished"
+killer = "cases/ie-push-cancel/case.gb"
+
+[[coverage.flip]]
+id = "flip--lowest_request_1+5--IntNotEqual"
+negates = "requested & 0x01 != 0"
+rules = [
+  "rule:crate::interrupt::lowest_request_1",
+  "rule:crate::interrupt::lowest_request_2",
+  "rule:crate::interrupt::lowest_request_3",
+  "rule:crate::interrupt::lowest_request_4",
+  "rule:crate::interrupt::lowest_request_5",
+  "rule:crate::interrupt::lowest_request_6",
+]
+status = "distinguished"
+killer = "cases/halt-ime/case.gb"
+
+[[coverage.flip]]
+id = "flip--lowest_request_2+4--IntNotEqual"
+negates = "requested & 0x02 != 0"
+rules = [
+  "rule:crate::interrupt::lowest_request_2",
+  "rule:crate::interrupt::lowest_request_3",
+  "rule:crate::interrupt::lowest_request_4",
+  "rule:crate::interrupt::lowest_request_5",
+  "rule:crate::interrupt::lowest_request_6",
+]
+status = "distinguished"
+killer = "cases/halt-ime/case.gb"
+
+[[coverage.flip]]
+id = "flip--lowest_request_3+3--IntNotEqual"
+negates = "requested & 0x04 != 0"
+rules = [
+  "rule:crate::interrupt::lowest_request_3",
+  "rule:crate::interrupt::lowest_request_4",
+  "rule:crate::interrupt::lowest_request_5",
+  "rule:crate::interrupt::lowest_request_6",
+]
+status = "distinguished"
+killer = "cases/halt-ime/case.gb"
+
+[[coverage.flip]]
+id = "flip--lowest_request_4+lowest_request_5+lowest_request_6--IntNotEqual"
+negates = "requested & 0x08 != 0"
+rules = [
+  "rule:crate::interrupt::lowest_request_4",
+  "rule:crate::interrupt::lowest_request_5",
+  "rule:crate::interrupt::lowest_request_6",
+]
+status = "distinguished"
+killer = "cases/ie-push-cancel/case.gb"
+
+[[coverage.flip]]
+id = "flip--lowest_request_5+lowest_request_6--IntNotEqual"
+negates = "requested & 0x10 != 0"
+rules = [
+  "rule:crate::interrupt::lowest_request_5",
+  "rule:crate::interrupt::lowest_request_6",
+]
+status = "distinguished"
+killer = "cases/ie-push-cancel/case.gb"
+
+[[coverage.flip]]
+id = "flip--latch_1+latch_2--IntEqual"
+negates = "addr == IF"
+rules = [
+  "rule:crate::machine::latch_1",
+  "rule:crate::machine::latch_2",
+]
+status = "distinguished"
+killer = "cases/alu-flags/case.gb"
+
+[[coverage.flip]]
+id = "flip--call_not_taken+call_taken--Holds"
+negates = "Holds(cond, flags)"
+rules = [
+  "rule:crate::micro::call_not_taken",
+  "rule:crate::micro::call_taken",
+]
+status = "distinguished"
+killer = "cases/calls/case.gb"
+
+[[coverage.flip]]
+id = "flip--fetch+fetch_halt_bug--bug"
+negates = "bug"
+rules = [
+  "rule:crate::micro::fetch",
+  "rule:crate::micro::fetch_halt_bug",
+]
+status = "distinguished"
+killer = "cases/ram-code/case.gb"
+
+[[coverage.flip]]
+id = "flip--fetch_halt_bug_rom+fetch_rom--bug"
+negates = "bug"
+rules = [
+  "rule:crate::micro::fetch_halt_bug_rom",
+  "rule:crate::micro::fetch_rom",
+]
+status = "distinguished"
+killer = "cases/alu-flags/case.gb"
+
+[[coverage.flip]]
+id = "flip--fetch+fetch_rom--InRom"
+negates = "InRom(rom_end, pc)"
+rules = [
+  "rule:crate::micro::fetch",
+  "rule:crate::micro::fetch_rom",
+]
+status = "distinguished"
+killer = "cases/alu-flags/case.gb"
+
+[[coverage.flip]]
+id = "flip--fetch_halt_bug+fetch_halt_bug_rom--InRom"
+negates = "InRom(rom_end, pc)"
+rules = [
+  "rule:crate::micro::fetch_halt_bug",
+  "rule:crate::micro::fetch_halt_bug_rom",
+]
+status = "distinguished"
+killer = "cases/halt-bug/case.gb"
+
+[[coverage.flip]]
+id = "flip--fetch_cb+fetch_cb_rom--InRom"
+negates = "InRom(rom_end, pc)"
+rules = [
+  "rule:crate::micro::fetch_cb",
+  "rule:crate::micro::fetch_cb_rom",
+]
+status = "distinguished"
+killer = "cases/cb-flags/case.gb"
+
+[[coverage.flip]]
+id = "flip--jump_not_taken+jump_taken--Holds"
+negates = "Holds(cond, flags)"
+rules = [
+  "rule:crate::micro::jump_not_taken",
+  "rule:crate::micro::jump_taken",
+]
+status = "distinguished"
+killer = "cases/alu-flags/case.gb"
+
+[[coverage.flip]]
+id = "flip--jump_relative_not_taken+jump_relative_taken--Holds"
+negates = "Holds(cond, flags)"
+rules = [
+  "rule:crate::micro::jump_relative_not_taken",
+  "rule:crate::micro::jump_relative_taken",
+]
+status = "distinguished"
+killer = "cases/jumps/case.gb"
+
+[[coverage.flip]]
+id = "flip--pop_pc_not_taken+pop_pc_taken--Holds"
+negates = "Holds(cond, flags)"
+rules = [
+  "rule:crate::micro::pop_pc_not_taken",
+  "rule:crate::micro::pop_pc_taken",
+]
+status = "distinguished"
+killer = "cases/calls/case.gb"
+
+[[coverage.flip]]
+id = "flip--read_w+read_w_rom--InRom"
+negates = "InRom(rom_end, addr)"
+rules = [
+  "rule:crate::micro::read_w",
+  "rule:crate::micro::read_w_rom",
+]
+status = "distinguished"
+killer = "cases/alu-flags/case.gb"
+
+[[coverage.flip]]
+id = "flip--read_z+read_z_rom--InRom"
+negates = "InRom(rom_end, addr)"
+rules = [
+  "rule:crate::micro::read_z",
+  "rule:crate::micro::read_z_rom",
+]
+status = "distinguished"
+killer = "cases/alu-flags/case.gb"
+
+[[coverage.flip]]
+id = "flip--write_byte+write_byte_rom--InRom"
+negates = "InRom(rom_end, addr)"
+rules = [
+  "rule:crate::micro::write_byte",
+  "rule:crate::micro::write_byte_rom",
+]
+status = "distinguished"
+killer = "cases/alu-flags/case.gb"
+
+[[coverage.flip]]
+id = "flip--daa_result_after_add+daa_result_after_sub--SubtractSet"
+negates = "SubtractSet(flags)"
+rules = [
+  "rule:foldiboy_sm83_core::alu::daa_result_after_add",
+  "rule:foldiboy_sm83_core::alu::daa_result_after_sub",
+]
+status = "distinguished"
+killer = "cases/daa-flags/case.gb"
+
+[[coverage.flip]]
+id = "flip--daa_high_1+daa_high_2--SubtractSet"
+negates = "SubtractSet(flags)"
+rules = [
+  "rule:foldiboy_sm83_core::alu::daa_high_1",
+  "rule:foldiboy_sm83_core::alu::daa_high_2",
+]
+status = "distinguished"
+killer = "cases/daa-flags/case.gb"
+
+[[coverage.flip]]
+id = "flip--daa_low_1+daa_low_2--SubtractSet"
+negates = "SubtractSet(flags)"
+rules = [
+  "rule:foldiboy_sm83_core::alu::daa_low_1",
+  "rule:foldiboy_sm83_core::alu::daa_low_2",
+]
+status = "distinguished"
+killer = "cases/daa-flags/case.gb"
+
+[[coverage.flip]]
+id = "flip--signed_1+signed_2--IntLess"
+negates = "value < 0x80"
+rules = [
+  "rule:foldiboy_sm83_core::arith::signed_1",
+  "rule:foldiboy_sm83_core::arith::signed_2",
+]
+status = "distinguished"
+killer = "cases/jumps/case.gb"
+
+[compare]
+# The verdicts of kink's `compare` command (`krs kink compare`, `kink-flow compare`): a run
+# without --locked rewrites this section, and `compare --locked` checks that it is current.
+version = 26
+profile = "z3"
+z3_version = "5.3.3.0 430d19e697e2ec9bad79ff210d41b4a7a5fcfa3e 430d19e"
+z3_library_sha256 = "7ca2ea1f27e40c86269d6ff7f0e82293708253cb05dbec094c90b08c4ec04d31"
+protocol = "kink-implementation/1"
+
+[compare.spec]
+outcome = "admitted"
+
+# Each [[compare.verdict]] is one view of one implementation on one program, and its verdict:
+# equal (its end agrees with the definition's under the view), different (`difference`, the
+# first difference), could-not-apply (it declined the program; `reason`, its own words) or
+# not-compared (`reason` says why). `request_sha256` names the request it was given, and
+# `identity_sha256` its build (its `identity` file); a run that gave no answer keeps its rows.
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/alu-flags/case.gb"
+view = "writes"
+required = true
+verdict = "equal"
+request_sha256 = "f5f9715da4e0b512422ad559c79c879c2a5118932521ac65316abcf7d01f541f"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/alu-flags/case.gb"
+view = "accesses"
+required = false
+verdict = "equal"
+request_sha256 = "f5f9715da4e0b512422ad559c79c879c2a5118932521ac65316abcf7d01f541f"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/alu-sweep/case.gb"
+view = "writes"
+required = true
+verdict = "equal"
+request_sha256 = "a9d1f61810a5a64ed5c233a1fa9604e24a673b3cb190cb6d8060896fb43fc5e1"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/alu-sweep/case.gb"
+view = "accesses"
+required = false
+verdict = "equal"
+request_sha256 = "a9d1f61810a5a64ed5c233a1fa9604e24a673b3cb190cb6d8060896fb43fc5e1"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/alu/case.gb"
+view = "writes"
+required = true
+verdict = "equal"
+request_sha256 = "ba2b5cdf4dc541b6676e957badaba1209f4122bac7ab8ccf38be2def78b700eb"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/alu/case.gb"
+view = "accesses"
+required = false
+verdict = "equal"
+request_sha256 = "ba2b5cdf4dc541b6676e957badaba1209f4122bac7ab8ccf38be2def78b700eb"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/calls/case.gb"
+view = "writes"
+required = true
+verdict = "equal"
+request_sha256 = "da3457ffd7ede091b210ab87ce237336767f564d26386dbed94fdd120c03dfee"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/calls/case.gb"
+view = "accesses"
+required = false
+verdict = "equal"
+request_sha256 = "da3457ffd7ede091b210ab87ce237336767f564d26386dbed94fdd120c03dfee"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/cb-flags/case.gb"
+view = "writes"
+required = true
+verdict = "equal"
+request_sha256 = "d07e5beac1c5af81580dc01632c0dbe2b8f9fe22a152b0f2d7e98e4ad171d442"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/cb-flags/case.gb"
+view = "accesses"
+required = false
+verdict = "equal"
+request_sha256 = "d07e5beac1c5af81580dc01632c0dbe2b8f9fe22a152b0f2d7e98e4ad171d442"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/cb-sweep/case.gb"
+view = "writes"
+required = true
+verdict = "equal"
+request_sha256 = "00324a4c14208bf4c264fbf5bb3a08b44b3c800d54faa13a16daac67769f9d64"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/cb-sweep/case.gb"
+view = "accesses"
+required = false
+verdict = "equal"
+request_sha256 = "00324a4c14208bf4c264fbf5bb3a08b44b3c800d54faa13a16daac67769f9d64"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/cb/case.gb"
+view = "writes"
+required = true
+verdict = "equal"
+request_sha256 = "f078ff4b654d4dd868ed66b171ecd15158af0260104dbf9564673c3a3ff848c7"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/cb/case.gb"
+view = "accesses"
+required = false
+verdict = "equal"
+request_sha256 = "f078ff4b654d4dd868ed66b171ecd15158af0260104dbf9564673c3a3ff848c7"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/cc-sweep/case.gb"
+view = "writes"
+required = true
+verdict = "equal"
+request_sha256 = "205383ed7014a5969be57d6a4b2b31a0ae6f64f23f70d7f90c2152928dcac132"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/cc-sweep/case.gb"
+view = "accesses"
+required = false
+verdict = "equal"
+request_sha256 = "205383ed7014a5969be57d6a4b2b31a0ae6f64f23f70d7f90c2152928dcac132"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/daa-flags/case.gb"
+view = "writes"
+required = true
+verdict = "equal"
+request_sha256 = "c1fcc7c395c32b130a779c2263457226c4411ab0242c5c49cf81b46cd42b2788"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/daa-flags/case.gb"
+view = "accesses"
+required = false
+verdict = "equal"
+request_sha256 = "c1fcc7c395c32b130a779c2263457226c4411ab0242c5c49cf81b46cd42b2788"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/daa/case.gb"
+view = "writes"
+required = true
+verdict = "equal"
+request_sha256 = "08bd6ed96fe5e3923057ce41bef3000d948e4e87688c57bba5fd9f295bceaa53"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/daa/case.gb"
+view = "accesses"
+required = false
+verdict = "equal"
+request_sha256 = "08bd6ed96fe5e3923057ce41bef3000d948e4e87688c57bba5fd9f295bceaa53"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/ei-di/case.gb"
+view = "writes"
+required = true
+verdict = "equal"
+request_sha256 = "fb4eeb7abeef1cd8651fd176aab535e0ec9b6ca694c7d6bc9ad53d70d0ee6d94"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/ei-di/case.gb"
+view = "accesses"
+required = false
+verdict = "equal"
+request_sha256 = "fb4eeb7abeef1cd8651fd176aab535e0ec9b6ca694c7d6bc9ad53d70d0ee6d94"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/halt-bug-operand/case.gb"
+view = "writes"
+required = true
+verdict = "equal"
+request_sha256 = "ba5f9ff60f94a06a255056eeebe5c0c31728df307e17c5ba88514c1518f01542"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/halt-bug-operand/case.gb"
+view = "accesses"
+required = false
+verdict = "equal"
+request_sha256 = "ba5f9ff60f94a06a255056eeebe5c0c31728df307e17c5ba88514c1518f01542"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/halt-bug-rst/case.gb"
+view = "writes"
+required = true
+verdict = "equal"
+request_sha256 = "238a525d25ee1222877da1f74c90a0080f19fad775aa50c510ce84ef4b84531c"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/halt-bug-rst/case.gb"
+view = "accesses"
+required = false
+verdict = "equal"
+request_sha256 = "238a525d25ee1222877da1f74c90a0080f19fad775aa50c510ce84ef4b84531c"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/halt-bug/case.gb"
+view = "writes"
+required = true
+verdict = "equal"
+request_sha256 = "6428a9babcf3aea05266d514bcd9d6b07d2c97b174481ce0195376e6a7efc504"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/halt-bug/case.gb"
+view = "accesses"
+required = false
+verdict = "equal"
+request_sha256 = "6428a9babcf3aea05266d514bcd9d6b07d2c97b174481ce0195376e6a7efc504"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/halt-ime/case.gb"
+view = "writes"
+required = true
+verdict = "equal"
+request_sha256 = "567790fc7f6c1c949fc3ebea9133c041284e7de5b32307aa5d8af41aef8c9db7"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/halt-ime/case.gb"
+view = "accesses"
+required = false
+verdict = "different"
+difference = '{"also_differ":[],"at":"cell","cell":"bus","compared":["regs","f","pc","sp","ime","ei_pending","halted","halt_bug","rom","rom_end","memory","bus","requests"],"format":"krs-difference/3","left":{"complete":true,"ends":1,"name":"definition","value":{"document":{"Read":{"addr":343,"value":118}},"offset":0,"rendering":"document","truncated":false}},"not_compared":["k","w","z"],"outside":"implementation","path":"bus[14]","right":{"complete":true,"ends":1,"name":"implementation","value":{"document":{"Write":{"addr":65533,"value":1}},"offset":0,"rendering":"document","truncated":false}},"segments":["[14]"],"views":{"bus":"AccessesView"}}'
+request_sha256 = "567790fc7f6c1c949fc3ebea9133c041284e7de5b32307aa5d8af41aef8c9db7"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/halt-mode-ime/case.gb"
+view = "writes"
+required = true
+verdict = "equal"
+request_sha256 = "5f9a4bb38b41dbf7f97848ca5008e20a61291d97094bd72531c68b84bf30be22"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/halt-mode-ime/case.gb"
+view = "accesses"
+required = false
+verdict = "equal"
+request_sha256 = "5f9a4bb38b41dbf7f97848ca5008e20a61291d97094bd72531c68b84bf30be22"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/halt-mode/case.gb"
+view = "writes"
+required = true
+verdict = "equal"
+request_sha256 = "a00b9229185fbb05d795f26363eed14824824db297802ecce02a8f5fc9149604"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/halt-mode/case.gb"
+view = "accesses"
+required = false
+verdict = "equal"
+request_sha256 = "a00b9229185fbb05d795f26363eed14824824db297802ecce02a8f5fc9149604"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/hl-flags/case.gb"
+view = "writes"
+required = true
+verdict = "equal"
+request_sha256 = "a0751da21c1e5ec3f0e905fafd05f9aa375f5e48cf8fde6e11c930c271a28f8b"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/hl-flags/case.gb"
+view = "accesses"
+required = false
+verdict = "equal"
+request_sha256 = "a0751da21c1e5ec3f0e905fafd05f9aa375f5e48cf8fde6e11c930c271a28f8b"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/ie-push-cancel/case.gb"
+view = "writes"
+required = true
+verdict = "equal"
+request_sha256 = "f69f51292d56922814dafa4471e6f23bbc499375f7bfc4f58db107e7823035a2"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/ie-push-cancel/case.gb"
+view = "accesses"
+required = false
+verdict = "different"
+difference = '{"also_differ":[],"at":"cell","cell":"bus","compared":["regs","f","pc","sp","ime","ei_pending","halted","halt_bug","rom","rom_end","memory","bus","requests"],"format":"krs-difference/3","left":{"complete":true,"ends":1,"name":"definition","value":{"document":{"Read":{"addr":347,"value":6}},"offset":0,"rendering":"document","truncated":false}},"not_compared":["k","w","z"],"outside":"implementation","path":"bus[17]","right":{"complete":true,"ends":1,"name":"implementation","value":{"document":{"Write":{"addr":65535,"value":1}},"offset":0,"rendering":"document","truncated":false}},"segments":["[17]"],"views":{"bus":"AccessesView"}}'
+request_sha256 = "f69f51292d56922814dafa4471e6f23bbc499375f7bfc4f58db107e7823035a2"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/incdec-sweep/case.gb"
+view = "writes"
+required = true
+verdict = "equal"
+request_sha256 = "13ff38ceeeb282704f8963f4ec805fb8b19fdcf1d334b74d2837a7765de51e8f"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/incdec-sweep/case.gb"
+view = "accesses"
+required = false
+verdict = "equal"
+request_sha256 = "13ff38ceeeb282704f8963f4ec805fb8b19fdcf1d334b74d2837a7765de51e8f"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/incdec/case.gb"
+view = "writes"
+required = true
+verdict = "equal"
+request_sha256 = "6d8528e9fb636c3d02ace0626cd2ff3b13c25a9a3cf223d72c2a713a408cb770"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/incdec/case.gb"
+view = "accesses"
+required = false
+verdict = "equal"
+request_sha256 = "6d8528e9fb636c3d02ace0626cd2ff3b13c25a9a3cf223d72c2a713a408cb770"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/indirect/case.gb"
+view = "writes"
+required = true
+verdict = "equal"
+request_sha256 = "e9af1782ce53147d7e70da62a1a07eb548616bcf57068062b01e0593ade36a97"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/indirect/case.gb"
+view = "accesses"
+required = false
+verdict = "equal"
+request_sha256 = "e9af1782ce53147d7e70da62a1a07eb548616bcf57068062b01e0593ade36a97"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/interrupt-sources/case.gb"
+view = "writes"
+required = true
+verdict = "equal"
+request_sha256 = "50aa16c440bbc5ea4df44374f3cd55e945e645dfc7436ea5e9c6663495afb81a"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/interrupt-sources/case.gb"
+view = "accesses"
+required = false
+verdict = "different"
+difference = '{"also_differ":[],"at":"cell","cell":"bus","compared":["regs","f","pc","sp","ime","ei_pending","halted","halt_bug","rom","rom_end","memory","bus","requests"],"format":"krs-difference/3","left":{"complete":true,"ends":1,"name":"definition","value":{"document":{"Read":{"addr":347,"value":245}},"offset":0,"rendering":"document","truncated":false}},"not_compared":["k","w","z"],"outside":"implementation","path":"bus[17]","right":{"complete":true,"ends":1,"name":"implementation","value":{"document":{"Write":{"addr":65533,"value":1}},"offset":0,"rendering":"document","truncated":false}},"segments":["[17]"],"views":{"bus":"AccessesView"}}'
+request_sha256 = "50aa16c440bbc5ea4df44374f3cd55e945e645dfc7436ea5e9c6663495afb81a"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/interrupt/case.gb"
+view = "writes"
+required = true
+verdict = "equal"
+request_sha256 = "bedd0fa162bd42f678427b7fa36219681d19812b525c75071a2437822a2b36b6"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/interrupt/case.gb"
+view = "accesses"
+required = false
+verdict = "different"
+difference = '{"also_differ":[],"at":"cell","cell":"bus","compared":["regs","f","pc","sp","ime","ei_pending","halted","halt_bug","rom","rom_end","memory","bus","requests"],"format":"krs-difference/3","left":{"complete":true,"ends":1,"name":"definition","value":{"document":{"Read":{"addr":346,"value":4}},"offset":0,"rendering":"document","truncated":false}},"not_compared":["k","w","z"],"outside":"implementation","path":"bus[16]","right":{"complete":true,"ends":1,"name":"implementation","value":{"document":{"Write":{"addr":65533,"value":1}},"offset":0,"rendering":"document","truncated":false}},"segments":["[16]"],"views":{"bus":"AccessesView"}}'
+request_sha256 = "bedd0fa162bd42f678427b7fa36219681d19812b525c75071a2437822a2b36b6"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/joypad-int/case.gb"
+view = "writes"
+required = true
+verdict = "equal"
+request_sha256 = "85c239ce4d266856754ddc47d6aa9a645340f1b6a7dfeb2d7ee56f7f9094d161"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/joypad-int/case.gb"
+view = "accesses"
+required = false
+verdict = "different"
+difference = '{"also_differ":[],"at":"cell","cell":"bus","compared":["regs","f","pc","sp","ime","ei_pending","halted","halt_bug","rom","rom_end","memory","bus","requests"],"format":"krs-difference/3","left":{"complete":true,"ends":1,"name":"definition","value":{"document":{"Read":{"addr":344,"value":243}},"offset":0,"rendering":"document","truncated":false}},"not_compared":["k","w","z"],"outside":"implementation","path":"bus[14]","right":{"complete":true,"ends":1,"name":"implementation","value":{"document":{"Write":{"addr":65533,"value":1}},"offset":0,"rendering":"document","truncated":false}},"segments":["[14]"],"views":{"bus":"AccessesView"}}'
+request_sha256 = "85c239ce4d266856754ddc47d6aa9a645340f1b6a7dfeb2d7ee56f7f9094d161"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/jumps/case.gb"
+view = "writes"
+required = true
+verdict = "equal"
+request_sha256 = "a68befa7403b993ce889d36e9f9b01f53c60046dbe711d374dbb8c9c73a5db51"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/jumps/case.gb"
+view = "accesses"
+required = false
+verdict = "equal"
+request_sha256 = "a68befa7403b993ce889d36e9f9b01f53c60046dbe711d374dbb8c9c73a5db51"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/ld-sweep/case.gb"
+view = "writes"
+required = true
+verdict = "equal"
+request_sha256 = "ac086066532c328fc2742de9ba6b51052a10653eec19737c783852a131b5578b"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/ld-sweep/case.gb"
+view = "accesses"
+required = false
+verdict = "equal"
+request_sha256 = "ac086066532c328fc2742de9ba6b51052a10653eec19737c783852a131b5578b"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/loads/case.gb"
+view = "writes"
+required = true
+verdict = "equal"
+request_sha256 = "d61a1f4b6aef06ec609fd30bfc9dd505dc3864f0a6c75f2f1eeea0c33f351768"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/loads/case.gb"
+view = "accesses"
+required = false
+verdict = "equal"
+request_sha256 = "d61a1f4b6aef06ec609fd30bfc9dd505dc3864f0a6c75f2f1eeea0c33f351768"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/ram-code/case.gb"
+view = "writes"
+required = true
+verdict = "equal"
+request_sha256 = "f6f112477d102848a714737a6ad00927795bf9cce37ad2f543dfb1b84501bcc2"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/ram-code/case.gb"
+view = "accesses"
+required = false
+verdict = "different"
+difference = '{"also_differ":[],"at":"cell","cell":"bus","compared":["regs","f","pc","sp","ime","ei_pending","halted","halt_bug","rom","rom_end","memory","bus","requests"],"format":"krs-difference/3","left":{"complete":true,"ends":1,"name":"definition","value":{"document":{"Read":{"addr":49428,"value":201}},"offset":0,"rendering":"document","truncated":false}},"not_compared":["k","w","z"],"outside":"implementation","path":"bus[208]","right":{"complete":true,"ends":1,"name":"implementation","value":{"document":{"Write":{"addr":65531,"value":193}},"offset":0,"rendering":"document","truncated":false}},"segments":["[208]"],"views":{"bus":"AccessesView"}}'
+request_sha256 = "f6f112477d102848a714737a6ad00927795bf9cce37ad2f543dfb1b84501bcc2"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/rom-write/case.gb"
+view = "writes"
+required = true
+verdict = "equal"
+request_sha256 = "48065b14cb764c9ae59a36b41d9a7e60325b555ab9c9fdac2b7bfb7d3cc9bea4"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/rom-write/case.gb"
+view = "accesses"
+required = false
+verdict = "equal"
+request_sha256 = "48065b14cb764c9ae59a36b41d9a7e60325b555ab9c9fdac2b7bfb7d3cc9bea4"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/rst-sweep/case.gb"
+view = "writes"
+required = true
+verdict = "equal"
+request_sha256 = "fea259214622e58f3d99854fa856ffdcd7617f9e798b972298d4c3b6b0bdaf9a"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/rst-sweep/case.gb"
+view = "accesses"
+required = false
+verdict = "equal"
+request_sha256 = "fea259214622e58f3d99854fa856ffdcd7617f9e798b972298d4c3b6b0bdaf9a"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/stack/case.gb"
+view = "writes"
+required = true
+verdict = "equal"
+request_sha256 = "4e54d8262160062615e6fc0668db0b49ffcd3eca84bff5c3d8a313a0c1162dc9"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/stack/case.gb"
+view = "accesses"
+required = false
+verdict = "equal"
+request_sha256 = "4e54d8262160062615e6fc0668db0b49ffcd3eca84bff5c3d8a313a0c1162dc9"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/stop/case.gb"
+view = "writes"
+required = true
+verdict = "equal"
+request_sha256 = "af8c1a7fb4d58923ee5436c859aa062fb15557e3c68bc79bc7bde7a23f65bb71"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/stop/case.gb"
+view = "accesses"
+required = false
+verdict = "equal"
+request_sha256 = "af8c1a7fb4d58923ee5436c859aa062fb15557e3c68bc79bc7bde7a23f65bb71"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/word-sweep/case.gb"
+view = "writes"
+required = true
+verdict = "equal"
+request_sha256 = "19b98c1de45656e994019cc90584143e8e78ae7d4de6fa348e0aeb2a64b2b373"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/word-sweep/case.gb"
+view = "accesses"
+required = false
+verdict = "equal"
+request_sha256 = "19b98c1de45656e994019cc90584143e8e78ae7d4de6fa348e0aeb2a64b2b373"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/word16/case.gb"
+view = "writes"
+required = true
+verdict = "equal"
+request_sha256 = "8805e1a7937bd2a9bfe7fe92dbcc91b7077582a7c0f14fcbcdc24c710ce92da6"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "cases/word16/case.gb"
+view = "accesses"
+required = false
+verdict = "equal"
+request_sha256 = "8805e1a7937bd2a9bfe7fe92dbcc91b7077582a7c0f14fcbcdc24c710ce92da6"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "scheduled/dispatch-request/case.toml"
+view = "writes"
+required = true
+verdict = "could-not-apply"
+reason = "the request of 0x04 at machine cycle 19 comes due inside an instruction or a dispatch, or where IME is set or about to be: this CPU delivers a request only between two steps"
+request_sha256 = "a75d43090287b2e2eee00f1526b836795bbc5008d41bb842e5c5f3657de7e2db"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "scheduled/dispatch-request/case.toml"
+view = "accesses"
+required = false
+verdict = "could-not-apply"
+reason = "the request of 0x04 at machine cycle 19 comes due inside an instruction or a dispatch, or where IME is set or about to be: this CPU delivers a request only between two steps"
+request_sha256 = "a75d43090287b2e2eee00f1526b836795bbc5008d41bb842e5c5f3657de7e2db"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "scheduled/halt-wake-ime/case.toml"
+view = "writes"
+required = true
+verdict = "equal"
+request_sha256 = "4125469c06ff84108f6affdfa0ede08bb1f986841e5ff3a11f51edb54cfa8836"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "scheduled/halt-wake-ime/case.toml"
+view = "accesses"
+required = false
+verdict = "different"
+difference = '{"also_differ":[],"at":"cell","cell":"bus","compared":["regs","f","pc","sp","ime","ei_pending","halted","halt_bug","rom","rom_end","memory","bus","requests"],"format":"krs-difference/3","left":{"complete":true,"ends":1,"name":"definition","value":{"document":{"Read":{"addr":348,"value":6}},"offset":0,"rendering":"document","truncated":false}},"not_compared":["k","w","z"],"outside":"implementation","path":"bus[18]","right":{"complete":true,"ends":1,"name":"implementation","value":{"document":{"Write":{"addr":65533,"value":1}},"offset":0,"rendering":"document","truncated":false}},"segments":["[18]"],"views":{"bus":"AccessesView"}}'
+request_sha256 = "4125469c06ff84108f6affdfa0ede08bb1f986841e5ff3a11f51edb54cfa8836"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "scheduled/halt-wake/case.toml"
+view = "writes"
+required = true
+verdict = "equal"
+request_sha256 = "d4d080fb8dbc8f0a2b2340f0ae56f9b80ccde411aa7ef2a7b7b5d4d62b634fb7"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "scheduled/halt-wake/case.toml"
+view = "accesses"
+required = false
+verdict = "equal"
+request_sha256 = "d4d080fb8dbc8f0a2b2340f0ae56f9b80ccde411aa7ef2a7b7b5d4d62b634fb7"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "scheduled/if-read-request/case.toml"
+view = "writes"
+required = true
+verdict = "could-not-apply"
+reason = "the request of 0x01 at machine cycle 16 comes due inside an instruction or a dispatch, or where IME is set or about to be: this CPU delivers a request only between two steps"
+request_sha256 = "f887accbc92cf5d7bed9db18594d6190fec3e188d207e52b283343d0ceb57bfb"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+
+[[compare.verdict]]
+implementation = "rust-cpu"
+program = "scheduled/if-read-request/case.toml"
+view = "accesses"
+required = false
+verdict = "could-not-apply"
+reason = "the request of 0x01 at machine cycle 16 comes due inside an instruction or a dispatch, or where IME is set or about to be: this CPU delivers a request only between two steps"
+request_sha256 = "f887accbc92cf5d7bed9db18594d6190fec3e188d207e52b283343d0ceb57bfb"
+identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"

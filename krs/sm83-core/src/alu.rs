@@ -100,14 +100,21 @@ pub struct Flags {
 #[k::function(total, internal)]
 pub fn FlagByte(flags: Term<FlagSet>) -> Term<Int> {
     match flags {
-        Flags { z, n, h, c } => FlagBit(z) * 0x80 + FlagBit(n) * 0x40 + FlagBit(h) * 0x20 + FlagBit(c) * 0x10,
+        Flags { z, n, h, c } => {
+            FlagBit(z) * 0x80 + FlagBit(n) * 0x40 + FlagBit(h) * 0x20 + FlagBit(c) * 0x10
+        }
     }
 }
 
 /// The flags of a flag byte; bits 3 to 0 are ignored.
 #[k::function(total, internal)]
 pub fn ByteFlags(value: Term<Int>) -> Term<FlagSet> {
-    Flags(value & 0x80 != 0, value & 0x40 != 0, value & 0x20 != 0, value & 0x10 != 0)
+    Flags(
+        value & 0x80 != 0,
+        value & 0x40 != 0,
+        value & 0x20 != 0,
+        value & 0x10 != 0,
+    )
 }
 
 /// The carry flag, as `0` or `1`.
@@ -154,7 +161,8 @@ pub fn AluResult(op: Term<AluOp>, a: Term<Int>, b: Term<Int>, flags: Term<FlagSe
 
 /// The new flags after `A <- A op b`.
 #[k::function(total, internal)]
-pub fn AluFlags(op: Term<AluOp>, a: Term<Int>, b: Term<Int>, flags: Term<FlagSet>) -> Term<FlagSet>;
+pub fn AluFlags(op: Term<AluOp>, a: Term<Int>, b: Term<Int>, flags: Term<FlagSet>)
+-> Term<FlagSet>;
 
 /// The new value after `v <- op v`.
 #[k::function(total, internal)]
@@ -179,102 +187,99 @@ k::equations! {
 
 k::equations! {
     for AluFlags;
-    add_flags: (Alu::Add, a, b, _) => Flags(
-        Byte(a + b) == 0,
-        false,
-        (a & 0x0F) + (b & 0x0F) > 0x0F,
-        a + b > 0xFF,
-    );
-    adc_flags: (Alu::Adc, a, b, flags) => Flags(
-        Byte(a + b + CarryIn(flags)) == 0,
-        false,
-        (a & 0x0F) + (b & 0x0F) + CarryIn(flags) > 0x0F,
-        a + b + CarryIn(flags) > 0xFF,
-    );
-    sub_flags: (Alu::Sub, a, b, _) => Flags(
-        a == b,
-        true,
-        a & 0x0F < b & 0x0F,
-        a < b,
-    );
-    sbc_flags: (Alu::Sbc, a, b, flags) => Flags(
-        Byte(a - b - CarryIn(flags)) == 0,
-        true,
-        a & 0x0F < (b & 0x0F) + CarryIn(flags),
-        a < b + CarryIn(flags),
-    );
-    and_flags: (Alu::And, a, b, _)     => Flags(a & b == 0, false, true, false);
-    xor_flags: (Alu::Xor, a, b, _)     => Flags(a == b, false, false, false);
-    or_flags:  (Alu::Or, a, b, _)      => Flags(a | b == 0, false, false, false);
-    cp_flags:  (Alu::Cp, a, b, flags)  => AluFlags(Alu::Sub, a, b, flags);
+    add_flags: (Alu::Add, a, b, _)
+               => Flags(Byte(a + b) == 0, false, (a & 0x0F) + (b & 0x0F) > 0x0F, a + b > 0xFF);
+    adc_flags: (Alu::Adc, a, b, flags)
+               => Flags(
+                   Byte(a + b + CarryIn(flags)) == 0,
+                   false,
+                   (a & 0x0F) + (b & 0x0F) + CarryIn(flags) > 0x0F,
+                   a + b + CarryIn(flags) > 0xFF,
+               );
+    sub_flags: (Alu::Sub, a, b, _)    => Flags(a == b, true, a & 0x0F < b & 0x0F, a < b);
+    sbc_flags: (Alu::Sbc, a, b, flags)
+               => Flags(
+                   Byte(a - b - CarryIn(flags)) == 0,
+                   true,
+                   a & 0x0F < (b & 0x0F) + CarryIn(flags),
+                   a < b + CarryIn(flags),
+               );
+    and_flags: (Alu::And, a, b, _)    => Flags(a & b == 0, false, true, false);
+    xor_flags: (Alu::Xor, a, b, _)    => Flags(a == b, false, false, false);
+    or_flags:  (Alu::Or, a, b, _)     => Flags(a | b == 0, false, false, false);
+    cp_flags:  (Alu::Cp, a, b, flags) => AluFlags(Alu::Sub, a, b, flags);
 }
 
 k::equations! {
     for UnaryResult;
-    inc_result:       (Unary::Inc, value, _)          => Byte(value + 1);
-    dec_result:       (Unary::Dec, value, _)          => Byte(value - 1);
-    rlc_result:       (Unary::Rlc, value, _)          => Byte(value << 1) | value >> 7;
-    rrc_result:       (Unary::Rrc, value, _)          => value >> 1 | (value & 0x01) << 7;
-    rl_result:        (Unary::Rl, value, flags)       => Byte(value << 1) | CarryIn(flags);
-    rr_result:        (Unary::Rr, value, flags)       => value >> 1 | CarryIn(flags) << 7;
-    sla_result:       (Unary::Sla, value, _)          => Byte(value << 1);
+    inc_result:           (Unary::Inc, value, _)      => Byte(value + 1);
+    dec_result:           (Unary::Dec, value, _)      => Byte(value - 1);
+    rlc_result:           (Unary::Rlc, value, _)      => Byte(value << 1) | value >> 7;
+    rrc_result:           (Unary::Rrc, value, _)      => value >> 1 | (value & 0x01) << 7;
+    rl_result:            (Unary::Rl, value, flags)   => Byte(value << 1) | CarryIn(flags);
+    rr_result:            (Unary::Rr, value, flags)   => value >> 1 | CarryIn(flags) << 7;
+    sla_result:           (Unary::Sla, value, _)      => Byte(value << 1);
     /// `SRA` keeps the sign bit.
-    sra_result:       (Unary::Sra, value, _)          => value >> 1 | (value & 0x80);
-    swap_result:      (Unary::Swap, value, _)         => (value & 0x0F) << 4 | value >> 4;
-    srl_result:       (Unary::Srl, value, _)          => value >> 1;
-    reset_bit_result: (Unary::ResetBit(bit), value, _) => value & (0xFF ^ 1 << bit);
-    set_bit_result:   (Unary::SetBit(bit), value, _)  => value | 1 << bit;
-    rlca_result:      (Unary::Rlca, value, flags)     => UnaryResult(Unary::Rlc, value, flags);
-    rrca_result:      (Unary::Rrca, value, flags)     => UnaryResult(Unary::Rrc, value, flags);
-    rla_result:       (Unary::Rla, value, flags)      => UnaryResult(Unary::Rl, value, flags);
-    rra_result:       (Unary::Rra, value, flags)      => UnaryResult(Unary::Rr, value, flags);
+    sra_result:           (Unary::Sra, value, _)      => value >> 1 | (value & 0x80);
+    swap_result:          (Unary::Swap, value, _)     => (value & 0x0F) << 4 | value >> 4;
+    srl_result:           (Unary::Srl, value, _)      => value >> 1;
+    reset_bit_result:     (Unary::ResetBit(bit), value, _)
+                          => value & (0xFF ^ 1 << bit);
+    set_bit_result:       (Unary::SetBit(bit), value, _)
+                          => value | 1 << bit;
+    rlca_result:          (Unary::Rlca, value, flags) => UnaryResult(Unary::Rlc, value, flags);
+    rrca_result:          (Unary::Rrca, value, flags) => UnaryResult(Unary::Rrc, value, flags);
+    rla_result:           (Unary::Rla, value, flags)  => UnaryResult(Unary::Rl, value, flags);
+    rra_result:           (Unary::Rra, value, flags)  => UnaryResult(Unary::Rr, value, flags);
     #[k::requires(!SubtractSet(flags))]
     daa_result_after_add: (Unary::Daa, value, flags)  => Byte(value + DaaCorrection(value, flags));
     #[k::requires(SubtractSet(flags))]
     daa_result_after_sub: (Unary::Daa, value, flags)  => Byte(value - DaaCorrection(value, flags));
-    cpl_result:       (Unary::Cpl, value, _)          => value ^ 0xFF;
-    scf_result:       (Unary::Scf, value, _)          => value;
-    ccf_result:       (Unary::Ccf, value, _)          => value;
+    cpl_result:           (Unary::Cpl, value, _)      => value ^ 0xFF;
+    scf_result:           (Unary::Scf, value, _)      => value;
+    ccf_result:           (Unary::Ccf, value, _)      => value;
 }
 
 k::equations! {
     for UnaryFlags;
     /// `INC` and `DEC` leave the carry flag unchanged.
-    inc_flags: (Unary::Inc, value, flags) => Flags(
-        value == 0xFF,
-        false,
-        value & 0x0F == 0x0F,
-        CarrySet(flags),
-    );
-    dec_flags: (Unary::Dec, value, flags) => Flags(
-        value == 0x01,
-        true,
-        value & 0x0F == 0x00,
-        CarrySet(flags),
-    );
-    rlc_flags:  (Unary::Rlc, value, flags) => ShiftFlags(UnaryResult(Unary::Rlc, value, flags), value & 0x80 != 0);
-    rrc_flags:  (Unary::Rrc, value, flags) => ShiftFlags(UnaryResult(Unary::Rrc, value, flags), value & 0x01 != 0);
-    rl_flags:   (Unary::Rl, value, flags)  => ShiftFlags(UnaryResult(Unary::Rl, value, flags), value & 0x80 != 0);
-    rr_flags:   (Unary::Rr, value, flags)  => ShiftFlags(UnaryResult(Unary::Rr, value, flags), value & 0x01 != 0);
-    sla_flags:  (Unary::Sla, value, flags) => ShiftFlags(UnaryResult(Unary::Sla, value, flags), value & 0x80 != 0);
-    sra_flags:  (Unary::Sra, value, flags) => ShiftFlags(UnaryResult(Unary::Sra, value, flags), value & 0x01 != 0);
-    srl_flags:  (Unary::Srl, value, flags) => ShiftFlags(UnaryResult(Unary::Srl, value, flags), value & 0x01 != 0);
-    swap_flags: (Unary::Swap, value, _)    => Flags(value == 0, false, false, false);
+    inc_flags:        (Unary::Inc, value, flags)
+                      => Flags(value == 0xFF, false, value & 0x0F == 0x0F, CarrySet(flags));
+    dec_flags:        (Unary::Dec, value, flags)
+                      => Flags(value == 0x01, true, value & 0x0F == 0x00, CarrySet(flags));
+    rlc_flags:        (Unary::Rlc, value, flags)
+                      => ShiftFlags(UnaryResult(Unary::Rlc, value, flags), value & 0x80 != 0);
+    rrc_flags:        (Unary::Rrc, value, flags)
+                      => ShiftFlags(UnaryResult(Unary::Rrc, value, flags), value & 0x01 != 0);
+    rl_flags:         (Unary::Rl, value, flags)
+                      => ShiftFlags(UnaryResult(Unary::Rl, value, flags), value & 0x80 != 0);
+    rr_flags:         (Unary::Rr, value, flags)
+                      => ShiftFlags(UnaryResult(Unary::Rr, value, flags), value & 0x01 != 0);
+    sla_flags:        (Unary::Sla, value, flags)
+                      => ShiftFlags(UnaryResult(Unary::Sla, value, flags), value & 0x80 != 0);
+    sra_flags:        (Unary::Sra, value, flags)
+                      => ShiftFlags(UnaryResult(Unary::Sra, value, flags), value & 0x01 != 0);
+    srl_flags:        (Unary::Srl, value, flags)
+                      => ShiftFlags(UnaryResult(Unary::Srl, value, flags), value & 0x01 != 0);
+    swap_flags:       (Unary::Swap, value, _) => Flags(value == 0, false, false, false);
     /// `RES` and `SET` leave the flags unchanged.
-    bit_update_flags: (Unary::ResetBit(_) | Unary::SetBit(_), _, flags) => flags;
-    rlca_flags: (Unary::Rlca, value, _)    => Flags(false, false, false, value & 0x80 != 0);
-    rrca_flags: (Unary::Rrca, value, _)    => Flags(false, false, false, value & 0x01 != 0);
-    rla_flags:  (Unary::Rla, value, _)     => Flags(false, false, false, value & 0x80 != 0);
-    rra_flags:  (Unary::Rra, value, _)     => Flags(false, false, false, value & 0x01 != 0);
-    daa_flags:  (Unary::Daa, value, flags) => Flags(
-        UnaryResult(Unary::Daa, value, flags) == 0,
-        SubtractSet(flags),
-        false,
-        DaaHigh(value, flags),
-    );
-    cpl_flags:  (Unary::Cpl, _, flags)     => Flags(ZeroSet(flags), true, true, CarrySet(flags));
-    scf_flags:  (Unary::Scf, _, flags)     => Flags(ZeroSet(flags), false, false, true);
-    ccf_flags:  (Unary::Ccf, _, flags)     => Flags(ZeroSet(flags), false, false, !CarrySet(flags));
+    bit_update_flags: (Unary::ResetBit(_) | Unary::SetBit(_), _, flags)
+                      => flags;
+    rlca_flags:       (Unary::Rlca, value, _) => Flags(false, false, false, value & 0x80 != 0);
+    rrca_flags:       (Unary::Rrca, value, _) => Flags(false, false, false, value & 0x01 != 0);
+    rla_flags:        (Unary::Rla, value, _)  => Flags(false, false, false, value & 0x80 != 0);
+    rra_flags:        (Unary::Rra, value, _)  => Flags(false, false, false, value & 0x01 != 0);
+    daa_flags:        (Unary::Daa, value, flags)
+                      => Flags(
+                          UnaryResult(Unary::Daa, value, flags) == 0,
+                          SubtractSet(flags),
+                          false,
+                          DaaHigh(value, flags),
+                      );
+    cpl_flags:        (Unary::Cpl, _, flags)  => Flags(ZeroSet(flags), true, true, CarrySet(flags));
+    scf_flags:        (Unary::Scf, _, flags)  => Flags(ZeroSet(flags), false, false, true);
+    ccf_flags:        (Unary::Ccf, _, flags)
+                      => Flags(ZeroSet(flags), false, false, !CarrySet(flags));
 }
 
 /// The flags of a rotate or shift: Z from the result, C from the bit

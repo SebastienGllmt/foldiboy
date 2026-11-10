@@ -4,8 +4,8 @@
 //! whose values cannot be quantified over in a premise, so a claim states `IsByte(m[addr])` for
 //! each address it reads.
 
-use k::builtin::{Bool, Int};
 use k::Term;
+use k::builtin::{Bool, Int};
 
 /// A value an 8-bit register or memory cell holds.
 #[k::function(total, internal)]

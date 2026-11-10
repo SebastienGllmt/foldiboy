@@ -29,12 +29,12 @@ pub fn Writes(log: Term<List<CpuEvent>>, acc: Term<List<CpuEvent>>) -> Term<List
 
 k::equations! {
     for Writes;
-    writes_keep: ([x @ Event::Write { .. }, rest @ ..], acc) => Writes(rest, [..acc, x]);
-    writes_drop_read: ([Event::Read { .. }, rest @ ..], acc) => Writes(rest, acc);
-    writes_drop_idle: ([Event::Idle, rest @ ..], acc) => Writes(rest, acc);
+    writes_keep:      ([x @ Event::Write { .. }, rest @ ..], acc) => Writes(rest, [..acc, x]);
+    writes_drop_read: ([Event::Read { .. }, rest @ ..], acc)      => Writes(rest, acc);
+    writes_drop_idle: ([Event::Idle, rest @ ..], acc)             => Writes(rest, acc);
     /// The log is empty: a builtin list is empty or has a first element.
     #[k::equation(owise)]
-    writes_end: (_, acc) => acc;
+    writes_end:       (_, acc)                                    => acc;
 }
 
 /// The read and write events of a bus log, in order: the log without its idle cycles.
@@ -48,12 +48,12 @@ pub fn Accesses(log: Term<List<CpuEvent>>, acc: Term<List<CpuEvent>>) -> Term<Li
 
 k::equations! {
     for Accesses;
-    accesses_keep_read: ([x @ Event::Read { .. }, rest @ ..], acc) => Accesses(rest, [..acc, x]);
+    accesses_keep_read:  ([x @ Event::Read { .. }, rest @ ..], acc)  => Accesses(rest, [..acc, x]);
     accesses_keep_write: ([x @ Event::Write { .. }, rest @ ..], acc) => Accesses(rest, [..acc, x]);
-    accesses_drop_idle: ([Event::Idle, rest @ ..], acc) => Accesses(rest, acc);
+    accesses_drop_idle:  ([Event::Idle, rest @ ..], acc)             => Accesses(rest, acc);
     /// The log is empty.
     #[k::equation(owise)]
-    accesses_end: (_, acc) => acc;
+    accesses_end:        (_, acc)                                    => acc;
 }
 
 /// The registers a mooneye test reports its result in: `B C D E H L` (3 5 8 13 21 34 is a pass,
@@ -75,5 +75,9 @@ pub fn MooneyeResult(regs: Term<Map<Reg8, Int>>) -> Term<Map<Reg8, Int>> {
 /// value there.
 #[k::function(total, internal)]
 pub fn MooneyeBreakpoint(pc: Term<Int>, rom_end: Term<Int>, rom: Term<Bytes>) -> Term<Bool> {
-    if InRom(rom_end, pc) { bytes::get(rom, pc) == 0x40 } else { false }
+    if InRom(rom_end, pc) {
+        bytes::get(rom, pc) == 0x40
+    } else {
+        false
+    }
 }

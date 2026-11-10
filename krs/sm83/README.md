@@ -112,8 +112,8 @@ Arithmetic and ALU definitions live in `../sm83-core` and are re-exported by thi
 
 ## Building
 
-The KRS crates and the scripts use k-rust from a pinned worktree, `/artifacts/worktrees/k-rust-foldiboy-pin`, a detached checkout of the commit recorded in `../K_RUST_PIN`, with its `krs` CLI built there against the static Z3 5.3.3 the machine provides (`with-z3-static-5.3.3 cargo build -p krs-cli --bin krs --no-default-features --features z3-inference,kink --locked`; the default features download that release instead).
-Moving the pin is a deliberate change: check out the new commit there, rebuild, update `K_RUST_PIN`, and rerun the verification. The k-rust development checkout moves on its own; a `krs` binary and a `krs` crate from different commits disagree on the collector protocol.
+The KRS crates and the scripts use k-rust from a pinned worktree, a detached checkout of the commit recorded in `../K_RUST_PIN` at the path recorded there (`/artifacts/worktrees/k-rust-pin-<commit>`), with its `krs` CLI built there against the static Z3 5.3.3 the machine provides (`with-z3-static-5.3.3 cargo build -p krs-cli --bin krs --no-default-features --features z3-inference,kink --locked`; the default features download that release instead).
+Moving the pin is a deliberate change: add a worktree of the new commit at its own path, build it, point `K_RUST_PIN` and the `krs` dependency of `krs/*/Cargo.toml` at it, and rerun the verification. The k-rust development checkout moves on its own; a `krs` binary and a `krs` crate from different commits disagree on the collector protocol, and a path that names its commit keeps a checkout on one pin from using another's worktree.
 `KRS_BIN` overrides the scripts' default binary. krs links the Z3 release its `Krs.lock` names (5.3.3), statically, so no Z3 library path is needed; kink's locks name that Z3 build, so a lock written on another build is stale under `--locked`.
 The scripts are `bun run` commands of the repository's `package.json` (`../../scripts/`). `scripts/krs.ts` runs krs with the root definition's selection, `--dependency foldiboy-sm83-core:core --dependency foldiboy-sm83-events:events`; direct KRS commands require the same selection.
 The scripts find the test suites under `FOLDIBOY_TEST_ROOT` (by default `roms/tests` beside the repository, reached through its logical path): `sm83/v1` (SingleStepTests) and `mooneye-test-suite`.
@@ -175,7 +175,7 @@ Success requires every selected claim to report `proven` and exit status 0.
 krs proves each claim in a supervised worker: a claim that runs past the timeout gets the verdict `timeout`, and a solver crash costs only its claim (`crashed`); neither establishes anything about the claim.
 Each solver query is bounded by Z3 resource units rather than the clock, so a verdict does not depend on the host's load.
 The six bit-index contracts use exhaustive native cases over the three-bit opcode field.
-The [claim inventory](src/claims/README.md#proof-evidence) records the reviewed proof evidence; at k-rust `b1966f5c6` (Z3 5.3.3) every contract proves except `contract-unary-daa-accumulator`.
+The [claim inventory](src/claims/README.md#proof-evidence) records the reviewed proof evidence; at k-rust `2185855a7` (Z3 5.3.3) every contract proves.
 Proof output is printed to the terminal; any saved diagnostic runs belong in ignored `results/`.
 
 Run the concrete test suites:
@@ -209,7 +209,7 @@ A mooneye test ends at its breakpoint (`LD B,B`) after setting the result regist
 
 The migration from KRS `8299da60f` to `793cc0a3a` adds typed helper parameters and builtin list notation.
 Its emitted `definition.k` is byte-identical to the unchanged source emitted by `793cc0a3a`.
-The model keeps its hand layout: the current formatter still pads table labels before the colon and breaks some rows awkwardly.
+The sources are in `krs fmt`'s layout at k-rust `2185855a7`, except `src/claims/control.rs`: there `krs fmt` writes a long negated `requires` it cannot parse back, and refuses the file (FB-49).
 
 Status at the last run:
 

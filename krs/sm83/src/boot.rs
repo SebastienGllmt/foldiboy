@@ -37,7 +37,12 @@ pub fn DmgRegisters() -> Term<Map<Reg8, Int>> {
 /// DMG: F is `$B0` (Z, H and C set) after the boot ROM.
 #[k::function(total, internal)]
 pub fn DmgFlags() -> Term<FlagSet> {
-    Flags { z: true, n: false, h: true, c: true }
+    Flags {
+        z: true,
+        n: false,
+        h: true,
+        c: true,
+    }
 }
 
 /// Every model hands over at `$0100`.

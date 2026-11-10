@@ -225,7 +225,8 @@ k::equations! {
     decode_dec_r:            k::bits!("00 yyy 101")      => Update8(Unary::Dec, R8(y));
     decode_ld_r_n:           k::bits!("00 yyy 110")      => Ld8(R8(y), Operand::Immediate);
     /// `RLCA`, `RRCA`, `RLA`, `RRA`, `DAA`, `CPL`, `SCF`, `CCF`.
-    decode_accumulator:      k::bits!("00 yyy 111")      => Update8(AccumulatorTable(y), Operand::Reg(Register::A));
+    decode_accumulator:      k::bits!("00 yyy 111")
+                             => Update8(AccumulatorTable(y), Operand::Reg(Register::A));
     /// `LD (HL), (HL)` is `HALT`.
     decode_halt:             k::bits!("01 110 110")      => Halt;
     #[k::requires(op != 0x76)]
@@ -257,17 +258,26 @@ k::equations! {
     decode_rst:              k::bits!("11 yyy 111")      => Restart(y * 8);
     decode_stop:             0x10                        => Stop;
     /// The unused opcodes.
-    decode_illegal:          opcode @ (0xD3 | 0xDB | 0xDD | 0xE3 | 0xE4 | 0xEB | 0xEC | 0xED | 0xF4 | 0xFC | 0xFD)
-                                                         => Illegal(opcode);
+    decode_illegal:          opcode @ (0xD3
+                             | 0xDB
+                             | 0xDD
+                             | 0xE3
+                             | 0xE4
+                             | 0xEB
+                             | 0xEC
+                             | 0xED
+                             | 0xF4
+                             | 0xFC
+                             | 0xFD) => Illegal(opcode);
 }
 
 k::equations! {
     for DecodeCb;
     use Instruction::*;
-    decode_cb_rot:           k::bits!("00 yyy zzz")      => Update8(Rot(y), R8(z));
-    decode_cb_bit:           k::bits!("01 yyy zzz")      => TestBit(y, R8(z));
-    decode_cb_res:           k::bits!("10 yyy zzz")      => Update8(Unary::ResetBit(y), R8(z));
-    decode_cb_set:           k::bits!("11 yyy zzz")      => Update8(Unary::SetBit(y), R8(z));
+    decode_cb_rot: k::bits!("00 yyy zzz") => Update8(Rot(y), R8(z));
+    decode_cb_bit: k::bits!("01 yyy zzz") => TestBit(y, R8(z));
+    decode_cb_res: k::bits!("10 yyy zzz") => Update8(Unary::ResetBit(y), R8(z));
+    decode_cb_set: k::bits!("11 yyy zzz") => Update8(Unary::SetBit(y), R8(z));
 }
 
 k::equations! {

@@ -9,7 +9,10 @@ import { mkdir, stat } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 
 export const root = resolve(import.meta.dir, "..");
-const bin = process.env.KRS_BIN ?? "/artifacts/worktrees/k-rust-foldiboy-pin/target/debug/krs";
+// The pinned worktree's path names its commit, so a krs binary and a krs crate of different
+// commits never share a path (krs/*/Cargo.toml name the same worktree).
+const pin = Bun.TOML.parse(await Bun.file(resolve(root, "krs/K_RUST_PIN")).text()) as { path: string };
+const bin = process.env.KRS_BIN ?? `${pin.path}/target/debug/krs`;
 
 // krs reads the views package's Cargo workspace: a case's observer (krs/sm83-views) must be one
 // of its packages, and the SM83 package is one too, as its dependency.

@@ -1,8 +1,8 @@
 //! Each decoded instruction as its sequence of micro-operations.
 
 use crate::decode::{Address, Condition, Instruction, Operand, Pair16};
-use crate::machine::Register;
 use crate::interrupt::Step;
+use crate::machine::Register;
 use crate::micro::Micro;
 use crate::{AddHlFlags, High, Hl, InterruptRequested, Low, Machine, PairValue, Word};
 
@@ -59,7 +59,7 @@ k::rules! {
             Micro::LoadZ { src: Operand::Immediate },
             Micro::LoadW { src: Operand::Immediate },
             Micro::JumpIf { cond },
-            ..
+            ..,
         ],
     };
 
@@ -81,7 +81,7 @@ k::rules! {
                 addr: Word(sp - 2),
                 value: Low(PairValue(pair, registers, flags, sp)),
             },
-            ..
+            ..,
         ],
         sp: Word(sp - 2),
     };
@@ -95,7 +95,7 @@ k::rules! {
             Micro::ReadZ { addr: sp },
             Micro::ReadW { addr: Word(sp + 1) },
             Micro::StorePair { pair },
-            ..
+            ..,
         ],
         sp: Word(sp + 2),
     };
@@ -113,7 +113,7 @@ k::rules! {
             Micro::ResolveAddress { mode: addr },
             Micro::ReadZAtWz,
             Micro::StoreZ { dst: Operand::Reg { r: Register::A } },
-            ..
+            ..,
         ],
     };
 
@@ -130,7 +130,7 @@ k::rules! {
             Micro::LoadZ { src: Operand::Immediate },
             Micro::LoadW { src: Operand::Immediate },
             Micro::StorePair { pair },
-            ..
+            ..,
         ],
     };
 
@@ -156,7 +156,7 @@ k::rules! {
             Micro::LoadZ { src: Operand::Immediate },
             Micro::Idle,
             Micro::AddSpZ { dst: Pair16::Registers { high: Register::H, low: Register::L } },
-            ..
+            ..,
         ],
     };
 
@@ -168,7 +168,7 @@ k::rules! {
             Micro::Idle,
             Micro::Idle,
             Micro::AddSpZ { dst: Pair16::StackPointer },
-            ..
+            ..,
         ],
     };
 
@@ -180,11 +180,8 @@ k::rules! {
     } => {
         k: [
             Micro::Idle,
-            Micro::SetPair {
-                pair,
-                value: Word(PairValue(pair, registers, flags, sp) + 1),
-            },
-            ..
+            Micro::SetPair { pair, value: Word(PairValue(pair, registers, flags, sp) + 1) },
+            ..,
         ],
     };
 
@@ -196,11 +193,8 @@ k::rules! {
     } => {
         k: [
             Micro::Idle,
-            Micro::SetPair {
-                pair,
-                value: Word(PairValue(pair, registers, flags, sp) - 1),
-            },
-            ..
+            Micro::SetPair { pair, value: Word(PairValue(pair, registers, flags, sp) - 1) },
+            ..,
         ],
     };
 
@@ -216,7 +210,7 @@ k::rules! {
                 pair: Pair16::Registers { high: Register::H, low: Register::L },
                 value: Word(Hl(registers) + PairValue(pair, registers, flags, sp)),
             },
-            ..
+            ..,
         ],
         f: AddHlFlags(Hl(registers), PairValue(pair, registers, flags, sp), flags),
     };
@@ -237,7 +231,7 @@ k::rules! {
             Micro::LoadZ { src: Operand::Immediate },
             Micro::LoadW { src: Operand::Immediate },
             Micro::CallIf { cond },
-            ..
+            ..,
         ],
     };
 
@@ -272,7 +266,7 @@ k::rules! {
             Micro::Idle,
             Micro::WriteByte { addr: Word(sp - 1), value: High(pc) },
             Micro::WriteByte { addr: Word(sp - 2), value: Low(pc) },
-            ..
+            ..,
         ],
         pc: target,
         sp: Word(sp - 2),

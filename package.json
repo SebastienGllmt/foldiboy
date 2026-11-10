@@ -9,7 +9,7 @@
     "mooneye": "bun scripts/roms.ts mooneye && bun scripts/krs.ts cases krs/oracles/mooneye/sm83.toml --output json --save krs/oracles/mooneye/results/sm83.jsonl",
     "sst": "bun krs/oracles/singlestep/sm83.ts",
     "claims": "bun scripts/krs.ts prove --spec-module SM83-CONTRACTS-SPEC --depth 32 --claim-timeout 600 --output jsonl --save krs/sm83/results/claims.jsonl",
-    "compare": "bun scripts/roms.ts corpus && bun scripts/compare.ts",
+    "compare": "bun scripts/roms.ts corpus && cargo build --release --offline --quiet --manifest-path krs/sm83-rust-cpu/Cargo.toml && bun scripts/krs.ts kink compare",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

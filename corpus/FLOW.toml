@@ -10,13 +10,11 @@ krs = { definition = "main" }
 [budget]
 time_ms = 30000
 max_depth = 200000
-work_factor = 4
 
-# A case in cases/ is a cartridge, and the rest of the console requests no interrupt. A case in
-# scheduled/ is a case document: its cartridge and the requests (the CPU stage's REQUESTS input).
+# A case in cases/ is a cartridge, and the rest of the console requests no interrupt (REQUESTS's
+# default). A case in scheduled/ is a case document: its cartridge and the requests.
 [[program]]
 files = "cases/*/case.gb"
-inputs = { requests = [] }
 
 [[program]]
 cases = "scheduled/*/case.toml"
@@ -35,6 +33,23 @@ name = "boundary"
 before = ["crate::interrupt::boundary_dispatch", "crate::interrupt::boundary_fetch", "crate::interrupt::boundary_halted", "crate::interrupt::boundary_wake"]
 stutter = "count"
 cells = ["pc", "ime", "halted"]
+
+# The Rust emulator's CPU, run on every program from the definition's start (`bun run compare`
+# builds it first; krs/sm83-rust-cpu says what its adapter decides). Its bus log is compared under
+# two views of krs/sm83-views: the writes in order, required equal, and every read and write in
+# order, reported only, since the emulator performs an instruction's accesses at once and the
+# definition's dispatch starts with a discarded opcode read the emulator does not make. It states
+# every cell but the computation and W and Z.
+[[implementation]]
+name = "rust-cpu"
+command = ["../krs/sm83-rust-cpu/target/release/sm83-rust-cpu", "--kink"]
+given = "start"
+omits = ["k", "w", "z"]
+identity = { file = "../krs/sm83-rust-cpu/target/release/sm83-rust-cpu" }
+views = [
+  { name = "writes", views = { bus = "WritesView" }, observer = "foldiboy-sm83-views:views", required = true },
+  { name = "accesses", views = { bus = "AccessesView" }, observer = "foldiboy-sm83-views:views" },
+]
 
 # Six ROM-side requirements no case can reach: `memory` never holds a ROM address, since a write
 # into the ROM region stores nothing (the rom-write case). The rules that read `memory` carry

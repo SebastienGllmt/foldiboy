@@ -89,14 +89,11 @@ pub mod spec {
             k: [],
             w: r[high],
             z: r[low],
-            memory: k::map![(r[high] * 0x100 + r[low]) -> Latch((r[high] * 0x100 + r[low]), r[Register::A]), ..m],
-            bus: [
-                ..log,
-                Event::Write {
-                    addr: (r[high] * 0x100 + r[low]),
-                    value: r[Register::A],
-                },
+            memory: k::map![
+                (r[high] * 0x100 + r[low]) -> Latch((r[high] * 0x100 + r[low]), r[Register::A]),
+                ..m,
             ],
+            bus: [..log, Event::Write { addr: (r[high] * 0x100 + r[low]), value: r[Register::A] }],
         };
 
         /// LD through A: specified address calculation, HL step where present, bus order and preserved flags.
@@ -177,7 +174,13 @@ pub mod spec {
                 ) % 0x100,
                 ..r,
             ],
-            memory: k::map![(r[Register::H] * 0x100 + r[Register::L]) -> Latch((r[Register::H] * 0x100 + r[Register::L]), r[Register::A]), ..m],
+            memory: k::map![
+                (r[Register::H] * 0x100 + r[Register::L]) -> Latch(
+                    (r[Register::H] * 0x100 + r[Register::L]),
+                    r[Register::A],
+                ),
+                ..m,
+            ],
             bus: [
                 ..log,
                 Event::Write {
@@ -240,14 +243,11 @@ pub mod spec {
             k: [],
             w: 0xFF,
             z: r[Register::C],
-            memory: k::map![(0xFF00 + r[Register::C]) -> Latch((0xFF00 + r[Register::C]), r[Register::A]), ..m],
-            bus: [
-                ..log,
-                Event::Write {
-                    addr: (0xFF00 + r[Register::C]),
-                    value: r[Register::A],
-                },
+            memory: k::map![
+                (0xFF00 + r[Register::C]) -> Latch((0xFF00 + r[Register::C]), r[Register::A]),
+                ..m,
             ],
+            bus: [..log, Event::Write { addr: (0xFF00 + r[Register::C]), value: r[Register::A] }],
         };
 
         /// LD through A: specified address calculation, HL step where present, bus order and preserved flags.
@@ -313,10 +313,7 @@ pub mod spec {
             bus: [
                 ..log,
                 Event::Read { addr: pc, value: m[pc] },
-                Event::Write {
-                    addr: (0xFF00 + m[pc]),
-                    value: r[Register::A],
-                },
+                Event::Write { addr: (0xFF00 + m[pc]), value: r[Register::A] },
             ],
             pc: ((pc + 1) % 0x1_0000),
         };
@@ -386,7 +383,13 @@ pub mod spec {
             k: [],
             w: m[(pc + 1) % 0x1_0000],
             z: m[pc],
-            memory: k::map![(m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]) -> Latch((m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]), r[Register::A]), ..m],
+            memory: k::map![
+                (m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]) -> Latch(
+                    (m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]),
+                    r[Register::A],
+                ),
+                ..m,
+            ],
             bus: [
                 ..log,
                 Event::Read { addr: pc, value: m[pc] },
@@ -428,8 +431,14 @@ pub mod spec {
             k: [],
             pc: ((pc + 2) % 0x1_0000),
             memory: k::map![
-                (m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]) -> Latch((m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]), sp % 0x100),
-                (((m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]) + 1) % 0x1_0000) -> Latch((((m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]) + 1) % 0x1_0000), sp / 0x100),
+                (m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]) -> Latch(
+                    (m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]),
+                    sp % 0x100,
+                ),
+                (((m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]) + 1) % 0x1_0000) -> Latch(
+                    (((m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]) + 1) % 0x1_0000),
+                    sp / 0x100,
+                ),
                 ..m,
             ],
             w: m[(pc + 1) % 0x1_0000],
@@ -438,10 +447,7 @@ pub mod spec {
                 ..log,
                 Event::Read { addr: pc, value: m[pc] },
                 Event::Read { addr: ((pc + 1) % 0x1_0000), value: m[(pc + 1) % 0x1_0000] },
-                Event::Write {
-                    addr: (m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]),
-                    value: sp % 0x100,
-                },
+                Event::Write { addr: (m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]), value: sp % 0x100 },
                 Event::Write {
                     addr: (((m[(pc + 1) % 0x1_0000] * 0x100 + m[pc]) + 1) % 0x1_0000),
                     value: sp / 0x100,
@@ -482,14 +488,8 @@ pub mod spec {
             bus: [
                 ..log,
                 Event::Idle,
-                Event::Write {
-                    addr: ((sp + 0xFFFF) % 0x1_0000),
-                    value: r[high],
-                },
-                Event::Write {
-                    addr: ((sp + 0xFFFE) % 0x1_0000),
-                    value: r[low],
-                },
+                Event::Write { addr: ((sp + 0xFFFF) % 0x1_0000), value: r[high] },
+                Event::Write { addr: ((sp + 0xFFFE) % 0x1_0000), value: r[low] },
             ],
         };
 
@@ -520,16 +520,16 @@ pub mod spec {
             sp: ((sp + 0xFFFE) % 0x1_0000),
             memory: k::map![
                 ((sp + 0xFFFF) % 0x1_0000) -> Latch(((sp + 0xFFFF) % 0x1_0000), r[Register::A]),
-                ((sp + 0xFFFE) % 0x1_0000) -> Latch(((sp + 0xFFFE) % 0x1_0000), ExpectedFlagByte(zero, subtract, half_carry, carry)),
+                ((sp + 0xFFFE) % 0x1_0000) -> Latch(
+                    ((sp + 0xFFFE) % 0x1_0000),
+                    ExpectedFlagByte(zero, subtract, half_carry, carry),
+                ),
                 ..m,
             ],
             bus: [
                 ..log,
                 Event::Idle,
-                Event::Write {
-                    addr: ((sp + 0xFFFF) % 0x1_0000),
-                    value: r[Register::A],
-                },
+                Event::Write { addr: ((sp + 0xFFFF) % 0x1_0000), value: r[Register::A] },
                 Event::Write {
                     addr: ((sp + 0xFFFE) % 0x1_0000),
                     value: ExpectedFlagByte(zero, subtract, half_carry, carry),

@@ -9,8 +9,8 @@ use crate::alu::{Alu, Flags, Unary};
 use crate::decode::{Address, Condition, Instruction, Operand, Pair16};
 use crate::interrupt::{IE, IF, Step};
 use crate::machine::{Event, Register};
-use crate::well_formed::{IsByte, IsWord};
 use crate::micro::Micro;
+use crate::well_formed::{IsByte, IsWord};
 use k::builtin::{int, kequal};
 
 #[k::spec_module(name = "SM83-FETCH-SPEC", imports = [crate])]

@@ -17,9 +17,9 @@ pub mod micro;
 pub mod well_formed;
 
 pub use alu::{
-    AddHlFlags, AluFlags, AluResult, BitFlags, ByteFlags, CarryIn, CarrySet, DaaCorrection, DaaHigh, DaaLow,
-    FlagByte, FlagSet, Flags, HalfCarrySet, ShiftFlags, SpOffsetFlags, SubtractSet, UnaryFlags, UnaryResult,
-    ZeroSet,
+    AddHlFlags, AluFlags, AluResult, BitFlags, ByteFlags, CarryIn, CarrySet, DaaCorrection,
+    DaaHigh, DaaLow, FlagByte, FlagSet, Flags, HalfCarrySet, ShiftFlags, SpOffsetFlags,
+    SubtractSet, UnaryFlags, UnaryResult, ZeroSet,
 };
 pub use arith::{Byte, FlagBit, High, Low, Pair, Signed, Word};
 pub use decode::{

@@ -7,7 +7,7 @@ rust-version = "1.99"
 publish = false
 
 [dependencies]
-k = { package = "krs", path = "/artifacts/worktrees/k-rust-foldiboy-pin/krs/crates/krs" }
+k = { package = "krs", path = "/artifacts/worktrees/k-rust-pin-2185855a7/krs/crates/krs" }
 
 [package.metadata.krs]
 k-namespace = "SM83-EVENTS"

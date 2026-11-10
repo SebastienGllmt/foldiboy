@@ -11,8 +11,8 @@ use crate::alu::{AluOp, UnaryOp};
 use crate::decode::{AddrMode, Address, Cond, Condition, Operand, Operand8, Pair16, RegPair};
 use crate::machine::{Event, Latch, Register};
 use crate::{
-    AluFlags, AluResult, BitFlags, ByteFlags, Decode, DecodeCb, High, Hl, Holds, InRom, Low, Machine, Pair, Signed,
-    SpOffsetFlags, UnaryFlags, UnaryResult, Word,
+    AluFlags, AluResult, BitFlags, ByteFlags, Decode, DecodeCb, High, Hl, Holds, InRom, Low,
+    Machine, Pair, Signed, SpOffsetFlags, UnaryFlags, UnaryResult, Word,
 };
 
 k::sorts! {

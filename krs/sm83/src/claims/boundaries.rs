@@ -9,8 +9,8 @@ use crate::alu::{Alu, Unary};
 use crate::decode::{Address, Condition, Instruction, Operand, Pair16};
 use crate::interrupt::{IE, IF, Step};
 use crate::machine::{Event, Latch, Register};
-use crate::well_formed::{IsByte, IsWord};
 use crate::micro::Micro;
+use crate::well_formed::{IsByte, IsWord};
 use k::builtin::Int;
 
 /// Pan Docs interrupt priority; test requests from bit 0 through bit 4.
@@ -272,14 +272,8 @@ pub mod spec {
                 Event::Read { addr: pc, value: m[pc] },
                 Event::Idle,
                 Event::Idle,
-                Event::Write {
-                    addr: ((sp + 0xFFFF) % 0x1_0000),
-                    value: pc / 0x100,
-                },
-                Event::Write {
-                    addr: ((sp + 0xFFFE) % 0x1_0000),
-                    value: pc % 0x100,
-                },
+                Event::Write { addr: ((sp + 0xFFFF) % 0x1_0000), value: pc / 0x100 },
+                Event::Write { addr: ((sp + 0xFFFE) % 0x1_0000), value: pc % 0x100 },
             ],
         };
 
@@ -332,14 +326,8 @@ pub mod spec {
                 Event::Read { addr: pc, value: m[pc] },
                 Event::Idle,
                 Event::Idle,
-                Event::Write {
-                    addr: ((sp + 0xFFFF) % 0x1_0000),
-                    value: pc / 0x100,
-                },
-                Event::Write {
-                    addr: ((sp + 0xFFFE) % 0x1_0000),
-                    value: pc % 0x100,
-                },
+                Event::Write { addr: ((sp + 0xFFFF) % 0x1_0000), value: pc / 0x100 },
+                Event::Write { addr: ((sp + 0xFFFE) % 0x1_0000), value: pc % 0x100 },
             ],
             halted: false,
         };
