@@ -2,6 +2,11 @@
 # answers each (pattern, case) hit, no or unknown, and fails (exit 1) when a claimed case is
 # refuted, that is, when the case never does what its header says it tests.
 #
+# `programs` is a stopgap: at k-rust b1966f5c6 a pattern no case claims is checked by nothing (a
+# pattern every case misses still exits 0). Once kink records one witness per pattern in a lock and
+# reports an unhit pattern as open (requested as FB-54), remove every `programs` list and let the
+# lock name the case, as verdicts.lock names a mutation's killer.
+#
 # A pattern is written as a rule's left-hand side over the emitted K (definition.k): micro-ops as
 # `# selectVector ( Ie )`, flags as `flags(Z, N, H, C)`, IF and IE as 65295 and 65535 (K has no hex
 # literal).
