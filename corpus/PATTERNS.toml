@@ -4,11 +4,15 @@
 #
 # A pattern is written as a rule's left-hand side over the emitted K (definition.k): micro-ops as
 # `# selectVector ( Ie )`, flags as `flags(Z, N, H, C)`, IF and IE as 65295 and 65535 (K has no hex
-# literal). The bus log and the pending requests make an order along a run one pattern: match the
-# later event at the end of the log (`L:List ListItem(read(...))`) and require the earlier one in
-# it (`write(...) in L`), or match the earlier state and require a request still to come.
-# A list pattern with a list variable on both sides of an element (`_:List ListItem(X) _:List`)
-# is left undecided by k-rust's matcher at b1966f5c6: write the element last instead.
+# literal).
+#
+# A pattern matches one state. An order along a run can be stated only through a cell that holds
+# history or what is still to come, and only in one shape (k-rust b1966f5c6): match the later bus
+# event at the end of the log and require the earlier one, every field bound, with `in`
+# (`<bus> L:List ListItem(read(A, V:Int)) </bus> requires write(A, V) in L`), or match the earlier
+# state and require a request still pending. `_:List ListItem(X) _:List`, `in` with a wildcard,
+# and two ordered earlier events are left undecided by the matcher, and state no cell logs (IME,
+# the HALT bug, the K cell) has no order at all (draft-personal/kink-patterns, FB-49).
 
 # --- HALT ---------------------------------------------------------------------------------------
 
