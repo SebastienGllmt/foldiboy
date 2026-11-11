@@ -32,6 +32,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "foldiboy-sm83-patterns"
+version = "0.1.0"
+dependencies = [
+ "foldiboy-sm83",
+ "foldiboy-sm83-events",
+ "krs",
+]
+
+[[package]]
 name = "foldiboy-sm83-views"
 version = "0.1.0"
 dependencies = [

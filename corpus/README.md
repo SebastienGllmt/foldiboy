@@ -51,7 +51,7 @@ It sets a scheduled case's requests in `IF` between two of the Rust CPU's steps,
 The bus log (`read`, `write`, `idle` events) is compared under a view, a function of the cell's value applied to both sides (`krs/sm83-views`).
 `WritesView` keeps only the writes; `AccessesView` keeps the reads and writes in order and drops idle cycles; no view keeps every event.
 The Rust CPU performs an instruction's accesses at once, with no internal cycles, so its bus is compared under `writes` (`WritesView`, required) and `accesses` (`AccessesView`, reported).
-At k-rust `2185855a7` (2026-11-11), under `writes` 37 of the 39 cases are equal and none differs; the other two are `could-not-apply`, the two whose requests come due where the Rust CPU cannot deliver them: `dispatch-request` (a request inside a dispatch) and `if-read-request` (a request read inside an instruction).
+At k-rust `db7063a30` (2026-11-11), under `writes` 37 of the 39 cases are equal and none differs; the other two are `could-not-apply`, the two whose requests come due where the Rust CPU cannot deliver them: `dispatch-request` (a request inside a dispatch) and `if-read-request` (a request read inside an instruction).
 Under `accesses` the seven cases that dispatch an interrupt (`interrupt`, `interrupt-sources`, `joypad-int`, `halt-ime`, `ie-push-cancel`, `ram-code`, `halt-wake-ime`) differ, each first at its first dispatch, where the definition reads the opcode at `PC` and discards it and the Rust CPU pushes at once.
 The definition's order is the one SameBoy, Gambatte and mooneye-gb share (`krs/sm83/notes/interrupt-sources.md`); Pan Docs and mooneye's hardware-verified `intr_timing` give only the five cycles, so no evidence here decides the order of accesses within them. The Rust CPU's order is that emulator's difference, not evidence against the definition's.
 The Rust CPU's interrupt logic accesses `IE` and `IF` without bus cycles (`memory::Bus::read_interrupt_register`), so those accesses are not logged.
@@ -86,12 +86,15 @@ Three close situations `krs kink query` showed no case reaching at k-rust b1966f
 
 ## What each case tests
 
-A case's header states its purpose in prose; `PATTERNS.toml` states it as a pattern, a configuration the case's run must reach, and names the cases that claim it.
-`bun run kink query` runs each claimed case and answers `hit` (a run reached a matching state), `no` (no run does: the claim is refuted, and the command exits 1) or `unknown`.
-A refuted claim is either a case that does not do what its header says or a pattern that does not say what was meant; the answer cannot tell them apart, so check the pattern first.
-`coverage` asks what the definition needs (each rule fired, each guard outcome shown); a pattern asks for a combination no single rule states, such as the HALT bug followed by a two-byte opcode.
-A pattern without `programs` asks every case whether it reaches the situation, which is how the three cases above were found missing.
-`PATTERNS.toml`'s header says how to write a pattern over the emitted K, an order of events along a run included.
+A case's header states its purpose in prose; `krs/sm83-patterns` states the situations the corpus must reach, as `k::patterns!` clauses over the definition's runs, and `FLOW.toml` declares that package (`[[patterns]] krs = "foldiboy-sm83-patterns"`).
+`bun run kink query` finds, for each pattern, a case whose run reaches it (`hit`), and records that case as the pattern's witness in `kink.lock` (`[query]`), as `[run]` records a mutation's killer: the next query asks the recorded witness first and keeps it while it still hits, and a pattern no case reaches is recorded `open`.
+So a new situation is written as a pattern first: if a case already reaches it, the lock names that case and no case is written; if none does, the pattern is recorded open, which is the case to write.
+`query --locked` exits 1 when the query would change `[query]`: a witness deleted or no longer reaching its pattern moves the witness to another case that does, or the pattern to `open`.
+`coverage` asks what the definition needs (each rule fired, each guard outcome shown); a pattern asks for a combination no single rule states, such as the HALT bug followed by a two-byte opcode, or an order along a run, such as a request that comes due inside a dispatch.
+
+A clause is a chain of steps (k-rust's language reference, "Chain patterns"). Each step is a set of states written as a claim's subject, and a cell it does not name is unconstrained; `a => b` holds when a later state of the same run matches `b` under the same binders, and `unless(u)` on the arrow excludes a state matching `u` between them.
+The package is outside the definition, so editing a pattern re-asks that pattern alone and moves no verdict.
+Patterns are KRS, as the claims and the views are, while mutations are K patches of `definition.k`: a statement about the definition's behaviour is written in KRS, and an edit of the definition is a patch of the K it emits, anchored by KRS item (k-rust's mutation-testing guide, "Why mutations are K patches, not Rust edits").
 
 ## Mutation testing
 
@@ -113,7 +116,7 @@ bun run kink check          # admit the definition and the cases, resolve every 
 bun run kink coverage       # what the cases cover: rules, guard outcomes, syntax, condition flips
 bun run kink run            # each mutation's status and its killer
 bun run kink run --full     # every case against every mutation: which cases are redundant
-bun run kink query          # each case reaches the situation PATTERNS.toml says it tests
+bun run kink query          # each pattern of krs/sm83-patterns has a case that reaches it
 ```
 
 `kink.lock` is kink's record of the corpus, one section per command, each rewritten by its command after a run that judged everything and checked by it with `--locked` (exit 1 when it would change, 3 when the clock stopped a run it rests on: not decided on this host):
@@ -121,15 +124,16 @@ bun run kink query          # each case reaches the situation PATTERNS.toml says
 - `[run]`: each mutation's status and, for a killed one, one killer. A run tries the recorded killer first and keeps it while it still kills, so adding a case moves no killer and runs only the survivors on it; a killer that stops killing is replaced, and the diff shows it.
 - `[coverage]`: each open obligation (a rule no case fires, a guard outcome no case shows, a production or `k::bits!` field value no case reaches), each argued one with its standing, and each condition flip (`[[coverage.flip]]`, a mutant kink generates by negating a guard or toggling a bit of an encoding) with what it changes, its status and its killer.
 - `[compare]`: each other implementation's verdict on each case under each view (below, "Comparing implementations").
+- `[query]`: each pattern's status (`hit`, `open` or `undecided`) and, for a hit, its witness (above, "What each case tests").
 
 `run --full` costs every case on every mutation, so it is for occasional corpus pruning, not routine runs.
 Under the Z3 profile kink caches results and outcomes (its solver queries are bounded by Z3 resource units, not the clock), so a rerun on an unchanged definition and corpus reuses them.
 `[observe]` compares every run at each instruction boundary on `pc`, `ime` and `halted` as well as at its end, so a mutant whose run never ends is told apart where it first differs. `krs kink query` ends its runs at `[stop]` as `run` does. `fuzz` has no template to vary: kink varies only a program bound as `$PGM` text, and a case is a cartridge.
 
-At k-rust 2185855a7, on the 39 cases (Z3 profile, 2026-11-11), every case is comparable.
+At k-rust db7063a30, on the 39 cases (Z3 profile, 2026-11-11), every case is comparable.
 Of 81 mutations, 72 are killed and the 9 `unobservable` controls survive, as they expect; none is unknown, and no mutant's run reaches the work bound (`[budget] work_factor`, kink's default of 5 times its program's baseline work).
-Every claim of `PATTERNS.toml` (20, over 17 cases) is a hit.
-The three cases `query` found missing (`ei-di`, `halt-bug-operand`, `halt-bug-rst`) moved neither lock: they kill no mutation and close no obligation, so their purpose is recorded only in `PATTERNS.toml`, and `bun run compare` finds the Rust CPU equal on each.
+Each of the 15 patterns of `krs/sm83-patterns` is a hit, and `[query]` names its witness; `query --full` finds 22 hitting pairs of 585, so 9 patterns are reached by one case only.
+The three cases `query` found missing (`ei-di`, `halt-bug-operand`, `halt-bug-rst`) moved neither `[run]` nor `[coverage]`: they kill no mutation and close no coverage obligation, so their purpose is recorded only as the witnesses of their patterns in `[query]`, and `bun run compare` finds the Rust CPU equal on each.
 `coverage`, for each family:
 
 | Family | Covered | Open |

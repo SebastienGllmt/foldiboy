@@ -19,6 +19,11 @@ files = "cases/*/case.gb"
 [[program]]
 cases = "scheduled/*/case.toml"
 
+# What the corpus must reach: krs/sm83-patterns, a KRS package of `k::patterns!` clauses outside the
+# definition. `query` records each pattern's witness in kink.lock's [query].
+[[patterns]]
+krs = "foldiboy-sm83-patterns"
+
 # A case ends by locking the CPU, except one that enters HALT mode with nothing to wake it: its run
 # ends at its second halted boundary (the first one idles). No other case reaches one.
 [stop]

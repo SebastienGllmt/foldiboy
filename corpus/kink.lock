@@ -1,14 +1,14 @@
 # kink's verdicts of a corpus, one section per command: [run] (`run` on a mutation list),
-# [coverage] (`coverage`) and [compare] (`compare`). As a lock (`--lock FILE`; krs keeps
-# <corpus>/kink.lock), each command reads, checks (--locked) and rewrites only its own section,
-# and keeps the others as they are.
+# [coverage] (`coverage`), [compare] (`compare`) and [query] (`query` on a pattern list). As a
+# lock (`--lock FILE`; krs keeps <corpus>/kink.lock), each command reads, checks (--locked) and
+# rewrites only its own section, and keeps the others as they are.
 schema = "kink-flow-verdicts"
 
 [run]
 # The verdicts of kink's `run` command (`krs kink run`, `kink-flow run`): the next run tries
 # each `killer` first, a run without --locked rewrites this section, and `run --locked` checks
 # that it is current.
-version = 26
+version = 27
 profile = "z3"
 z3_version = "5.3.3.0 430d19e697e2ec9bad79ff210d41b4a7a5fcfa3e 430d19e"
 z3_library_sha256 = "7ca2ea1f27e40c86269d6ff7f0e82293708253cb05dbec094c90b08c4ec04d31"
@@ -422,7 +422,7 @@ status = "survived"
 # The verdicts of kink's `coverage` command (`krs kink coverage`, `kink-flow coverage`): the
 # next run tries each flip's `killer` first, a run without --locked rewrites this section, and
 # `coverage --locked` checks that it is current.
-version = 26
+version = 27
 profile = "z3"
 z3_version = "5.3.3.0 430d19e697e2ec9bad79ff210d41b4a7a5fcfa3e 430d19e"
 z3_library_sha256 = "7ca2ea1f27e40c86269d6ff7f0e82293708253cb05dbec094c90b08c4ec04d31"
@@ -880,7 +880,7 @@ killer = "cases/jumps/case.gb"
 [compare]
 # The verdicts of kink's `compare` command (`krs kink compare`, `kink-flow compare`): a run
 # without --locked rewrites this section, and `compare --locked` checks that it is current.
-version = 26
+version = 27
 profile = "z3"
 z3_version = "5.3.3.0 430d19e697e2ec9bad79ff210d41b4a7a5fcfa3e 430d19e"
 z3_library_sha256 = "7ca2ea1f27e40c86269d6ff7f0e82293708253cb05dbec094c90b08c4ec04d31"
@@ -901,7 +901,7 @@ view = "writes"
 required = true
 verdict = "equal"
 request_sha256 = "f5f9715da4e0b512422ad559c79c879c2a5118932521ac65316abcf7d01f541f"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -910,7 +910,7 @@ view = "accesses"
 required = false
 verdict = "equal"
 request_sha256 = "f5f9715da4e0b512422ad559c79c879c2a5118932521ac65316abcf7d01f541f"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -919,7 +919,7 @@ view = "writes"
 required = true
 verdict = "equal"
 request_sha256 = "a9d1f61810a5a64ed5c233a1fa9604e24a673b3cb190cb6d8060896fb43fc5e1"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -928,7 +928,7 @@ view = "accesses"
 required = false
 verdict = "equal"
 request_sha256 = "a9d1f61810a5a64ed5c233a1fa9604e24a673b3cb190cb6d8060896fb43fc5e1"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -937,7 +937,7 @@ view = "writes"
 required = true
 verdict = "equal"
 request_sha256 = "ba2b5cdf4dc541b6676e957badaba1209f4122bac7ab8ccf38be2def78b700eb"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -946,7 +946,7 @@ view = "accesses"
 required = false
 verdict = "equal"
 request_sha256 = "ba2b5cdf4dc541b6676e957badaba1209f4122bac7ab8ccf38be2def78b700eb"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -955,7 +955,7 @@ view = "writes"
 required = true
 verdict = "equal"
 request_sha256 = "da3457ffd7ede091b210ab87ce237336767f564d26386dbed94fdd120c03dfee"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -964,7 +964,7 @@ view = "accesses"
 required = false
 verdict = "equal"
 request_sha256 = "da3457ffd7ede091b210ab87ce237336767f564d26386dbed94fdd120c03dfee"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -973,7 +973,7 @@ view = "writes"
 required = true
 verdict = "equal"
 request_sha256 = "d07e5beac1c5af81580dc01632c0dbe2b8f9fe22a152b0f2d7e98e4ad171d442"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -982,7 +982,7 @@ view = "accesses"
 required = false
 verdict = "equal"
 request_sha256 = "d07e5beac1c5af81580dc01632c0dbe2b8f9fe22a152b0f2d7e98e4ad171d442"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -991,7 +991,7 @@ view = "writes"
 required = true
 verdict = "equal"
 request_sha256 = "00324a4c14208bf4c264fbf5bb3a08b44b3c800d54faa13a16daac67769f9d64"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1000,7 +1000,7 @@ view = "accesses"
 required = false
 verdict = "equal"
 request_sha256 = "00324a4c14208bf4c264fbf5bb3a08b44b3c800d54faa13a16daac67769f9d64"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1009,7 +1009,7 @@ view = "writes"
 required = true
 verdict = "equal"
 request_sha256 = "f078ff4b654d4dd868ed66b171ecd15158af0260104dbf9564673c3a3ff848c7"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1018,7 +1018,7 @@ view = "accesses"
 required = false
 verdict = "equal"
 request_sha256 = "f078ff4b654d4dd868ed66b171ecd15158af0260104dbf9564673c3a3ff848c7"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1027,7 +1027,7 @@ view = "writes"
 required = true
 verdict = "equal"
 request_sha256 = "205383ed7014a5969be57d6a4b2b31a0ae6f64f23f70d7f90c2152928dcac132"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1036,7 +1036,7 @@ view = "accesses"
 required = false
 verdict = "equal"
 request_sha256 = "205383ed7014a5969be57d6a4b2b31a0ae6f64f23f70d7f90c2152928dcac132"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1045,7 +1045,7 @@ view = "writes"
 required = true
 verdict = "equal"
 request_sha256 = "c1fcc7c395c32b130a779c2263457226c4411ab0242c5c49cf81b46cd42b2788"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1054,7 +1054,7 @@ view = "accesses"
 required = false
 verdict = "equal"
 request_sha256 = "c1fcc7c395c32b130a779c2263457226c4411ab0242c5c49cf81b46cd42b2788"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1063,7 +1063,7 @@ view = "writes"
 required = true
 verdict = "equal"
 request_sha256 = "08bd6ed96fe5e3923057ce41bef3000d948e4e87688c57bba5fd9f295bceaa53"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1072,7 +1072,7 @@ view = "accesses"
 required = false
 verdict = "equal"
 request_sha256 = "08bd6ed96fe5e3923057ce41bef3000d948e4e87688c57bba5fd9f295bceaa53"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1081,7 +1081,7 @@ view = "writes"
 required = true
 verdict = "equal"
 request_sha256 = "fb4eeb7abeef1cd8651fd176aab535e0ec9b6ca694c7d6bc9ad53d70d0ee6d94"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1090,7 +1090,7 @@ view = "accesses"
 required = false
 verdict = "equal"
 request_sha256 = "fb4eeb7abeef1cd8651fd176aab535e0ec9b6ca694c7d6bc9ad53d70d0ee6d94"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1099,7 +1099,7 @@ view = "writes"
 required = true
 verdict = "equal"
 request_sha256 = "ba5f9ff60f94a06a255056eeebe5c0c31728df307e17c5ba88514c1518f01542"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1108,7 +1108,7 @@ view = "accesses"
 required = false
 verdict = "equal"
 request_sha256 = "ba5f9ff60f94a06a255056eeebe5c0c31728df307e17c5ba88514c1518f01542"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1117,7 +1117,7 @@ view = "writes"
 required = true
 verdict = "equal"
 request_sha256 = "238a525d25ee1222877da1f74c90a0080f19fad775aa50c510ce84ef4b84531c"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1126,7 +1126,7 @@ view = "accesses"
 required = false
 verdict = "equal"
 request_sha256 = "238a525d25ee1222877da1f74c90a0080f19fad775aa50c510ce84ef4b84531c"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1135,7 +1135,7 @@ view = "writes"
 required = true
 verdict = "equal"
 request_sha256 = "6428a9babcf3aea05266d514bcd9d6b07d2c97b174481ce0195376e6a7efc504"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1144,7 +1144,7 @@ view = "accesses"
 required = false
 verdict = "equal"
 request_sha256 = "6428a9babcf3aea05266d514bcd9d6b07d2c97b174481ce0195376e6a7efc504"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1153,7 +1153,7 @@ view = "writes"
 required = true
 verdict = "equal"
 request_sha256 = "567790fc7f6c1c949fc3ebea9133c041284e7de5b32307aa5d8af41aef8c9db7"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1163,7 +1163,7 @@ required = false
 verdict = "different"
 difference = '{"also_differ":[],"at":"cell","cell":"bus","compared":["regs","f","pc","sp","ime","ei_pending","halted","halt_bug","rom","rom_end","memory","bus","requests"],"format":"krs-difference/3","left":{"complete":true,"ends":1,"name":"definition","value":{"document":{"Read":{"addr":343,"value":118}},"offset":0,"rendering":"document","truncated":false}},"not_compared":["k","w","z"],"outside":"implementation","path":"bus[14]","right":{"complete":true,"ends":1,"name":"implementation","value":{"document":{"Write":{"addr":65533,"value":1}},"offset":0,"rendering":"document","truncated":false}},"segments":["[14]"],"views":{"bus":"AccessesView"}}'
 request_sha256 = "567790fc7f6c1c949fc3ebea9133c041284e7de5b32307aa5d8af41aef8c9db7"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1172,7 +1172,7 @@ view = "writes"
 required = true
 verdict = "equal"
 request_sha256 = "5f9a4bb38b41dbf7f97848ca5008e20a61291d97094bd72531c68b84bf30be22"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1181,7 +1181,7 @@ view = "accesses"
 required = false
 verdict = "equal"
 request_sha256 = "5f9a4bb38b41dbf7f97848ca5008e20a61291d97094bd72531c68b84bf30be22"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1190,7 +1190,7 @@ view = "writes"
 required = true
 verdict = "equal"
 request_sha256 = "a00b9229185fbb05d795f26363eed14824824db297802ecce02a8f5fc9149604"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1199,7 +1199,7 @@ view = "accesses"
 required = false
 verdict = "equal"
 request_sha256 = "a00b9229185fbb05d795f26363eed14824824db297802ecce02a8f5fc9149604"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1208,7 +1208,7 @@ view = "writes"
 required = true
 verdict = "equal"
 request_sha256 = "a0751da21c1e5ec3f0e905fafd05f9aa375f5e48cf8fde6e11c930c271a28f8b"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1217,7 +1217,7 @@ view = "accesses"
 required = false
 verdict = "equal"
 request_sha256 = "a0751da21c1e5ec3f0e905fafd05f9aa375f5e48cf8fde6e11c930c271a28f8b"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1226,7 +1226,7 @@ view = "writes"
 required = true
 verdict = "equal"
 request_sha256 = "f69f51292d56922814dafa4471e6f23bbc499375f7bfc4f58db107e7823035a2"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1236,7 +1236,7 @@ required = false
 verdict = "different"
 difference = '{"also_differ":[],"at":"cell","cell":"bus","compared":["regs","f","pc","sp","ime","ei_pending","halted","halt_bug","rom","rom_end","memory","bus","requests"],"format":"krs-difference/3","left":{"complete":true,"ends":1,"name":"definition","value":{"document":{"Read":{"addr":347,"value":6}},"offset":0,"rendering":"document","truncated":false}},"not_compared":["k","w","z"],"outside":"implementation","path":"bus[17]","right":{"complete":true,"ends":1,"name":"implementation","value":{"document":{"Write":{"addr":65535,"value":1}},"offset":0,"rendering":"document","truncated":false}},"segments":["[17]"],"views":{"bus":"AccessesView"}}'
 request_sha256 = "f69f51292d56922814dafa4471e6f23bbc499375f7bfc4f58db107e7823035a2"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1245,7 +1245,7 @@ view = "writes"
 required = true
 verdict = "equal"
 request_sha256 = "13ff38ceeeb282704f8963f4ec805fb8b19fdcf1d334b74d2837a7765de51e8f"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1254,7 +1254,7 @@ view = "accesses"
 required = false
 verdict = "equal"
 request_sha256 = "13ff38ceeeb282704f8963f4ec805fb8b19fdcf1d334b74d2837a7765de51e8f"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1263,7 +1263,7 @@ view = "writes"
 required = true
 verdict = "equal"
 request_sha256 = "6d8528e9fb636c3d02ace0626cd2ff3b13c25a9a3cf223d72c2a713a408cb770"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1272,7 +1272,7 @@ view = "accesses"
 required = false
 verdict = "equal"
 request_sha256 = "6d8528e9fb636c3d02ace0626cd2ff3b13c25a9a3cf223d72c2a713a408cb770"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1281,7 +1281,7 @@ view = "writes"
 required = true
 verdict = "equal"
 request_sha256 = "e9af1782ce53147d7e70da62a1a07eb548616bcf57068062b01e0593ade36a97"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1290,7 +1290,7 @@ view = "accesses"
 required = false
 verdict = "equal"
 request_sha256 = "e9af1782ce53147d7e70da62a1a07eb548616bcf57068062b01e0593ade36a97"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1299,7 +1299,7 @@ view = "writes"
 required = true
 verdict = "equal"
 request_sha256 = "50aa16c440bbc5ea4df44374f3cd55e945e645dfc7436ea5e9c6663495afb81a"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1309,7 +1309,7 @@ required = false
 verdict = "different"
 difference = '{"also_differ":[],"at":"cell","cell":"bus","compared":["regs","f","pc","sp","ime","ei_pending","halted","halt_bug","rom","rom_end","memory","bus","requests"],"format":"krs-difference/3","left":{"complete":true,"ends":1,"name":"definition","value":{"document":{"Read":{"addr":347,"value":245}},"offset":0,"rendering":"document","truncated":false}},"not_compared":["k","w","z"],"outside":"implementation","path":"bus[17]","right":{"complete":true,"ends":1,"name":"implementation","value":{"document":{"Write":{"addr":65533,"value":1}},"offset":0,"rendering":"document","truncated":false}},"segments":["[17]"],"views":{"bus":"AccessesView"}}'
 request_sha256 = "50aa16c440bbc5ea4df44374f3cd55e945e645dfc7436ea5e9c6663495afb81a"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1318,7 +1318,7 @@ view = "writes"
 required = true
 verdict = "equal"
 request_sha256 = "bedd0fa162bd42f678427b7fa36219681d19812b525c75071a2437822a2b36b6"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1328,7 +1328,7 @@ required = false
 verdict = "different"
 difference = '{"also_differ":[],"at":"cell","cell":"bus","compared":["regs","f","pc","sp","ime","ei_pending","halted","halt_bug","rom","rom_end","memory","bus","requests"],"format":"krs-difference/3","left":{"complete":true,"ends":1,"name":"definition","value":{"document":{"Read":{"addr":346,"value":4}},"offset":0,"rendering":"document","truncated":false}},"not_compared":["k","w","z"],"outside":"implementation","path":"bus[16]","right":{"complete":true,"ends":1,"name":"implementation","value":{"document":{"Write":{"addr":65533,"value":1}},"offset":0,"rendering":"document","truncated":false}},"segments":["[16]"],"views":{"bus":"AccessesView"}}'
 request_sha256 = "bedd0fa162bd42f678427b7fa36219681d19812b525c75071a2437822a2b36b6"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1337,7 +1337,7 @@ view = "writes"
 required = true
 verdict = "equal"
 request_sha256 = "85c239ce4d266856754ddc47d6aa9a645340f1b6a7dfeb2d7ee56f7f9094d161"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1347,7 +1347,7 @@ required = false
 verdict = "different"
 difference = '{"also_differ":[],"at":"cell","cell":"bus","compared":["regs","f","pc","sp","ime","ei_pending","halted","halt_bug","rom","rom_end","memory","bus","requests"],"format":"krs-difference/3","left":{"complete":true,"ends":1,"name":"definition","value":{"document":{"Read":{"addr":344,"value":243}},"offset":0,"rendering":"document","truncated":false}},"not_compared":["k","w","z"],"outside":"implementation","path":"bus[14]","right":{"complete":true,"ends":1,"name":"implementation","value":{"document":{"Write":{"addr":65533,"value":1}},"offset":0,"rendering":"document","truncated":false}},"segments":["[14]"],"views":{"bus":"AccessesView"}}'
 request_sha256 = "85c239ce4d266856754ddc47d6aa9a645340f1b6a7dfeb2d7ee56f7f9094d161"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1356,7 +1356,7 @@ view = "writes"
 required = true
 verdict = "equal"
 request_sha256 = "a68befa7403b993ce889d36e9f9b01f53c60046dbe711d374dbb8c9c73a5db51"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1365,7 +1365,7 @@ view = "accesses"
 required = false
 verdict = "equal"
 request_sha256 = "a68befa7403b993ce889d36e9f9b01f53c60046dbe711d374dbb8c9c73a5db51"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1374,7 +1374,7 @@ view = "writes"
 required = true
 verdict = "equal"
 request_sha256 = "ac086066532c328fc2742de9ba6b51052a10653eec19737c783852a131b5578b"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1383,7 +1383,7 @@ view = "accesses"
 required = false
 verdict = "equal"
 request_sha256 = "ac086066532c328fc2742de9ba6b51052a10653eec19737c783852a131b5578b"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1392,7 +1392,7 @@ view = "writes"
 required = true
 verdict = "equal"
 request_sha256 = "d61a1f4b6aef06ec609fd30bfc9dd505dc3864f0a6c75f2f1eeea0c33f351768"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1401,7 +1401,7 @@ view = "accesses"
 required = false
 verdict = "equal"
 request_sha256 = "d61a1f4b6aef06ec609fd30bfc9dd505dc3864f0a6c75f2f1eeea0c33f351768"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1410,7 +1410,7 @@ view = "writes"
 required = true
 verdict = "equal"
 request_sha256 = "f6f112477d102848a714737a6ad00927795bf9cce37ad2f543dfb1b84501bcc2"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1420,7 +1420,7 @@ required = false
 verdict = "different"
 difference = '{"also_differ":[],"at":"cell","cell":"bus","compared":["regs","f","pc","sp","ime","ei_pending","halted","halt_bug","rom","rom_end","memory","bus","requests"],"format":"krs-difference/3","left":{"complete":true,"ends":1,"name":"definition","value":{"document":{"Read":{"addr":49428,"value":201}},"offset":0,"rendering":"document","truncated":false}},"not_compared":["k","w","z"],"outside":"implementation","path":"bus[208]","right":{"complete":true,"ends":1,"name":"implementation","value":{"document":{"Write":{"addr":65531,"value":193}},"offset":0,"rendering":"document","truncated":false}},"segments":["[208]"],"views":{"bus":"AccessesView"}}'
 request_sha256 = "f6f112477d102848a714737a6ad00927795bf9cce37ad2f543dfb1b84501bcc2"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1429,7 +1429,7 @@ view = "writes"
 required = true
 verdict = "equal"
 request_sha256 = "48065b14cb764c9ae59a36b41d9a7e60325b555ab9c9fdac2b7bfb7d3cc9bea4"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1438,7 +1438,7 @@ view = "accesses"
 required = false
 verdict = "equal"
 request_sha256 = "48065b14cb764c9ae59a36b41d9a7e60325b555ab9c9fdac2b7bfb7d3cc9bea4"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1447,7 +1447,7 @@ view = "writes"
 required = true
 verdict = "equal"
 request_sha256 = "fea259214622e58f3d99854fa856ffdcd7617f9e798b972298d4c3b6b0bdaf9a"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1456,7 +1456,7 @@ view = "accesses"
 required = false
 verdict = "equal"
 request_sha256 = "fea259214622e58f3d99854fa856ffdcd7617f9e798b972298d4c3b6b0bdaf9a"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1465,7 +1465,7 @@ view = "writes"
 required = true
 verdict = "equal"
 request_sha256 = "4e54d8262160062615e6fc0668db0b49ffcd3eca84bff5c3d8a313a0c1162dc9"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1474,7 +1474,7 @@ view = "accesses"
 required = false
 verdict = "equal"
 request_sha256 = "4e54d8262160062615e6fc0668db0b49ffcd3eca84bff5c3d8a313a0c1162dc9"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1483,7 +1483,7 @@ view = "writes"
 required = true
 verdict = "equal"
 request_sha256 = "af8c1a7fb4d58923ee5436c859aa062fb15557e3c68bc79bc7bde7a23f65bb71"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1492,7 +1492,7 @@ view = "accesses"
 required = false
 verdict = "equal"
 request_sha256 = "af8c1a7fb4d58923ee5436c859aa062fb15557e3c68bc79bc7bde7a23f65bb71"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1501,7 +1501,7 @@ view = "writes"
 required = true
 verdict = "equal"
 request_sha256 = "19b98c1de45656e994019cc90584143e8e78ae7d4de6fa348e0aeb2a64b2b373"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1510,7 +1510,7 @@ view = "accesses"
 required = false
 verdict = "equal"
 request_sha256 = "19b98c1de45656e994019cc90584143e8e78ae7d4de6fa348e0aeb2a64b2b373"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1519,7 +1519,7 @@ view = "writes"
 required = true
 verdict = "equal"
 request_sha256 = "8805e1a7937bd2a9bfe7fe92dbcc91b7077582a7c0f14fcbcdc24c710ce92da6"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1528,7 +1528,7 @@ view = "accesses"
 required = false
 verdict = "equal"
 request_sha256 = "8805e1a7937bd2a9bfe7fe92dbcc91b7077582a7c0f14fcbcdc24c710ce92da6"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1538,7 +1538,7 @@ required = true
 verdict = "could-not-apply"
 reason = "the request of 0x04 at machine cycle 19 comes due inside an instruction or a dispatch, or where IME is set or about to be: this CPU delivers a request only between two steps"
 request_sha256 = "a75d43090287b2e2eee00f1526b836795bbc5008d41bb842e5c5f3657de7e2db"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1548,7 +1548,7 @@ required = false
 verdict = "could-not-apply"
 reason = "the request of 0x04 at machine cycle 19 comes due inside an instruction or a dispatch, or where IME is set or about to be: this CPU delivers a request only between two steps"
 request_sha256 = "a75d43090287b2e2eee00f1526b836795bbc5008d41bb842e5c5f3657de7e2db"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1557,7 +1557,7 @@ view = "writes"
 required = true
 verdict = "equal"
 request_sha256 = "4125469c06ff84108f6affdfa0ede08bb1f986841e5ff3a11f51edb54cfa8836"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1567,7 +1567,7 @@ required = false
 verdict = "different"
 difference = '{"also_differ":[],"at":"cell","cell":"bus","compared":["regs","f","pc","sp","ime","ei_pending","halted","halt_bug","rom","rom_end","memory","bus","requests"],"format":"krs-difference/3","left":{"complete":true,"ends":1,"name":"definition","value":{"document":{"Read":{"addr":348,"value":6}},"offset":0,"rendering":"document","truncated":false}},"not_compared":["k","w","z"],"outside":"implementation","path":"bus[18]","right":{"complete":true,"ends":1,"name":"implementation","value":{"document":{"Write":{"addr":65533,"value":1}},"offset":0,"rendering":"document","truncated":false}},"segments":["[18]"],"views":{"bus":"AccessesView"}}'
 request_sha256 = "4125469c06ff84108f6affdfa0ede08bb1f986841e5ff3a11f51edb54cfa8836"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1576,7 +1576,7 @@ view = "writes"
 required = true
 verdict = "equal"
 request_sha256 = "d4d080fb8dbc8f0a2b2340f0ae56f9b80ccde411aa7ef2a7b7b5d4d62b634fb7"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1585,7 +1585,7 @@ view = "accesses"
 required = false
 verdict = "equal"
 request_sha256 = "d4d080fb8dbc8f0a2b2340f0ae56f9b80ccde411aa7ef2a7b7b5d4d62b634fb7"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1595,7 +1595,7 @@ required = true
 verdict = "could-not-apply"
 reason = "the request of 0x01 at machine cycle 16 comes due inside an instruction or a dispatch, or where IME is set or about to be: this CPU delivers a request only between two steps"
 request_sha256 = "f887accbc92cf5d7bed9db18594d6190fec3e188d207e52b283343d0ceb57bfb"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
 
 [[compare.verdict]]
 implementation = "rust-cpu"
@@ -1605,4 +1605,95 @@ required = false
 verdict = "could-not-apply"
 reason = "the request of 0x01 at machine cycle 16 comes due inside an instruction or a dispatch, or where IME is set or about to be: this CPU delivers a request only between two steps"
 request_sha256 = "f887accbc92cf5d7bed9db18594d6190fec3e188d207e52b283343d0ceb57bfb"
-identity_sha256 = "e3bc5447a5c0227f7017faba0bc22ee3b594a2abbf9ac6e32d757eaf201c7d7a"
+identity_sha256 = "30d85ada9c5ca440e00be5c173f3563b4704b3d58bc534bb8dfe3fd8c504e782"
+
+[query]
+# The obligations of kink's `query` command (`krs kink query`, `kink-flow query`): the next
+# query tries each pattern's `witness` first, a query of the whole pattern list without
+# --locked rewrites this section, and `query --locked` checks that it is current.
+version = 27
+profile = "z3"
+z3_version = "5.3.3.0 430d19e697e2ec9bad79ff210d41b4a7a5fcfa3e 430d19e"
+z3_library_sha256 = "7ca2ea1f27e40c86269d6ff7f0e82293708253cb05dbec094c90b08c4ec04d31"
+
+[query.spec]
+outcome = "admitted"
+
+# Each [[query.pattern]] is a pattern of the list, by its id, and its obligation, that some
+# program's run reaches a state that matches it: hit (`witness` names one such program, kept
+# while it still hits), open (every program's run reaches none: each answered a final no) or
+# undecided (no program hits, and some program's answer is not a final no).
+[[query.pattern]]
+id = "add-sp-negative-offset"
+status = "hit"
+witness = "cases/word16/case.gb"
+
+[[query.pattern]]
+id = "daa-above-99-no-carry-after-add"
+status = "hit"
+witness = "cases/daa-flags/case.gb"
+
+[[query.pattern]]
+id = "daa-low-digit-above-9-no-half-after-sub"
+status = "hit"
+witness = "cases/daa-flags/case.gb"
+
+[[query.pattern]]
+id = "dispatch-cancelled"
+status = "hit"
+witness = "cases/ie-push-cancel/case.gb"
+
+[[query.pattern]]
+id = "dispatch-from-sp-zero"
+status = "hit"
+witness = "cases/ie-push-cancel/case.gb"
+
+[[query.pattern]]
+id = "ei-then-di"
+status = "hit"
+witness = "cases/ei-di/case.gb"
+
+[[query.pattern]]
+id = "halt-bug-double-read"
+status = "hit"
+witness = "cases/halt-bug-operand/case.gb"
+
+[[query.pattern]]
+id = "halt-bug-on-two-byte-opcode"
+status = "hit"
+witness = "cases/halt-bug-operand/case.gb"
+
+[[query.pattern]]
+id = "halt-bug-then-rst"
+status = "hit"
+witness = "cases/halt-bug-rst/case.gb"
+
+[[query.pattern]]
+id = "halt-mode-ime-clear"
+status = "hit"
+witness = "cases/halt-mode/case.gb"
+
+[[query.pattern]]
+id = "halt-mode-ime-set"
+status = "hit"
+witness = "cases/halt-mode-ime/case.gb"
+
+[[query.pattern]]
+id = "halt-wake-request"
+status = "hit"
+witness = "scheduled/halt-wake-ime/case.toml"
+
+[[query.pattern]]
+id = "request-due-inside-dispatch"
+status = "hit"
+witness = "scheduled/dispatch-request/case.toml"
+
+[[query.pattern]]
+id = "store-read-back"
+status = "hit"
+witness = "cases/ram-code/case.gb"
+
+[[query.pattern]]
+id = "two-requests-at-selection"
+status = "hit"
+witness = "cases/interrupt-sources/case.gb"

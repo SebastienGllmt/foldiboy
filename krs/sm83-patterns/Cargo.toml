@@ -1,0 +1,18 @@
+[package]
+name = "foldiboy-sm83-patterns"
+description = "Situations the corpus must reach, as kink chain patterns over the SM83 definition's runs"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99"
+publish = false
+workspace = "../sm83-views"
+
+[dependencies]
+sm83 = { package = "foldiboy-sm83", path = "../sm83" }
+sm83-events = { package = "foldiboy-sm83-events", path = "../sm83-events" }
+k = { package = "krs", path = "/artifacts/worktrees/k-rust-pin-db7063a30/krs/crates/krs" }
+
+[package.metadata.krs]
+k-namespace = "SM83-PATTERNS"
+
+[package.metadata.krs.definitions.patterns]

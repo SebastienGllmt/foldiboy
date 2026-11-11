@@ -27,7 +27,12 @@ const definition = [
 // printed, or with `save` written to that file (relative to the root).
 export async function krs(verb: string, args: string[], save?: string): Promise<number> {
   const corpus = verb === "kink" ? ["--corpus", resolve(root, "corpus")] : [];
-  if (save) await mkdir(dirname(resolve(root, save)), { recursive: true });
+  if (save) {
+    await mkdir(dirname(resolve(root, save)), { recursive: true });
+    // Bun.file as stdout writes from the start without truncating: empty the file first, so an
+    // earlier, longer output leaves no tail after this one.
+    await Bun.write(resolve(root, save), "");
+  }
   const child = Bun.spawn([bin, verb, ...args, ...definition, ...corpus], {
     cwd: root,
     env: { ...process.env, CARGO_TARGET_DIR: `${views}/target` },
