@@ -277,6 +277,7 @@ At k-rust `599bb8485` (2026-11-09), with `MemoryOutsideRom` added to the definit
 At k-rust `b1966f5c6` (2026-11-10), with `IF`'s write-side `Latch` and the solver bounded by Z3 resource units by default (CF-33), the verdicts are the same again: 182 proved in 14 minutes, `contract-unary-daa-accumulator` failing as FB-44 states.
 At k-rust `2185855a7` (2026-11-11), which fixed FB-44 (a summary's body domain drops the conjuncts builtin hooks decide true, and a summary is specialized at a constructor argument's shape), all 183 contracts prove in 23 minutes at a 600-second bound, `contract-unary-daa-accumulator` included.
 At k-rust `db7063a30` (2026-11-11), which marks constants in `definition.k` and adds chain patterns, all 183 still prove, in 20 minutes.
+At k-rust `5418b8f7b` (2026-11-11) the emitted `definition.k` and `spec.k` are byte-identical to `8e938d911`'s (whose KRS front end is `db7063a30`'s), with `control.rs` in `krs fmt`'s layout, so the proofs were not rerun.
 `contract-dispatch-running` and `contract-dispatch-wake` prove with `ExpectedInterruptVector` and `ExpectedInterruptMask` written as `if` chains: k-rust now admits those helpers' guards (`x / 2^k` is defined) to the prover's guarded reading (OT-20), so the single-expression workaround is gone.
 
 Before the 2026-11-02 replay, `contract-call-taken`, `contract-dispatch-running` and `contract-dispatch-wake` each reached a 90-second external wall limit without a native verdict; all three prove at `b06b9b869`.

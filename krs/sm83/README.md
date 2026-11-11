@@ -175,7 +175,7 @@ Success requires every selected claim to report `proven` and exit status 0.
 krs proves each claim in a supervised worker: a claim that runs past the timeout gets the verdict `timeout`, and a solver crash costs only its claim (`crashed`); neither establishes anything about the claim.
 Each solver query is bounded by Z3 resource units rather than the clock, so a verdict does not depend on the host's load.
 The six bit-index contracts use exhaustive native cases over the three-bit opcode field.
-The [claim inventory](src/claims/README.md#proof-evidence) records the reviewed proof evidence; at k-rust `db7063a30` (Z3 5.3.3) every contract proves.
+The [claim inventory](src/claims/README.md#proof-evidence) records the reviewed proof evidence; at k-rust `db7063a30` (Z3 5.3.3) every contract proves, and up to `5418b8f7b` the emitted claims are byte-identical.
 Proof output is printed to the terminal; any saved diagnostic runs belong in ignored `results/`.
 
 Run the concrete test suites:
@@ -209,7 +209,7 @@ A mooneye test ends at its breakpoint (`LD B,B`) after setting the result regist
 
 The migration from KRS `8299da60f` to `793cc0a3a` adds typed helper parameters and builtin list notation.
 Its emitted `definition.k` is byte-identical to the unchanged source emitted by `793cc0a3a`.
-The sources are in `krs fmt`'s layout at k-rust `db7063a30`, except `src/claims/control.rs`: there `krs fmt` writes a long negated `requires` it cannot parse back, and refuses the file (the k-rust ledger's FB-49, still open at db7063a30).
+The sources are in `krs fmt`'s layout at k-rust `5418b8f7b` (`krs fmt --check` passes in every package), `src/claims/control.rs` included since that commit fixed the long negated `requires` it could not lay out (FB-56); formatting it moved no emitted K (`definition.k` and `spec.k` are byte-identical).
 
 Status at the last run:
 
