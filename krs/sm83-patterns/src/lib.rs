@@ -15,7 +15,7 @@
 
 use sm83::alu::{Flags, Unary};
 use sm83::decode::Instruction;
-use sm83::interrupt::{IF, INTERRUPT_BITS, Step};
+use sm83::interrupt::{IF, INTERRUPT_BITS, Request, Step};
 use sm83::machine::Event;
 use sm83::micro::Micro;
 use sm83::{InterruptRequested, Machine, Requested};
@@ -54,6 +54,15 @@ k::patterns! {
     #[k::requires(InterruptRequested(memory))]
     halt_wake_request: { halted: true, memory };
 
+    /// A request wakes HALT mode entered with IME clear: the CPU resumes fetching without
+    /// dispatching, and the request stays in IF.
+    #[k::requires(InterruptRequested(memory))]
+    halt_wake_resumes: { halted: true, ime: false }
+        => { k: [Micro::Fetch, ..], halted: false, memory };
+
+    /// A request wakes HALT mode entered with IME set: the CPU dispatches it.
+    halt_wake_dispatches: { halted: true, ime: true } => { k: [Step::Dispatch, ..] };
+
     // --- Interrupts ---------------------------------------------------------------------------
 
     /// `DI` runs with IME already set and an enabled request pending: `EI`'s delay kept the
@@ -79,6 +88,15 @@ k::patterns! {
     request_due_inside_dispatch: { k: [Step::Dispatch, ..], memory: { IF -> before, .. } }
         => unless({ k: [Step::Boundary, ..] })
         { k: [Step::SelectVector { .. }, ..], memory: { IF -> after, .. } };
+
+    /// A read of IF sees a request made in its own machine cycle (VBlank) and not one made in the
+    /// next (STAT, still to come); a later read of IF sees both.
+    #[k::requires((seen & INTERRUPT_BITS) == 0x01)]
+    #[k::requires((both & INTERRUPT_BITS) == 0x03)]
+    if_read_sees_its_own_cycle: {
+        bus: [.., Event::Read { addr: IF, value: seen }],
+        requests: [Request::At { bits: 0x02, .. }, ..],
+    } => { bus: [.., Event::Read { addr: IF, value: both }] };
 
     // --- Arithmetic ---------------------------------------------------------------------------
 

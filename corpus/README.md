@@ -51,7 +51,7 @@ It sets a scheduled case's requests in `IF` between two of the Rust CPU's steps,
 The bus log (`read`, `write`, `idle` events) is compared under a view, a function of the cell's value applied to both sides (`krs/sm83-views`).
 `WritesView` keeps only the writes; `AccessesView` keeps the reads and writes in order and drops idle cycles; no view keeps every event.
 The Rust CPU performs an instruction's accesses at once, with no internal cycles, so its bus is compared under `writes` (`WritesView`, required) and `accesses` (`AccessesView`, reported).
-At k-rust `db7063a30` (2026-11-11), under `writes` 37 of the 39 cases are equal and none differs; the other two are `could-not-apply`, the two whose requests come due where the Rust CPU cannot deliver them: `dispatch-request` (a request inside a dispatch) and `if-read-request` (a request read inside an instruction).
+At k-rust `8e938d911` (2026-11-11), under `writes` 37 of the 39 cases are equal and none differs; the other two are `could-not-apply`, the two whose requests come due where the Rust CPU cannot deliver them: `dispatch-request` (a request inside a dispatch) and `if-read-request` (a request read inside an instruction).
 Under `accesses` the seven cases that dispatch an interrupt (`interrupt`, `interrupt-sources`, `joypad-int`, `halt-ime`, `ie-push-cancel`, `ram-code`, `halt-wake-ime`) differ, each first at its first dispatch, where the definition reads the opcode at `PC` and discards it and the Rust CPU pushes at once.
 The definition's order is the one SameBoy, Gambatte and mooneye-gb share (`krs/sm83/notes/interrupt-sources.md`); Pan Docs and mooneye's hardware-verified `intr_timing` give only the five cycles, so no evidence here decides the order of accesses within them. The Rust CPU's order is that emulator's difference, not evidence against the definition's.
 The Rust CPU's interrupt logic accesses `IE` and `IF` without bus cycles (`memory::Bus::read_interrupt_register`), so those accesses are not logged.
@@ -115,7 +115,7 @@ kink runs each case on the definition and on each mutant and compares their ends
 bun run kink check          # admit the definition and the cases, resolve every mutation
 bun run kink coverage       # what the cases cover: rules, guard outcomes, syntax, condition flips
 bun run kink run            # each mutation's status and its killer
-bun run kink run --full     # every case against every mutation: which cases are redundant
+bun run kink run --full     # every case against every mutation: every killer of each
 bun run kink query          # each pattern of krs/sm83-patterns has a case that reaches it
 ```
 
@@ -127,12 +127,14 @@ bun run kink query          # each pattern of krs/sm83-patterns has a case that 
 - `[query]`: each pattern's status (`hit`, `open` or `undecided`) and, for a hit, its witness (above, "What each case tests").
 
 `run --full` costs every case on every mutation, so it is for occasional corpus pruning, not routine runs.
+`krs kink prune` (`bun run kink prune`) reports which cases are redundant: it runs `coverage`, `run --full` and `query --full` and keeps a case only for an obligation no other case discharges (a mutation it alone kills, a pattern it alone hits, a coverage item it alone covers, a flip it kills), or one only it might discharge. It writes nothing, and it is not run routinely, since its cost is `run --full`'s.
+So a case's purpose is kept by prune only if an obligation states it: a case whose header names a situation no pattern states is reported redundant whenever other cases cover what it covers (`halt-wake` and `halt-wake-ime` cover the same rules, and only their patterns tell them apart). Write the pattern when the case is written.
 Under the Z3 profile kink caches results and outcomes (its solver queries are bounded by Z3 resource units, not the clock), so a rerun on an unchanged definition and corpus reuses them.
 `[observe]` compares every run at each instruction boundary on `pc`, `ime` and `halted` as well as at its end, so a mutant whose run never ends is told apart where it first differs. `krs kink query` ends its runs at `[stop]` as `run` does. `fuzz` has no template to vary: kink varies only a program bound as `$PGM` text, and a case is a cartridge.
 
-At k-rust db7063a30, on the 39 cases (Z3 profile, 2026-11-11), every case is comparable.
+At k-rust 8e938d911, on the 39 cases (Z3 profile, 2026-11-11), every case is comparable.
 Of 81 mutations, 72 are killed and the 9 `unobservable` controls survive, as they expect; none is unknown, and no mutant's run reaches the work bound (`[budget] work_factor`, kink's default of 5 times its program's baseline work).
-Each of the 15 patterns of `krs/sm83-patterns` is a hit, and `[query]` names its witness; `query --full` finds 22 hitting pairs of 585, so 9 patterns are reached by one case only.
+Each of the 18 patterns of `krs/sm83-patterns` is a hit, and `[query]` names its witness; `query --full` finds 25 hitting pairs of 702, so 12 patterns are reached by one case only.
 The three cases `query` found missing (`ei-di`, `halt-bug-operand`, `halt-bug-rst`) moved neither `[run]` nor `[coverage]`: they kill no mutation and close no coverage obligation, so their purpose is recorded only as the witnesses of their patterns in `[query]`, and `bun run compare` finds the Rust CPU equal on each.
 `coverage`, for each family:
 

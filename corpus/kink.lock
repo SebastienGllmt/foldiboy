@@ -1679,9 +1679,24 @@ status = "hit"
 witness = "cases/halt-mode-ime/case.gb"
 
 [[query.pattern]]
+id = "halt-wake-dispatches"
+status = "hit"
+witness = "scheduled/halt-wake-ime/case.toml"
+
+[[query.pattern]]
 id = "halt-wake-request"
 status = "hit"
 witness = "scheduled/halt-wake-ime/case.toml"
+
+[[query.pattern]]
+id = "halt-wake-resumes"
+status = "hit"
+witness = "scheduled/halt-wake/case.toml"
+
+[[query.pattern]]
+id = "if-read-sees-its-own-cycle"
+status = "hit"
+witness = "scheduled/if-read-request/case.toml"
 
 [[query.pattern]]
 id = "request-due-inside-dispatch"
