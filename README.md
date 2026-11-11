@@ -19,6 +19,12 @@ You can learn more about subtle points in relation to which component is proven 
 - human-written managed documentation [here](./docs)
 - AI-assisted documentation [here](./machine-docs/)
 
+## Documentation site
+
+The local documentation and research site lives in [`site/`](./site).
+Run `cd site && bun install --frozen-lockfile && bun run dev`, then open <http://127.0.0.1:4173/#/docs>.
+Start with the [getting started guide](./docs/README.md).
+
 ## Architecture
 
 ```
